@@ -1,0 +1,3241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Derivation Builder</title>
+
+    <!-- Security: Unified CSP for PhiLang -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- PhiLang Core Modules -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_api.js"></script>
+    <script src="philang_persistence.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_ontology.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_export.js"></script>
+    <script src="philang_urlstate.js"></script>
+    <script src="philang_ui.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="philang-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--void);
+            color: var(--pearl);
+            overflow: hidden;
+        }
+
+        /* Cosmic background for canvas */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 30% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 30% at 70% 80%, rgba(201, 162, 39, 0.04) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        #app { display: flex; height: 100vh; padding-top: 2px; }
+
+        /* Left Sidebar - Concept Palette */
+        #palette {
+            width: 280px;
+            min-width: 280px;
+            background: linear-gradient(180deg, rgba(22, 20, 28, 0.95) 0%, rgba(15, 14, 19, 0.98) 100%);
+            border-right: 1px solid rgba(61, 55, 80, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        #palette.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #palette-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(61, 55, 80, 0.3);
+            background: rgba(201, 162, 39, 0.03);
+        }
+
+        #palette-header h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        #palette-header h1 span { color: var(--gold); }
+
+        #palette-header p {
+            color: var(--silver);
+            font-size: 0.75rem;
+        }
+
+        #palette-search {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(61, 55, 80, 0.3);
+        }
+
+        #palette-search input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(15, 14, 19, 0.8);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 8px;
+            color: var(--pearl);
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 0.875rem;
+        }
+
+        #palette-search input:focus {
+            outline: none;
+            border-color: rgba(201, 162, 39, 0.5);
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.1);
+        }
+
+        #palette-search input::placeholder {
+            color: var(--stone);
+        }
+
+        #tradition-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(61, 55, 80, 0.3);
+        }
+
+        .tradition-tab {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .tradition-tab.active {
+            opacity: 1;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .tradition-tab:hover { opacity: 0.8; }
+
+        #concept-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .concept-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 6px;
+            border: 1px solid transparent;
+            background: rgba(22, 20, 28, 0.4);
+        }
+
+        .concept-item:hover {
+            background: rgba(42, 38, 54, 0.6);
+            border-color: rgba(61, 55, 80, 0.5);
+        }
+
+        .concept-item.selected {
+            border-color: var(--gold);
+            background: rgba(201, 162, 39, 0.1);
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.15);
+        }
+
+        .concept-item .symbol {
+            font-size: 1.4rem;
+            width: 36px;
+            text-align: center;
+        }
+
+        .concept-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .concept-item .name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--pearl);
+        }
+
+        .concept-item .tradition-tag {
+            font-size: 0.6rem;
+            padding: 3px 7px;
+            border-radius: 100px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* Main Canvas Area */
+        #canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(22, 20, 28, 0.9);
+            border-bottom: 1px solid rgba(61, 55, 80, 0.3);
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        .toolbar-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            background: rgba(15, 14, 19, 0.8);
+            color: var(--pearl);
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(42, 38, 54, 0.8);
+            border-color: rgba(201, 162, 39, 0.3);
+        }
+
+        .toolbar-btn.active {
+            background: linear-gradient(135deg, var(--ember) 0%, var(--gold) 100%);
+            border-color: var(--gold);
+            color: var(--void);
+        }
+
+        .toolbar-btn.success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border-color: #10b981;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(61, 55, 80, 0.4);
+        }
+
+        #mode-indicator {
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        #mode-indicator.derive {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        #mode-indicator.explore {
+            background: rgba(201, 162, 39, 0.2);
+            color: var(--gold);
+            border: 1px solid rgba(201, 162, 39, 0.3);
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 50%, rgba(22, 20, 28, 1) 0%, rgba(10, 10, 12, 1) 100%);
+        }
+
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Floating Selection Panel */
+        #floating-selection {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, rgba(22, 20, 28, 0.95) 0%, rgba(15, 14, 19, 0.98) 100%);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 20px;
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(16px);
+            box-shadow:
+                0 12px 40px rgba(0,0,0,0.5),
+                0 0 60px rgba(201, 162, 39, 0.08);
+            z-index: 100;
+        }
+
+        .selection-slots {
+            display: flex;
+            gap: 16px;
+        }
+
+        .selection-slot {
+            width: 90px;
+            height: 80px;
+            border: 2px dashed rgba(61, 55, 80, 0.5);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: rgba(15, 14, 19, 0.4);
+        }
+
+        .selection-slot.filled {
+            border-style: solid;
+            background: rgba(22, 20, 28, 0.8);
+            border-color: rgba(61, 55, 80, 0.6);
+        }
+
+        .selection-slot.active {
+            border-color: var(--gold);
+            animation: pulse-border 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: var(--gold); box-shadow: 0 0 20px rgba(201, 162, 39, 0.2); }
+            50% { border-color: var(--amber); box-shadow: 0 0 30px rgba(201, 162, 39, 0.4); }
+        }
+
+        .selection-slot .slot-symbol {
+            font-size: 1.6rem;
+            margin-bottom: 4px;
+        }
+
+        .selection-slot .slot-label {
+            font-size: 0.65rem;
+            color: var(--stone);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .selection-slot .slot-name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--pearl);
+        }
+
+        .slot-arrow {
+            font-size: 1.5rem;
+            color: #64748b;
+        }
+
+        #derive-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #derive-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+        #derive-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Collapsible Workspace */
+        #workspace {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 220px;
+            background: #1e293bf5;
+            border-top: 1px solid #334155;
+            display: flex;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 50;
+        }
+
+        #workspace.collapsed {
+            transform: translateY(100%);
+        }
+
+        #workspace-toggle {
+            position: absolute;
+            top: -36px;
+            right: 20px;
+            padding: 8px 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #workspace-toggle:hover { color: #e2e8f0; }
+
+        /* Chain Display */
+        #chain-display {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        #chain-display h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .derivation-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chain-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 8px;
+            border-left: 3px solid;
+        }
+
+        .chain-step .step-number {
+            width: 22px;
+            height: 22px;
+            background: #334155;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .chain-step .step-content {
+            flex: 1;
+        }
+
+        .chain-step .step-expression {
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        .chain-step .step-rule {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .chain-step .step-rule strong {
+            color: #e2e8f0;
+        }
+
+        /* Inference Rules Panel */
+        #rules-panel {
+            width: 280px;
+            border-left: 1px solid #334155;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        #rules-panel h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .rule-item {
+            padding: 8px;
+            background: #0f172a;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .rule-item:hover { border-color: #334155; }
+
+        .rule-item.applicable {
+            border-color: #10b981;
+            background: #10b98115;
+        }
+
+        .rule-item .rule-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rule-item .rule-tradition {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .rule-item .rule-pattern {
+            font-family: monospace;
+            color: #94a3b8;
+            margin-bottom: 3px;
+        }
+
+        .rule-item .rule-desc {
+            color: #64748b;
+            font-size: 0.7rem;
+        }
+
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+        }
+
+        .empty-state .icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        /* Graph styling */
+        .node { cursor: pointer; }
+
+        .node circle {
+            stroke-width: 2px;
+            transition: all 0.3s;
+        }
+
+        .node:hover circle {
+            stroke-width: 3px;
+            filter: brightness(1.2);
+        }
+
+        .node.selected circle {
+            stroke-width: 4px;
+            filter: drop-shadow(0 0 12px currentColor);
+        }
+
+        .node.compatible circle {
+            stroke-dasharray: 4 2;
+            animation: compatible-pulse 1s infinite;
+        }
+
+        @keyframes compatible-pulse {
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5)); }
+            50% { filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8)); }
+        }
+
+        .node.in-chain circle {
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font-size: 11px;
+            fill: #e2e8f0;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke-opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .link.highlighted {
+            stroke-opacity: 1;
+            stroke-width: 3px;
+        }
+
+        .link.potential {
+            stroke-dasharray: 6 4;
+            stroke-opacity: 0.3;
+            animation: dash-flow 1s linear infinite;
+        }
+
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -10; }
+        }
+
+        /* Result notification */
+        .result-notification {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .result-notification.success {
+            background: #10b981;
+            color: white;
+        }
+
+        .result-notification.info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .result-notification.warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Potential connections indicator */
+        #potential-indicator {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: #1e293bee;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(5px);
+        }
+
+        #potential-indicator .count {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+
+        /* Affinity Tooltip */
+        .affinity-tooltip {
+            position: fixed;
+            background: #1e293bf0;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            min-width: 220px;
+            max-width: 300px;
+            z-index: 1000;
+            transform: translateX(-50%) translateY(-100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: tooltipIn 0.2s ease-out;
+        }
+
+        @keyframes tooltipIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-90%); }
+            to { opacity: 1; transform: translateX(-50%) translateY(-100%); }
+        }
+
+        .tooltip-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.2rem;
+            margin-bottom: 6px;
+        }
+
+        .tooltip-arrow { color: #64748b; font-size: 0.9rem; }
+
+        .tooltip-affinity {
+            margin-left: auto;
+            background: #10b98130;
+            color: #10b981;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .tooltip-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .tooltip-insights { font-size: 0.75rem; }
+
+        .insight-item {
+            color: #94a3b8;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        /* Insight Panel */
+        #insight-panel {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            background: #1e293bee;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px;
+            width: 260px;
+            max-height: 400px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 50;
+            display: none;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .insight-symbol { font-size: 1.5rem; }
+
+        .insight-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .insight-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .insight-partner {
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .insight-partner:hover {
+            border-color: #334155;
+            background: #1e293b;
+        }
+
+        .partner-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .partner-symbol { font-size: 1.1rem; }
+
+        .partner-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .partner-affinity {
+            margin-left: auto;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .partner-insight {
+            font-size: 0.7rem;
+            color: #64748b;
+            line-height: 1.3;
+            padding-left: 2px;
+        }
+
+        /* Affinity connection lines animation */
+        .affinity-line {
+            transition: stroke-opacity 0.3s;
+        }
+
+        /* Glowing effect for high-affinity nodes */
+        .node.high-affinity circle {
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+
+        /* Toggle palette button */
+        #toggle-palette {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 200;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        #toggle-palette:hover { color: #e2e8f0; background: #334155; }
+
+        /* API Status indicator */
+        .philang-api-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+        }
+
+        .philang-api-indicator:hover {
+            border-color: #4a9eff;
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        .philang-api-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .philang-api-indicator .dot.active {
+            background: #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+        }
+
+        .philang-api-indicator .dot.inactive {
+            background: #f87171;
+        }
+
+        .philang-api-indicator span {
+            color: #94a3b8;
+        }
+
+        /* AI Explanation panel */
+        #ai-explanation {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: #1e293bf5;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 16px;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            z-index: 100;
+            display: none;
+        }
+
+        #ai-explanation.visible { display: block; }
+
+        #ai-explanation-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        #ai-explanation-header .title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #818cf8;
+        }
+
+        #ai-explanation-header .close-btn {
+            margin-left: auto;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        #ai-explanation-header .close-btn:hover { color: #e2e8f0; }
+
+        #ai-explanation-content {
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+
+        #ai-explanation-content .philang-expr {
+            font-family: monospace;
+            background: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #10b981;
+        }
+
+        .ai-loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+        }
+
+        .ai-loading-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #818cf8;
+            animation: ai-pulse 1s infinite;
+        }
+
+        .ai-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .ai-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes ai-pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Derivation History Items */
+        .derivation-item {
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            margin-bottom: 4px;
+        }
+        .derivation-item:hover {
+            background-color: rgba(55, 65, 81, 0.5);
+            border-color: rgba(75, 85, 99, 0.5);
+        }
+        .derivation-item-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .derivation-traditions {
+            flex-shrink: 0;
+            display: flex;
+            gap: 2px;
+            padding-top: 4px;
+        }
+        .derivation-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .derivation-title {
+            font-size: 0.875rem;
+            color: #e5e7eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .derivation-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .derivation-date {
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+        .delete-derivation {
+            opacity: 0;
+            color: #6b7280;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            transition: opacity 0.2s, color 0.2s;
+        }
+        .delete-derivation:hover {
+            color: #ef4444;
+        }
+        .derivation-item:hover .delete-derivation {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav role="navigation" aria-label="Main navigation" style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(100, 116, 139, 0.3); padding: 8px 16px; position: fixed; top: 3px; left: 0; right: 0; z-index: 1000;">
+        <div style="display: flex; align-items: center; justify-content: space-between; max-width: 100%;">
+            <div style="display: flex; align-items: center; gap: 24px;">
+                <a href="index.html" style="display: flex; align-items: center; gap: 8px; color: #818cf8; text-decoration: none;">
+                    <span style="font-size: 1.25rem; font-family: serif;">φ</span>
+                    <span style="font-size: 0.875rem; font-weight: 500;">PhiLang</span>
+                </a>
+                <div style="display: flex; align-items: center; gap: 16px; font-size: 0.875rem;">
+                    <a href="derivation_graph.html" style="color: white; text-decoration: none; font-weight: 500;">Derivation</a>
+                    <a href="dialectical_dialogue.html" style="color: #9ca3af; text-decoration: none;">Dialogue</a>
+                    <a href="socratic_counsel.html" style="color: #9ca3af; text-decoration: none;">Counsel</a>
+                    <a href="philang_embeddings.html" style="color: #9ca3af; text-decoration: none;">Embeddings</a>
+                    <a href="philang_embeddings_advanced.html" style="color: #9ca3af; text-decoration: none;">Advanced</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app" style="padding-top: 40px;">
+        <!-- Left Sidebar - Concept Palette -->
+        <div id="palette">
+            <div id="palette-header">
+                <h1><span>φ</span> Derivation Builder</h1>
+                <p>Select concepts to derive insights</p>
+            </div>
+
+            <div id="palette-search">
+                <input type="text" id="search-input" placeholder="Search concepts..." aria-label="Search philosophical concepts">
+            </div>
+
+            <div id="tradition-tabs"></div>
+
+            <div id="concept-list"></div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div id="canvas-area">
+            <div id="toolbar">
+                <button class="toolbar-btn" id="toggle-palette-btn">☰</button>
+                <button class="toolbar-btn active" id="mode-derive">Derive</button>
+                <button class="toolbar-btn" id="mode-explore">Explore</button>
+                <div class="toolbar-divider"></div>
+                <div id="mode-indicator" class="derive">Derive</div>
+                <div style="flex: 1;"></div>
+                <div id="api-indicator"></div>
+                <div style="position: relative;">
+                    <button class="toolbar-btn" id="btn-history" title="Derivation History">📜</button>
+                    <div id="history-dropdown" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 8px; width: 320px; max-height: 384px; overflow-y: auto; background: rgba(17, 24, 39, 0.95); border: 1px solid rgba(75, 85, 99, 0.5); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); z-index: 50; backdrop-filter: blur(8px);">
+                        <div style="padding: 12px; border-bottom: 1px solid rgba(75, 85, 99, 0.3);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.875rem; font-weight: 500; color: #d1d5db;">Saved Derivations</span>
+                                <button id="btn-export-all" style="font-size: 0.75rem; color: #818cf8; background: none; border: none; cursor: pointer;">Export All</button>
+                            </div>
+                        </div>
+                        <div id="history-list" style="padding: 8px;">
+                            <div style="text-align: center; color: #6b7280; font-size: 0.875rem; padding: 16px;">Loading derivations...</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="toolbar-btn" id="btn-clear">Clear</button>
+                <button class="toolbar-btn" id="btn-export">Export</button>
+                <button class="toolbar-btn" id="btn-share" title="Copy shareable link">Share</button>
+                <button class="toolbar-btn" id="btn-toggle-workspace">Chain ▲</button>
+            </div>
+
+            <div id="canvas-container">
+                <svg id="graph-canvas"></svg>
+
+                <!-- Potential connections indicator -->
+                <div id="potential-indicator" style="display: none;">
+                    <span class="count">0</span> productive affinities
+                </div>
+
+                <!-- Floating Selection Panel -->
+                <div id="floating-selection">
+                    <div class="selection-slots">
+                        <div class="selection-slot active" id="slot-1">
+                            <div class="slot-label">First</div>
+                        </div>
+                        <div class="slot-arrow">→</div>
+                        <div class="selection-slot" id="slot-2">
+                            <div class="slot-label">Second</div>
+                        </div>
+                    </div>
+                    <button id="derive-btn" disabled>
+                        <span>⟹</span> Derive
+                    </button>
+                </div>
+            </div>
+
+            <!-- Collapsible Workspace -->
+            <div id="workspace" class="collapsed">
+                <div id="workspace-toggle">
+                    <span>▼</span> Derivation Chain
+                </div>
+
+                <!-- Chain Display -->
+                <div id="chain-display">
+                    <h3>Derivation Chain</h3>
+                    <div id="chain-content">
+                        <div class="empty-state">
+                            <div class="icon">⟹</div>
+                            <p>Derive concepts to build a chain</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rules Panel -->
+                <div id="rules-panel">
+                    <h3>Applicable Rules</h3>
+                    <div id="rules-content">
+                        <div class="empty-state">
+                            <p>Select concepts to see rules</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA - Traditions, Concepts, and Inference Rules
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITIONS = {
+    PHENOMENOLOGY: { name: 'Phenomenology', color: '#6366f1' },
+    SPINOZISM: { name: 'Spinozism', color: '#f59e0b' },
+    BUDDHISM: { name: 'Buddhism', color: '#10b981' },
+    PROCESS: { name: 'Process', color: '#3b82f6' },
+    POSTSTRUCTURALISM: { name: 'Poststructuralism', color: '#ec4899' },
+    HEGELIANISM: { name: 'Hegelianism', color: '#8b5cf6' },
+    HEIDEGGERIANISM: { name: 'Heideggerianism', color: '#ef4444' },
+    WITTGENSTEIN_EARLY: { name: 'Early Wittgenstein', color: '#06b6d4' },
+    WITTGENSTEIN_LATE: { name: 'Late Wittgenstein', color: '#14b8a6' },
+    KANTIANISM: { name: 'Kantianism', color: '#a855f7' },
+    PLATONISM: { name: 'Platonism', color: '#4f46e5' },
+    ARISTOTELIANISM: { name: 'Aristotelianism', color: '#059669' },
+    HERACLITEANISM: { name: 'Heracliteanism', color: '#dc2626' },
+};
+
+const CONCEPTS = [
+    // Phenomenology
+    { id: 'self', symbol: 'Σ', name: 'Self', tradition: 'PHENOMENOLOGY', description: 'The experiencing subject', keywords: ['ego', 'subject', 'consciousness'] },
+    { id: 'other', symbol: 'Ω', name: 'Other', tradition: 'PHENOMENOLOGY', description: 'Alterity, the other subject', keywords: ['alterity', 'thou'] },
+    { id: 'flesh', symbol: 'χ', name: 'Flesh', tradition: 'PHENOMENOLOGY', description: 'Chiasmic sensible-sentient', keywords: ['body', 'embodiment'] },
+    { id: 'horizon', symbol: 'H[τ]', name: 'Horizon', tradition: 'PHENOMENOLOGY', description: 'Field of possible experience', keywords: ['context', 'background'] },
+    { id: 'face', symbol: '◉', name: 'Face', tradition: 'PHENOMENOLOGY', description: 'Ethical epiphany of the Other', keywords: ['levinas', 'ethics'] },
+    { id: 'living-present', symbol: 'τ', name: 'Living Present', tradition: 'PHENOMENOLOGY', description: 'Streaming now with retention/protention', keywords: ['time', 'now'] },
+
+    // Spinozism
+    { id: 'substance', symbol: '▣', name: 'Substance', tradition: 'SPINOZISM', description: 'One infinite substance (Deus sive Natura)', keywords: ['god', 'nature', 'monism'] },
+    { id: 'mode', symbol: '◇', name: 'Mode', tradition: 'SPINOZISM', description: 'Modification of substance', keywords: ['attribute', 'particular'] },
+    { id: 'conatus', symbol: 'κ+', name: 'Conatus', tradition: 'SPINOZISM', description: 'Striving to persist in being', keywords: ['striving', 'power'] },
+    { id: 'k3', symbol: 'K₃', name: 'Intuitive Knowledge', tradition: 'SPINOZISM', description: 'Third kind, seeing from eternity', keywords: ['intuition', 'eternity'] },
+    { id: 'adequate-idea', symbol: '𝔄', name: 'Adequate Idea', tradition: 'SPINOZISM', description: 'True idea with internal marks of truth', keywords: ['truth', 'idea'] },
+
+    // Buddhism
+    { id: 'emptiness', symbol: 'śū', name: 'Emptiness', tradition: 'BUDDHISM', description: 'Śūnyatā—empty of inherent existence', keywords: ['sunyata', 'void'] },
+    { id: 'dep-orig', symbol: 'प्र', name: 'Dependent Origination', tradition: 'BUDDHISM', description: 'Pratītyasamutpāda', keywords: ['causation', 'interdependence'] },
+    { id: 'tetralemma', symbol: '◈', name: 'Tetralemma', tradition: 'BUDDHISM', description: 'Four-cornered negation', keywords: ['catuskoti', 'logic'] },
+    { id: 'non-arising', symbol: 'अ', name: 'Non-arising', tradition: 'BUDDHISM', description: 'Anutpāda—nothing truly arises', keywords: ['arising', 'cessation'] },
+    { id: 'two-truths', symbol: '⊏⊐', name: 'Two Truths', tradition: 'BUDDHISM', description: 'Conventional and ultimate truth', keywords: ['conventional', 'ultimate'] },
+    { id: 'skillful-means', symbol: '⇝', name: 'Skillful Means', tradition: 'BUDDHISM', description: 'Upāya—expedient teaching methods', keywords: ['upaya', 'pedagogy'] },
+
+    // Process
+    { id: 'actual-entity', symbol: '⦿', name: 'Actual Entity', tradition: 'PROCESS', description: 'Drops of experience', keywords: ['occasion', 'event'] },
+    { id: 'prehension', symbol: '⥤', name: 'Prehension', tradition: 'PROCESS', description: 'Feeling/grasping of data', keywords: ['feeling', 'grasp'] },
+    { id: 'concrescence', symbol: '⤳', name: 'Concrescence', tradition: 'PROCESS', description: 'Process of becoming concrete', keywords: ['becoming', 'growth'] },
+    { id: 'creativity', symbol: 'ℂ', name: 'Creativity', tradition: 'PROCESS', description: 'Many become one, increased by one', keywords: ['novelty', 'creation'] },
+    { id: 'eternal-object', symbol: '∞ₒ', name: 'Eternal Object', tradition: 'PROCESS', description: 'Pure potential for ingression', keywords: ['potential', 'form'] },
+
+    // Poststructuralism
+    { id: 'fold', symbol: '⌒', name: 'Fold', tradition: 'POSTSTRUCTURALISM', description: 'Inside as folded outside', keywords: ['deleuze', 'inside', 'outside'] },
+    { id: 'virtual', symbol: 'ν', name: 'Virtual', tradition: 'POSTSTRUCTURALISM', description: 'Field of differential relations', keywords: ['potential', 'real'] },
+    { id: 'trace', symbol: '†', name: 'Trace', tradition: 'POSTSTRUCTURALISM', description: 'Presence of absence', keywords: ['derrida', 'absence'] },
+    { id: 'plane', symbol: 'Π∞', name: 'Plane of Immanence', tradition: 'POSTSTRUCTURALISM', description: 'Infinite field of concepts', keywords: ['immanence', 'field'] },
+    { id: 'differance', symbol: '⫘', name: 'Différance', tradition: 'POSTSTRUCTURALISM', description: 'Differing and deferring', keywords: ['derrida', 'difference'] },
+    { id: 'rhizome', symbol: '⋔', name: 'Rhizome', tradition: 'POSTSTRUCTURALISM', description: 'Non-hierarchical multiplicity', keywords: ['deleuze', 'network'] },
+
+    // Hegelianism
+    { id: 'aufhebung', symbol: '⍟', name: 'Aufhebung', tradition: 'HEGELIANISM', description: 'Sublation: cancel, preserve, elevate', keywords: ['sublation', 'negate'] },
+    { id: 'det-neg', symbol: '¬ᵈ', name: 'Determinate Negation', tradition: 'HEGELIANISM', description: 'Specific, productive negation', keywords: ['negation', 'specific'] },
+    { id: 'spirit', symbol: '𝔊', name: 'Spirit', tradition: 'HEGELIANISM', description: 'Geist—self-knowing absolute', keywords: ['geist', 'mind'] },
+    { id: 'becoming', symbol: '⥁', name: 'Becoming', tradition: 'HEGELIANISM', description: 'Unity of being and nothing', keywords: ['change', 'process'] },
+    { id: 'contradiction', symbol: '⊠', name: 'Contradiction', tradition: 'HEGELIANISM', description: 'Internal opposition driving movement', keywords: ['opposition', 'dialectic'] },
+    { id: 'absolute', symbol: '𝔸', name: 'Absolute', tradition: 'HEGELIANISM', description: 'Self-comprehending totality', keywords: ['totality', 'whole'] },
+
+    // Heideggerianism
+    { id: 'being', symbol: '𝔖', name: 'Being', tradition: 'HEIDEGGERIANISM', description: 'Sein—Being as such', keywords: ['sein', 'ontology'] },
+    { id: 'dasein', symbol: '𝔇', name: 'Dasein', tradition: 'HEIDEGGERIANISM', description: 'Being for whom Being is a question', keywords: ['existence', 'human'] },
+    { id: 'care', symbol: '⦿c', name: 'Care', tradition: 'HEIDEGGERIANISM', description: 'Sorge—the Being of Dasein', keywords: ['sorge', 'concern'] },
+    { id: 'thrownness', symbol: '⤋', name: 'Thrownness', tradition: 'HEIDEGGERIANISM', description: 'Already thrown into world', keywords: ['geworfenheit', 'facticity'] },
+    { id: 'clearing', symbol: '⌾', name: 'Clearing', tradition: 'HEIDEGGERIANISM', description: 'Where Being shows itself', keywords: ['lichtung', 'opening'] },
+    { id: 'aletheia', symbol: 'ἀ', name: 'Aletheia', tradition: 'HEIDEGGERIANISM', description: 'Truth as unconcealment', keywords: ['truth', 'disclosure'] },
+    { id: 'ereignis', symbol: '𝔈', name: 'Ereignis', tradition: 'HEIDEGGERIANISM', description: 'Event of appropriation', keywords: ['event', 'enowning'] },
+    { id: 'temporality', symbol: 'ℨ', name: 'Temporality', tradition: 'HEIDEGGERIANISM', description: 'Ecstatic unity of time', keywords: ['time', 'ecstatic'] },
+
+    // Early Wittgenstein
+    { id: 'world', symbol: '𝕎', name: 'World', tradition: 'WITTGENSTEIN_EARLY', description: 'Die Welt—totality of facts', keywords: ['totality', 'facts'] },
+    { id: 'fact', symbol: '𝔉', name: 'Fact', tradition: 'WITTGENSTEIN_EARLY', description: 'Tatsache—what is the case', keywords: ['state', 'case'] },
+    { id: 'state-affairs', symbol: '𝔖𝔞', name: 'State of Affairs', tradition: 'WITTGENSTEIN_EARLY', description: 'Sachverhalt—atomic fact', keywords: ['atomic', 'configuration'] },
+    { id: 'object', symbol: '𝔬', name: 'Object', tradition: 'WITTGENSTEIN_EARLY', description: 'Gegenstand—simple object', keywords: ['simple', 'thing'] },
+    { id: 'proposition', symbol: '𝔓', name: 'Proposition', tradition: 'WITTGENSTEIN_EARLY', description: 'Satz—logical picture', keywords: ['satz', 'sentence'] },
+    { id: 'pictures', symbol: '↭', name: 'Pictures', tradition: 'WITTGENSTEIN_EARLY', description: 'Abbildet—depicts reality', keywords: ['picture', 'depict'] },
+    { id: 'shows', symbol: '⧓', name: 'Shows', tradition: 'WITTGENSTEIN_EARLY', description: 'Zeigt—what cannot be said', keywords: ['show', 'manifest'] },
+    { id: 'silence', symbol: '⊘', name: 'Silence', tradition: 'WITTGENSTEIN_EARLY', description: 'Whereof one cannot speak', keywords: ['quiet', 'unsayable'] },
+    { id: 'mystical', symbol: '⤒', name: 'Mystical', tradition: 'WITTGENSTEIN_EARLY', description: 'That the world exists', keywords: ['wonder', 'ineffable'] },
+    { id: 'logical-form', symbol: '𝔏𝔣', name: 'Logical Form', tradition: 'WITTGENSTEIN_EARLY', description: 'Shared structure of proposition and fact', keywords: ['form', 'structure'] },
+
+    // Late Wittgenstein
+    { id: 'lang-game', symbol: '𝔖𝔭', name: 'Language-game', tradition: 'WITTGENSTEIN_LATE', description: 'Sprachspiel—meaning in use', keywords: ['sprachspiel', 'game'] },
+    { id: 'use', symbol: '℧', name: 'Use', tradition: 'WITTGENSTEIN_LATE', description: 'Gebrauch—meaning is use', keywords: ['gebrauch', 'meaning'] },
+    { id: 'rule', symbol: '⟴', name: 'Rule', tradition: 'WITTGENSTEIN_LATE', description: 'Regel—normative practice', keywords: ['regel', 'norm'] },
+    { id: 'form-life', symbol: '𝔏', name: 'Form of Life', tradition: 'WITTGENSTEIN_LATE', description: 'Lebensform—shared practices', keywords: ['lebensform', 'social'] },
+    { id: 'fam-resem', symbol: '≋ᶠ', name: 'Family Resemblance', tradition: 'WITTGENSTEIN_LATE', description: 'Overlapping similarities', keywords: ['family', 'resemblance'] },
+    { id: 'aspect', symbol: '⊛ₐ', name: 'Aspect', tradition: 'WITTGENSTEIN_LATE', description: 'Seeing-as, aspect perception', keywords: ['seeing-as', 'gestalt'] },
+    { id: 'therapy', symbol: '⤥', name: 'Therapy', tradition: 'WITTGENSTEIN_LATE', description: 'Philosophy as therapy', keywords: ['therapeutic', 'cure'] },
+    { id: 'dissolution', symbol: '⌀', name: 'Dissolution', tradition: 'WITTGENSTEIN_LATE', description: 'Problems dissolve, not solve', keywords: ['dissolve', 'vanish'] },
+    { id: 'hinge', symbol: '⊢ₕ', name: 'Hinge', tradition: 'WITTGENSTEIN_LATE', description: 'Hinge proposition—unquestioned', keywords: ['bedrock', 'certainty'] },
+    { id: 'private-lang', symbol: '⬚', name: 'Private Language', tradition: 'WITTGENSTEIN_LATE', description: 'Impossibility of private language', keywords: ['private', 'beetle'] },
+
+    // Kantianism
+    { id: 'transcendental', symbol: '𝕿', name: 'Transcendental', tradition: 'KANTIANISM', description: 'Conditions of possibility', keywords: ['conditions', 'possibility'] },
+    { id: 'a-priori', symbol: '𝔞', name: 'A Priori', tradition: 'KANTIANISM', description: 'Prior to experience', keywords: ['prior', 'independent'] },
+    { id: 'synth-apriori', symbol: '⊕ₛ𝔞', name: 'Synthetic A Priori', tradition: 'KANTIANISM', description: 'Ampliative yet necessary', keywords: ['synthetic', 'necessary'] },
+    { id: 'phenomenon', symbol: 'φₖ', name: 'Phenomenon', tradition: 'KANTIANISM', description: 'Appearance to sensibility', keywords: ['appearance', 'experience'] },
+    { id: 'noumenon', symbol: 'νₖ', name: 'Noumenon', tradition: 'KANTIANISM', description: 'Thing-in-itself', keywords: ['thing-in-itself', 'unknowable'] },
+    { id: 'intuition', symbol: '𝔦', name: 'Intuition', tradition: 'KANTIANISM', description: 'Anschauung—immediate givenness', keywords: ['anschauung', 'sensibility'] },
+    { id: 'category', symbol: 'Ꮯ', name: 'Category', tradition: 'KANTIANISM', description: 'Pure concept of understanding', keywords: ['concept', 'pure'] },
+    { id: 'schema', symbol: 'σₖ', name: 'Schema', tradition: 'KANTIANISM', description: 'Mediates concept and intuition', keywords: ['mediate', 'bridge'] },
+    { id: 'apperception', symbol: '𝔄ₜ', name: 'Apperception', tradition: 'KANTIANISM', description: 'Transcendental unity of self', keywords: ['unity', 'i think'] },
+    { id: 'cat-imp', symbol: '⊨ᶜ', name: 'Categorical Imperative', tradition: 'KANTIANISM', description: 'Act only on universalizable maxims', keywords: ['imperative', 'duty'] },
+    { id: 'autonomy', symbol: '𝔞ᵤ', name: 'Autonomy', tradition: 'KANTIANISM', description: 'Self-legislation of the will', keywords: ['freedom', 'will'] },
+    { id: 'sublime', symbol: '𝔖ᵤ', name: 'Sublime', tradition: 'KANTIANISM', description: 'That which exceeds imagination', keywords: ['overwhelming', 'magnitude'] },
+
+    // Platonism
+    { id: 'form', symbol: '△', name: 'Form', tradition: 'PLATONISM', description: 'Eidos—eternal paradigm', keywords: ['idea', 'eidos', 'archetype'] },
+    { id: 'participation', symbol: '⊂ₚ', name: 'Participation', tradition: 'PLATONISM', description: 'Methexis—how particulars share in Forms', keywords: ['methexis', 'share'] },
+    { id: 'the-good', symbol: '☉', name: 'The Good', tradition: 'PLATONISM', description: 'The Form beyond being, source of truth', keywords: ['agathon', 'sun', 'highest'] },
+    { id: 'anamnesis', symbol: '⟲', name: 'Anamnesis', tradition: 'PLATONISM', description: 'Recollection of Forms by the soul', keywords: ['recollection', 'memory', 'learning'] },
+    { id: 'demiurge', symbol: '✦', name: 'Demiurge', tradition: 'PLATONISM', description: 'Divine craftsman who shapes the cosmos', keywords: ['craftsman', 'creator'] },
+    { id: 'receptacle', symbol: '⌂', name: 'Receptacle', tradition: 'PLATONISM', description: 'Chora—the space that receives Forms', keywords: ['chora', 'space', 'matrix'] },
+    { id: 'eros', symbol: '♡', name: 'Eros', tradition: 'PLATONISM', description: 'Love as ascent toward Beauty', keywords: ['love', 'desire', 'ascent'] },
+    { id: 'dialectic', symbol: '⇅', name: 'Dialectic', tradition: 'PLATONISM', description: 'Method of division and collection', keywords: ['division', 'method'] },
+
+    // Aristotelianism
+    { id: 'ousia', symbol: '⦰', name: 'Ousia', tradition: 'ARISTOTELIANISM', description: 'Substance—primary being', keywords: ['substance', 'essence'] },
+    { id: 'hylomorphism', symbol: '⧈', name: 'Hylomorphism', tradition: 'ARISTOTELIANISM', description: 'Unity of matter (hyle) and form (morphe)', keywords: ['matter', 'form', 'composite'] },
+    { id: 'actuality', symbol: 'ἐν', name: 'Actuality', tradition: 'ARISTOTELIANISM', description: 'Energeia—being-at-work', keywords: ['energeia', 'act'] },
+    { id: 'potentiality', symbol: 'δύ', name: 'Potentiality', tradition: 'ARISTOTELIANISM', description: 'Dynamis—capacity for change', keywords: ['dynamis', 'power'] },
+    { id: 'telos', symbol: '⊚', name: 'Telos', tradition: 'ARISTOTELIANISM', description: 'End, purpose, final cause', keywords: ['end', 'purpose', 'goal'] },
+    { id: 'eudaimonia', symbol: '☀', name: 'Eudaimonia', tradition: 'ARISTOTELIANISM', description: 'Flourishing, the highest good', keywords: ['happiness', 'flourishing'] },
+    { id: 'four-causes', symbol: '④', name: 'Four Causes', tradition: 'ARISTOTELIANISM', description: 'Material, formal, efficient, final', keywords: ['cause', 'explanation'] },
+    { id: 'nous', symbol: 'ν', name: 'Nous', tradition: 'ARISTOTELIANISM', description: 'Intellect, rational soul', keywords: ['intellect', 'mind', 'reason'] },
+
+    // Heracliteanism
+    { id: 'flux', symbol: '≋', name: 'Flux', tradition: 'HERACLITEANISM', description: 'Panta rhei—everything flows', keywords: ['flow', 'change', 'river'] },
+    { id: 'logos-h', symbol: 'λ', name: 'Logos', tradition: 'HERACLITEANISM', description: 'Rational principle governing change', keywords: ['reason', 'word', 'order'] },
+    { id: 'fire', symbol: '🔥', name: 'Fire', tradition: 'HERACLITEANISM', description: 'Primal element, ever-living fire', keywords: ['element', 'primal'] },
+    { id: 'strife', symbol: '⚔', name: 'Strife', tradition: 'HERACLITEANISM', description: 'Polemos—war as father of all', keywords: ['war', 'conflict', 'tension'] },
+    { id: 'unity-opposites', symbol: '⊕', name: 'Unity of Opposites', tradition: 'HERACLITEANISM', description: 'Opposites are secretly one', keywords: ['opposites', 'harmony'] },
+    { id: 'hidden-harmony', symbol: '⫰', name: 'Hidden Harmony', tradition: 'HERACLITEANISM', description: 'The non-apparent connection', keywords: ['harmony', 'hidden'] },
+    { id: 'thunderbolt', symbol: '⚡', name: 'Thunderbolt', tradition: 'HERACLITEANISM', description: 'Lightning steers all things', keywords: ['lightning', 'governance'] },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INFERENCE RULES - The Heart of Philosophical Derivation
+// ═══════════════════════════════════════════════════════════════════════════
+
+const INFERENCE_RULES = [
+    // Buddhist Rules
+    { id: 'dep-orig-emptiness', name: 'Dependent → Empty', tradition: 'BUDDHISM', pattern: 'प्र(X) → śū(X)', description: 'Whatever arises dependently is empty of inherent existence', inputs: ['dep-orig'], output: { concept: 'emptiness', transform: (a) => `śū(${a.name})` }, matches: (concepts) => concepts.some(c => c.id === 'dep-orig') },
+    { id: 'emptiness-tetralemma', name: 'Emptiness → Tetralemma', tradition: 'BUDDHISM', pattern: 'śū → ◈', description: 'Emptiness transcends all four logical positions', inputs: ['emptiness'], output: { concept: 'tetralemma', transform: (a) => `◈(${a.name})` }, matches: (concepts) => concepts.some(c => c.id === 'emptiness') },
+    { id: 'two-truths-skillful', name: 'Two Truths → Skillful Means', tradition: 'BUDDHISM', pattern: '⊏⊐ → ⇝', description: 'The distinction of truths enables pedagogical adaptation', inputs: ['two-truths'], output: { concept: 'skillful-means', transform: () => 'Teaching adapts to level' }, matches: (concepts) => concepts.some(c => c.id === 'two-truths') },
+
+    // Hegelian Rules
+    { id: 'contradiction-negation', name: 'Contradiction → Determinate Negation', tradition: 'HEGELIANISM', pattern: '⊠(A) → ¬ᵈ(A)', description: 'Internal contradiction produces determinate negation', inputs: ['contradiction'], output: { concept: 'det-neg', transform: (a) => `¬ᵈ(${a.name})` }, matches: (concepts) => concepts.some(c => c.id === 'contradiction') },
+    { id: 'negation-aufhebung', name: 'Negation → Aufhebung', tradition: 'HEGELIANISM', pattern: '¬ᵈ(A) → ⍟(A)', description: 'Determinate negation sublates into higher unity', inputs: ['det-neg'], output: { concept: 'aufhebung', transform: (a) => `⍟(${a.name})` }, matches: (concepts) => concepts.some(c => c.id === 'det-neg') },
+    { id: 'thesis-antithesis', name: 'Thesis + Antithesis → Synthesis', tradition: 'HEGELIANISM', pattern: 'A + ¬A → ⍟(A, ¬A)', description: 'Opposing concepts sublate into higher synthesis', inputs: ['any', 'any'], output: { concept: 'aufhebung', transform: (a, b) => `⍟(${a.name}, ${b.name})` }, matches: (concepts) => concepts.length === 2 && concepts[0].tradition !== concepts[1].tradition },
+    { id: 'becoming-spirit', name: 'Becoming → Spirit', tradition: 'HEGELIANISM', pattern: '⥁ ⟹ 𝔊', description: 'Becoming, fully developed, reveals itself as Spirit', inputs: ['becoming'], output: { concept: 'spirit', transform: () => 'Becoming reveals Spirit' }, matches: (concepts) => concepts.some(c => c.id === 'becoming') },
+
+    // Heideggerian Rules
+    { id: 'dasein-care', name: 'Dasein → Care', tradition: 'HEIDEGGERIANISM', pattern: '𝔇 ≡ ⦿c', description: 'The Being of Dasein is Care (Sorge)', inputs: ['dasein'], output: { concept: 'care', transform: () => 'Dasein\'s Being is Care' }, matches: (concepts) => concepts.some(c => c.id === 'dasein') },
+    { id: 'care-temporality', name: 'Care → Temporality', tradition: 'HEIDEGGERIANISM', pattern: '⦿c → ℨ', description: 'Care is grounded in temporality', inputs: ['care'], output: { concept: 'temporality', transform: () => 'Care grounds in Temporality' }, matches: (concepts) => concepts.some(c => c.id === 'care') },
+    { id: 'clearing-aletheia', name: 'Clearing → Aletheia', tradition: 'HEIDEGGERIANISM', pattern: '⌾ → ἀ', description: 'The Clearing is where truth as unconcealment happens', inputs: ['clearing'], output: { concept: 'aletheia', transform: () => 'Clearing enables Aletheia' }, matches: (concepts) => concepts.some(c => c.id === 'clearing') },
+    { id: 'being-ereignis', name: 'Being + Dasein → Ereignis', tradition: 'HEIDEGGERIANISM', pattern: '𝔖 + 𝔇 → 𝔈', description: 'Being and Dasein belong together in the Event', inputs: ['being', 'dasein'], output: { concept: 'ereignis', transform: () => 'Being-Dasein co-belonging' }, matches: (concepts) => concepts.some(c => c.id === 'being') && concepts.some(c => c.id === 'dasein') },
+
+    // Process Rules
+    { id: 'prehension-concrescence', name: 'Prehension → Concrescence', tradition: 'PROCESS', pattern: '⥤ → ⤳', description: 'Prehensions integrate into concrescence', inputs: ['prehension'], output: { concept: 'concrescence', transform: () => 'Prehensions become concrete' }, matches: (concepts) => concepts.some(c => c.id === 'prehension') },
+    { id: 'concrescence-creativity', name: 'Concrescence → Creativity', tradition: 'PROCESS', pattern: '⤳ → ℂ', description: 'Completed concrescence expresses creativity', inputs: ['concrescence'], output: { concept: 'creativity', transform: () => 'Concrescence manifests Creativity' }, matches: (concepts) => concepts.some(c => c.id === 'concrescence') },
+    { id: 'actual-prehension', name: 'Actual Entity → Prehension', tradition: 'PROCESS', pattern: '⦿ → ⥤', description: 'Every actual entity prehends its world', inputs: ['actual-entity'], output: { concept: 'prehension', transform: () => 'Actuality requires prehension' }, matches: (concepts) => concepts.some(c => c.id === 'actual-entity') },
+
+    // Early Wittgenstein Rules
+    { id: 'world-facts', name: 'World = Facts', tradition: 'WITTGENSTEIN_EARLY', pattern: '𝕎 ≡ Σ𝔉', description: 'The world is the totality of facts', inputs: ['world'], output: { concept: 'fact', transform: () => 'World is totality of Facts' }, matches: (concepts) => concepts.some(c => c.id === 'world') },
+    { id: 'proposition-picture', name: 'Proposition Pictures', tradition: 'WITTGENSTEIN_EARLY', pattern: '𝔓 ↭ 𝔖𝔞', description: 'Propositions picture states of affairs', inputs: ['proposition'], output: { concept: 'pictures', transform: () => 'Proposition pictures reality' }, matches: (concepts) => concepts.some(c => c.id === 'proposition') },
+    { id: 'shows-silence', name: 'Shows → Silence', tradition: 'WITTGENSTEIN_EARLY', pattern: '⧓ → ⊘', description: 'What shows itself cannot be said—silence', inputs: ['shows'], output: { concept: 'silence', transform: () => 'What shows demands Silence' }, matches: (concepts) => concepts.some(c => c.id === 'shows') },
+    { id: 'silence-mystical', name: 'Silence → Mystical', tradition: 'WITTGENSTEIN_EARLY', pattern: '⊘ → ⤒', description: 'Silence opens to the mystical', inputs: ['silence'], output: { concept: 'mystical', transform: () => 'Silence reveals the Mystical' }, matches: (concepts) => concepts.some(c => c.id === 'silence') },
+
+    // Late Wittgenstein Rules
+    { id: 'meaning-use', name: 'Meaning = Use', tradition: 'WITTGENSTEIN_LATE', pattern: '𝔖𝔭 ≡ ℧', description: 'Meaning is use in a language-game', inputs: ['lang-game'], output: { concept: 'use', transform: () => 'Meaning is Use' }, matches: (concepts) => concepts.some(c => c.id === 'lang-game') },
+    { id: 'rule-form-life', name: 'Rule → Form of Life', tradition: 'WITTGENSTEIN_LATE', pattern: '⟴ ⊂ 𝔏', description: 'Rules are embedded in forms of life', inputs: ['rule'], output: { concept: 'form-life', transform: () => 'Rules require Form of Life' }, matches: (concepts) => concepts.some(c => c.id === 'rule') },
+    { id: 'therapy-dissolution', name: 'Therapy → Dissolution', tradition: 'WITTGENSTEIN_LATE', pattern: '⤥ → ⌀', description: 'Philosophical therapy dissolves problems', inputs: ['therapy'], output: { concept: 'dissolution', transform: () => 'Therapy dissolves problems' }, matches: (concepts) => concepts.some(c => c.id === 'therapy') },
+
+    // Kantian Rules
+    { id: 'transcendental-apriori', name: 'Transcendental → A Priori', tradition: 'KANTIANISM', pattern: '𝕿 → 𝔞', description: 'Transcendental conditions are a priori', inputs: ['transcendental'], output: { concept: 'a-priori', transform: () => 'Transcendental is A Priori' }, matches: (concepts) => concepts.some(c => c.id === 'transcendental') },
+    { id: 'category-schema', name: 'Category → Schema', tradition: 'KANTIANISM', pattern: 'Ꮯ → σₖ', description: 'Categories require schemata for application', inputs: ['category'], output: { concept: 'schema', transform: () => 'Category needs Schema' }, matches: (concepts) => concepts.some(c => c.id === 'category') },
+    { id: 'phenomenon-noumenon', name: 'Phenomenon ⊥ Noumenon', tradition: 'KANTIANISM', pattern: 'φₖ ⊥ νₖ', description: 'Phenomena and noumena are categorically distinct', inputs: ['phenomenon'], output: { concept: 'noumenon', transform: () => 'Phenomenon implies unknowable Noumenon' }, matches: (concepts) => concepts.some(c => c.id === 'phenomenon') },
+    { id: 'cat-imp-autonomy', name: 'Categorical Imperative → Autonomy', tradition: 'KANTIANISM', pattern: '⊨ᶜ → 𝔞ᵤ', description: 'The categorical imperative expresses autonomy', inputs: ['cat-imp'], output: { concept: 'autonomy', transform: () => 'Moral law is self-legislation' }, matches: (concepts) => concepts.some(c => c.id === 'cat-imp') },
+
+    // Spinozist Rules
+    { id: 'substance-mode', name: 'Substance → Modes', tradition: 'SPINOZISM', pattern: '▣ → ◇', description: 'Substance expresses itself through modes', inputs: ['substance'], output: { concept: 'mode', transform: () => 'Substance expresses as Modes' }, matches: (concepts) => concepts.some(c => c.id === 'substance') },
+    { id: 'conatus-knowledge', name: 'Conatus → Intuitive Knowledge', tradition: 'SPINOZISM', pattern: 'κ+ → K₃', description: 'Conatus, fully realized, becomes intuitive knowledge', inputs: ['conatus'], output: { concept: 'k3', transform: () => 'Conatus leads to Scientia Intuitiva' }, matches: (concepts) => concepts.some(c => c.id === 'conatus') },
+
+    // Poststructuralist Rules
+    { id: 'virtual-fold', name: 'Virtual → Fold', tradition: 'POSTSTRUCTURALISM', pattern: 'ν → ⌒', description: 'The virtual actualizes through folding', inputs: ['virtual'], output: { concept: 'fold', transform: () => 'Virtual folds into actual' }, matches: (concepts) => concepts.some(c => c.id === 'virtual') },
+    { id: 'differance-trace', name: 'Différance → Trace', tradition: 'POSTSTRUCTURALISM', pattern: '⫘ → †', description: 'Différance leaves traces', inputs: ['differance'], output: { concept: 'trace', transform: () => 'Différance produces Traces' }, matches: (concepts) => concepts.some(c => c.id === 'differance') },
+
+    // Phenomenological Rules
+    { id: 'self-other-chiasm', name: 'Self ⋈ Other', tradition: 'PHENOMENOLOGY', pattern: 'Σ ⋈ Ω', description: 'Self and Other are chiasmic—each implies the other', inputs: ['self', 'other'], output: { concept: 'flesh', transform: () => 'Self-Other intertwine in Flesh' }, matches: (concepts) => concepts.some(c => c.id === 'self') && concepts.some(c => c.id === 'other') },
+    { id: 'other-face', name: 'Other → Face', tradition: 'PHENOMENOLOGY', pattern: 'Ω → ◉', description: 'The Other appears through the Face', inputs: ['other'], output: { concept: 'face', transform: () => 'Other reveals through Face' }, matches: (concepts) => concepts.some(c => c.id === 'other') },
+
+    // Cross-tradition resonances
+    { id: 'emptiness-dissolution', name: 'Emptiness ≈ Dissolution', tradition: 'CROSS', pattern: 'śū ≈ ⌀', description: 'Buddhist emptiness resonates with Wittgensteinian dissolution', inputs: ['emptiness', 'dissolution'], output: { concept: null, transform: (a, b) => `${a.name} ≈ ${b.name}: Both dissolve false problems` }, matches: (concepts) => concepts.some(c => c.id === 'emptiness') && concepts.some(c => c.id === 'dissolution') },
+    { id: 'dasein-self', name: 'Dasein ≈ Self', tradition: 'CROSS', pattern: '𝔇 ≈ Σ', description: 'Dasein and phenomenological Self share structure', inputs: ['dasein', 'self'], output: { concept: null, transform: (a, b) => `${a.name} ≈ ${b.name}: Both are questioning beings` }, matches: (concepts) => concepts.some(c => c.id === 'dasein') && concepts.some(c => c.id === 'self') },
+    { id: 'becoming-concrescence', name: 'Becoming ≈ Concrescence', tradition: 'CROSS', pattern: '⥁ ≈ ⤳', description: 'Hegelian becoming parallels Whiteheadian concrescence', inputs: ['becoming', 'concrescence'], output: { concept: null, transform: (a, b) => `${a.name} ≈ ${b.name}: Process as fundamental` }, matches: (concepts) => concepts.some(c => c.id === 'becoming') && concepts.some(c => c.id === 'concrescence') },
+    { id: 'noumenon-substance', name: 'Noumenon ⊥ Substance', tradition: 'CROSS', pattern: 'νₖ ⊥ ▣', description: 'Kant limits knowledge of substance; Spinoza claims full access', inputs: ['noumenon', 'substance'], output: { concept: null, transform: () => 'Tension: Limits vs. Immanent Access' }, matches: (concepts) => concepts.some(c => c.id === 'noumenon') && concepts.some(c => c.id === 'substance') },
+    { id: 'aletheia-shows', name: 'Aletheia ≈ Shows', tradition: 'CROSS', pattern: 'ἀ ≈ ⧓', description: 'Truth as unconcealment parallels what shows itself', inputs: ['aletheia', 'shows'], output: { concept: null, transform: () => 'Truth shows itself, cannot be said' }, matches: (concepts) => concepts.some(c => c.id === 'aletheia') && concepts.some(c => c.id === 'shows') },
+    { id: 'horizon-transcendental', name: 'Horizon ≈ Transcendental', tradition: 'CROSS', pattern: 'H[τ] ≈ 𝕿', description: 'Phenomenological horizon parallels transcendental conditions', inputs: ['horizon', 'transcendental'], output: { concept: null, transform: () => 'Both structure possible experience' }, matches: (concepts) => concepts.some(c => c.id === 'horizon') && concepts.some(c => c.id === 'transcendental') },
+
+    // Platonic Rules
+    { id: 'participation-form', name: 'Participation → Form', tradition: 'PLATONISM', pattern: '⊂ₚ → △', description: 'Participation reveals the Form it shares in', inputs: ['participation'], output: { concept: 'form', transform: () => 'Participation points to Form' }, matches: (concepts) => concepts.some(c => c.id === 'participation') },
+    { id: 'form-good', name: 'Form → The Good', tradition: 'PLATONISM', pattern: '△ → ☉', description: 'All Forms depend on The Good for their being', inputs: ['form'], output: { concept: 'the-good', transform: () => 'Forms illuminated by The Good' }, matches: (concepts) => concepts.some(c => c.id === 'form') },
+    { id: 'eros-dialectic', name: 'Eros → Dialectic', tradition: 'PLATONISM', pattern: '♡ → ⇅', description: 'Eros drives the dialectical ascent toward truth', inputs: ['eros'], output: { concept: 'dialectic', transform: () => 'Love propels Dialectic' }, matches: (concepts) => concepts.some(c => c.id === 'eros') },
+    { id: 'anamnesis-form', name: 'Anamnesis → Form', tradition: 'PLATONISM', pattern: '⟲ → △', description: 'Recollection recovers knowledge of Forms', inputs: ['anamnesis'], output: { concept: 'form', transform: () => 'Soul recollects the Forms' }, matches: (concepts) => concepts.some(c => c.id === 'anamnesis') },
+
+    // Aristotelian Rules
+    { id: 'potentiality-actuality', name: 'Potentiality → Actuality', tradition: 'ARISTOTELIANISM', pattern: 'δύ → ἐν', description: 'Potentiality realizes itself as actuality', inputs: ['potentiality'], output: { concept: 'actuality', transform: () => 'Potential becomes Actual' }, matches: (concepts) => concepts.some(c => c.id === 'potentiality') },
+    { id: 'telos-eudaimonia', name: 'Telos → Eudaimonia', tradition: 'ARISTOTELIANISM', pattern: '⊚ → ☀', description: 'The human telos is eudaimonia', inputs: ['telos'], output: { concept: 'eudaimonia', transform: () => 'Human end is Flourishing' }, matches: (concepts) => concepts.some(c => c.id === 'telos') },
+    { id: 'hylomorphism-ousia', name: 'Hylomorphism → Ousia', tradition: 'ARISTOTELIANISM', pattern: '⧈ → ⦰', description: 'Form and matter compose substance', inputs: ['hylomorphism'], output: { concept: 'ousia', transform: () => 'Form-matter unity is Substance' }, matches: (concepts) => concepts.some(c => c.id === 'hylomorphism') },
+    { id: 'nous-actuality', name: 'Nous → Pure Actuality', tradition: 'ARISTOTELIANISM', pattern: 'ν → ἐν', description: 'Divine intellect is pure actuality', inputs: ['nous'], output: { concept: 'actuality', transform: () => 'Nous is thought thinking itself' }, matches: (concepts) => concepts.some(c => c.id === 'nous') },
+
+    // Heraclitean Rules
+    { id: 'flux-logos', name: 'Flux → Logos', tradition: 'HERACLITEANISM', pattern: '≋ → λ', description: 'Within flux, logos maintains order', inputs: ['flux'], output: { concept: 'logos-h', transform: () => 'Flux governed by Logos' }, matches: (concepts) => concepts.some(c => c.id === 'flux') },
+    { id: 'strife-unity', name: 'Strife → Unity of Opposites', tradition: 'HERACLITEANISM', pattern: '⚔ → ⊕', description: 'Strife reveals the hidden unity', inputs: ['strife'], output: { concept: 'unity-opposites', transform: () => 'War reveals secret harmony' }, matches: (concepts) => concepts.some(c => c.id === 'strife') },
+    { id: 'fire-flux', name: 'Fire → Flux', tradition: 'HERACLITEANISM', pattern: '🔥 → ≋', description: 'Fire is the element of eternal becoming', inputs: ['fire'], output: { concept: 'flux', transform: () => 'Fire is living change' }, matches: (concepts) => concepts.some(c => c.id === 'fire') },
+    { id: 'unity-hidden', name: 'Unity of Opposites → Hidden Harmony', tradition: 'HERACLITEANISM', pattern: '⊕ → ⫰', description: 'The unity is a non-apparent attunement', inputs: ['unity-opposites'], output: { concept: 'hidden-harmony', transform: () => 'Unity is hidden, superior' }, matches: (concepts) => concepts.some(c => c.id === 'unity-opposites') },
+
+    // Cross-tradition resonances with new traditions
+    { id: 'form-eternal-object', name: 'Form ≈ Eternal Object', tradition: 'CROSS', pattern: '△ ≈ ∞ₒ', description: 'Platonic Forms parallel Whiteheadian eternal objects', inputs: ['form', 'eternal-object'], output: { concept: null, transform: () => 'Both are pure potentials for actualization' }, matches: (concepts) => concepts.some(c => c.id === 'form') && concepts.some(c => c.id === 'eternal-object') },
+    { id: 'flux-becoming', name: 'Flux ≈ Becoming', tradition: 'CROSS', pattern: '≋ ≈ ⥁', description: 'Heraclitean flux anticipates Hegelian becoming', inputs: ['flux', 'becoming'], output: { concept: null, transform: () => 'Both affirm primacy of change' }, matches: (concepts) => concepts.some(c => c.id === 'flux') && concepts.some(c => c.id === 'becoming') },
+    { id: 'ousia-substance', name: 'Ousia ≈ Substance', tradition: 'CROSS', pattern: '⦰ ≈ ▣', description: 'Aristotelian ousia and Spinozist substance compared', inputs: ['ousia', 'substance'], output: { concept: null, transform: () => 'Different conceptions of primary being' }, matches: (concepts) => concepts.some(c => c.id === 'ousia') && concepts.some(c => c.id === 'substance') },
+    { id: 'good-k3', name: 'The Good ≈ Intuitive Knowledge', tradition: 'CROSS', pattern: '☉ ≈ K₃', description: 'Platonic illumination parallels Spinozist scientia intuitiva', inputs: ['the-good', 'k3'], output: { concept: null, transform: () => 'Both: highest knowledge of unity' }, matches: (concepts) => concepts.some(c => c.id === 'the-good') && concepts.some(c => c.id === 'k3') },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEMANTIC AFFINITY ENGINE — Discovers productive philosophical combinations
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Semantic dimensions for computing affinity (what makes concepts "productive" together)
+const SEMANTIC_DIMENSIONS = {
+    temporal: { // How the concept relates to time
+        'living-present': 0.95, 'temporality': 0.9, 'becoming': 0.85, 'concrescence': 0.8,
+        'horizon': 0.6, 'dep-orig': 0.7, 'prehension': 0.6, 'ereignis': 0.75,
+        'substance': 0.1, 'eternal-object': 0.05, 'noumenon': 0.1, 'emptiness': 0.3,
+        // Platonism
+        'form': 0.05, 'the-good': 0.02, 'participation': 0.5, 'anamnesis': 0.4, 'demiurge': 0.3, 'receptacle': 0.5, 'eros': 0.5, 'dialectic': 0.3,
+        // Aristotelianism
+        'ousia': 0.3, 'hylomorphism': 0.5, 'actuality': 0.4, 'potentiality': 0.6, 'telos': 0.3, 'eudaimonia': 0.4, 'four-causes': 0.4, 'nous': 0.2,
+        // Heracliteanism
+        'flux': 0.95, 'fire': 0.9, 'strife': 0.7, 'logos-h': 0.2, 'unity-opposites': 0.3, 'hidden-harmony': 0.2, 'thunderbolt': 0.5
+    },
+    processual: { // Degree of process/becoming vs static being
+        'becoming': 0.95, 'concrescence': 0.9, 'creativity': 0.85, 'aufhebung': 0.8,
+        'prehension': 0.75, 'fold': 0.7, 'virtual': 0.8, 'dep-orig': 0.85,
+        'substance': 0.2, 'object': 0.1, 'noumenon': 0.15, 'fact': 0.2,
+        // Platonism
+        'form': 0.1, 'the-good': 0.05, 'participation': 0.4, 'anamnesis': 0.3, 'demiurge': 0.6, 'receptacle': 0.4, 'eros': 0.6, 'dialectic': 0.5,
+        // Aristotelianism
+        'ousia': 0.3, 'hylomorphism': 0.5, 'actuality': 0.5, 'potentiality': 0.7, 'telos': 0.4, 'eudaimonia': 0.4, 'four-causes': 0.4, 'nous': 0.3,
+        // Heracliteanism
+        'flux': 0.99, 'fire': 0.95, 'strife': 0.85, 'logos-h': 0.5, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.7
+    },
+    relational: { // How much the concept depends on relations
+        'dep-orig': 0.95, 'prehension': 0.9, 'other': 0.85, 'flesh': 0.8,
+        'rhizome': 0.9, 'lang-game': 0.85, 'form-life': 0.8, 'trace': 0.75,
+        'substance': 0.3, 'self': 0.5, 'noumenon': 0.2, 'object': 0.4,
+        // Platonism
+        'form': 0.4, 'the-good': 0.3, 'participation': 0.9, 'anamnesis': 0.6, 'demiurge': 0.7, 'receptacle': 0.8, 'eros': 0.7, 'dialectic': 0.6,
+        // Aristotelianism
+        'ousia': 0.4, 'hylomorphism': 0.8, 'actuality': 0.5, 'potentiality': 0.6, 'telos': 0.6, 'eudaimonia': 0.6, 'four-causes': 0.85, 'nous': 0.4,
+        // Heracliteanism
+        'flux': 0.7, 'fire': 0.6, 'strife': 0.8, 'logos-h': 0.6, 'unity-opposites': 0.95, 'hidden-harmony': 0.7, 'thunderbolt': 0.5
+    },
+    negational: { // Role of negation/absence/emptiness
+        'emptiness': 0.95, 'det-neg': 0.9, 'aufhebung': 0.85, 'trace': 0.8,
+        'tetralemma': 0.9, 'contradiction': 0.85, 'differance': 0.8, 'non-arising': 0.9,
+        'substance': 0.2, 'actual-entity': 0.3, 'fact': 0.15, 'self': 0.3,
+        // Platonism
+        'form': 0.2, 'the-good': 0.1, 'participation': 0.4, 'anamnesis': 0.3, 'demiurge': 0.2, 'receptacle': 0.6, 'eros': 0.4, 'dialectic': 0.5,
+        // Aristotelianism
+        'ousia': 0.3, 'hylomorphism': 0.3, 'actuality': 0.2, 'potentiality': 0.5, 'telos': 0.2, 'eudaimonia': 0.2, 'four-causes': 0.3, 'nous': 0.2,
+        // Heracliteanism
+        'flux': 0.5, 'fire': 0.5, 'strife': 0.7, 'logos-h': 0.3, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.4
+    },
+    disclosive: { // Truth/manifestation/showing
+        'aletheia': 0.95, 'clearing': 0.9, 'shows': 0.85, 'phenomenon': 0.8,
+        'face': 0.75, 'intuition': 0.7, 'k3': 0.8, 'mystical': 0.7,
+        'noumenon': 0.3, 'silence': 0.6, 'trace': 0.5, 'virtual': 0.6,
+        // Platonism
+        'form': 0.85, 'the-good': 0.95, 'participation': 0.5, 'anamnesis': 0.8, 'demiurge': 0.6, 'receptacle': 0.3, 'eros': 0.6, 'dialectic': 0.8,
+        // Aristotelianism
+        'ousia': 0.7, 'hylomorphism': 0.6, 'actuality': 0.8, 'potentiality': 0.4, 'telos': 0.6, 'eudaimonia': 0.7, 'four-causes': 0.75, 'nous': 0.9,
+        // Heracliteanism
+        'flux': 0.5, 'fire': 0.6, 'strife': 0.5, 'logos-h': 0.85, 'unity-opposites': 0.7, 'hidden-harmony': 0.9, 'thunderbolt': 0.7
+    },
+    practical: { // Embeddedness in practice/life
+        'lang-game': 0.95, 'use': 0.9, 'form-life': 0.9, 'rule': 0.85,
+        'care': 0.8, 'conatus': 0.75, 'dasein': 0.8, 'therapy': 0.7,
+        'proposition': 0.3, 'eternal-object': 0.1, 'noumenon': 0.1, 'logical-form': 0.2,
+        // Platonism
+        'form': 0.3, 'the-good': 0.4, 'participation': 0.4, 'anamnesis': 0.5, 'demiurge': 0.7, 'receptacle': 0.3, 'eros': 0.7, 'dialectic': 0.8,
+        // Aristotelianism
+        'ousia': 0.5, 'hylomorphism': 0.5, 'actuality': 0.7, 'potentiality': 0.5, 'telos': 0.8, 'eudaimonia': 0.95, 'four-causes': 0.6, 'nous': 0.5,
+        // Heracliteanism
+        'flux': 0.4, 'fire': 0.5, 'strife': 0.6, 'logos-h': 0.6, 'unity-opposites': 0.5, 'hidden-harmony': 0.4, 'thunderbolt': 0.5
+    }
+};
+
+// Compute semantic affinity between two concepts (0-1)
+function computeSemanticAffinity(concept1, concept2) {
+    if (concept1.id === concept2.id) return 0;
+
+    let totalAffinity = 0;
+    let dimensions = 0;
+
+    // 1. Dimensional resonance (similar positions on semantic axes)
+    Object.entries(SEMANTIC_DIMENSIONS).forEach(([dim, values]) => {
+        const v1 = values[concept1.id] ?? 0.5;
+        const v2 = values[concept2.id] ?? 0.5;
+        // High affinity when both high OR both low (resonance), also when complementary
+        const resonance = 1 - Math.abs(v1 - v2);
+        const complementarity = Math.abs(v1 - v2) > 0.5 ? (v1 + v2) / 2 : 0; // productive tension
+        totalAffinity += Math.max(resonance * 0.7, complementarity * 0.5);
+        dimensions++;
+    });
+
+    // 2. Cross-tradition bonus (different traditions = potentially more productive)
+    if (concept1.tradition !== concept2.tradition) {
+        totalAffinity += 0.3;
+    }
+
+    // 3. Keyword overlap (shared concerns)
+    const keywords1 = new Set(concept1.keywords || []);
+    const keywords2 = new Set(concept2.keywords || []);
+    const overlap = [...keywords1].filter(k => keywords2.has(k)).length;
+    totalAffinity += overlap * 0.15;
+
+    // 4. Rule-based productivity (concepts that have inference rules together)
+    INFERENCE_RULES.forEach(rule => {
+        const inputs = rule.inputs;
+        if (inputs.includes(concept1.id) && inputs.includes(concept2.id)) {
+            totalAffinity += 0.5; // Strong boost for rule-connected concepts
+        }
+        if (inputs.includes(concept1.id) && rule.output.concept === concept2.id) {
+            totalAffinity += 0.4; // Derivational connection
+        }
+        if (inputs.includes(concept2.id) && rule.output.concept === concept1.id) {
+            totalAffinity += 0.4;
+        }
+    });
+
+    return Math.min(1, totalAffinity / (dimensions + 1));
+}
+
+// Generate insight text when concepts are brought together
+function generateProductiveInsight(concept1, concept2, affinity) {
+    const insights = [];
+
+    // Check dimensional tensions and resonances
+    Object.entries(SEMANTIC_DIMENSIONS).forEach(([dim, values]) => {
+        const v1 = values[concept1.id] ?? 0.5;
+        const v2 = values[concept2.id] ?? 0.5;
+
+        if (Math.abs(v1 - v2) > 0.5) {
+            // Productive tension
+            const dimNames = {
+                temporal: ['eternal', 'temporal'],
+                processual: ['static', 'processual'],
+                relational: ['independent', 'relational'],
+                negational: ['positive', 'negational'],
+                disclosive: ['concealed', 'disclosive'],
+                practical: ['theoretical', 'practical']
+            };
+            const [low, high] = dimNames[dim] || [dim, dim];
+            const higher = v1 > v2 ? concept1 : concept2;
+            const lower = v1 > v2 ? concept2 : concept1;
+            insights.push(`${higher.symbol} brings ${high} dimension to ${lower.symbol}'s ${low} character`);
+        } else if (v1 > 0.7 && v2 > 0.7) {
+            // Deep resonance
+            insights.push(`Both share deep ${dim} structure`);
+        }
+    });
+
+    // Cross-tradition insight
+    if (concept1.tradition !== concept2.tradition) {
+        const t1 = TRADITIONS[concept1.tradition].name;
+        const t2 = TRADITIONS[concept2.tradition].name;
+        insights.push(`Bridge between ${t1} and ${t2}`);
+    }
+
+    return insights.slice(0, 3); // Return top 3 insights
+}
+
+// Build affinity map for all concept pairs
+function buildAffinityMap() {
+    const map = {};
+    CONCEPTS.forEach(c1 => {
+        map[c1.id] = {};
+        CONCEPTS.forEach(c2 => {
+            if (c1.id !== c2.id) {
+                map[c1.id][c2.id] = computeSemanticAffinity(c1, c2);
+            }
+        });
+    });
+    return map;
+}
+
+const AFFINITY_MAP = buildAffinityMap();
+
+// Get top N most productive concepts for a given concept
+function getProductivePartners(conceptId, topN = 8) {
+    const affinities = AFFINITY_MAP[conceptId];
+    if (!affinities) return [];
+
+    return Object.entries(affinities)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, topN)
+        .map(([id, affinity]) => ({
+            concept: CONCEPTS.find(c => c.id === id),
+            affinity
+        }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APPLICATION STATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const state = {
+    mode: 'derive',
+    selectedConcepts: [],
+    derivationChain: [],
+    activeTradition: null,
+    searchQuery: '',
+    workspaceCollapsed: true,
+    paletteCollapsed: false,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// D3 VISUALIZATION - Full Screen with Magnetic Attraction
+// ═══════════════════════════════════════════════════════════════════════════
+
+let svg, g, simulation, nodeElements, linkElements;
+let currentWidth, currentHeight;
+
+function getGraphDimensions() {
+    const container = document.getElementById('canvas-container');
+    return {
+        width: container.clientWidth,
+        height: container.clientHeight
+    };
+}
+
+function initGraph() {
+    const dims = getGraphDimensions();
+    currentWidth = dims.width;
+    currentHeight = dims.height;
+
+    svg = d3.select('#graph-canvas')
+        .attr('width', currentWidth)
+        .attr('height', currentHeight);
+
+    const zoom = d3.zoom()
+        .scaleExtent([0.2, 4])
+        .on('zoom', (event) => g.attr('transform', event.transform));
+
+    svg.call(zoom);
+    g = svg.append('g');
+
+    // Arrow markers
+    const defs = svg.append('defs');
+    const markerColors = {
+        implies: '#10b981',
+        requires: '#f59e0b',
+        resonates: '#ec4899',
+        opposes: '#ef4444',
+        potential: '#64748b'
+    };
+
+    Object.entries(markerColors).forEach(([type, color]) => {
+        defs.append('marker')
+            .attr('id', `arrow-${type}`)
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 25)
+            .attr('refY', 0)
+            .attr('markerWidth', 5)
+            .attr('markerHeight', 5)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', color);
+    });
+
+    updateGraph();
+}
+
+function updateGraph() {
+    const dims = getGraphDimensions();
+    currentWidth = dims.width;
+    currentHeight = dims.height;
+
+    svg.attr('width', currentWidth).attr('height', currentHeight);
+
+    const nodes = [...CONCEPTS];
+    const links = buildLinks();
+    const potentialLinks = buildPotentialLinks();
+
+    g.selectAll('*').remove();
+
+    // Build semantic affinity data for the currently selected concept
+    const selected = state.selectedConcepts[0];
+    const productivePartners = selected ? getProductivePartners(selected.id, 12) : [];
+    const affinityById = {};
+    productivePartners.forEach(p => {
+        affinityById[p.concept.id] = p.affinity;
+    });
+
+    // Ideal orbital distance - close enough to show affinity, far enough to read
+    const CLUSTER_ORBIT = 75;  // Target distance from selected node
+    const MIN_NEIGHBOR_DIST = 50; // Minimum distance between attracted nodes
+
+    // Custom force for SEMANTIC MAGNETIC ATTRACTION
+    // Pulls concepts toward an ORBITAL distance around selected (not into it)
+    function semanticMagneticForce(alpha) {
+        if (!selected) return;
+
+        const selectedNode = nodes.find(n => n.id === selected.id);
+        if (!selectedNode || selectedNode.x == null) return;
+
+        nodes.forEach(node => {
+            if (node.id === selected.id) return;
+
+            const affinity = affinityById[node.id];
+            if (affinity && affinity > 0.3) {
+                if (node.x == null) return;
+
+                const dx = selectedNode.x - node.x;
+                const dy = selectedNode.y - node.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Target orbit: higher affinity = closer orbit
+                const targetOrbit = CLUSTER_ORBIT + (1 - affinity) * 50;
+
+                // Pull toward orbit, not toward center
+                const orbitDelta = distance - targetOrbit;
+
+                if (Math.abs(orbitDelta) > 10) {
+                    const strength = alpha * affinity * 1.5;
+                    // Positive delta = too far, pull in. Negative = too close, push out gently
+                    const direction = orbitDelta > 0 ? 1 : -0.7;
+                    const force = strength * direction * Math.min(1, Math.abs(orbitDelta) / 60) * 20;
+                    node.vx += (dx / distance) * force;
+                    node.vy += (dy / distance) * force;
+                }
+            }
+        });
+    }
+
+    // Spread force - prevents attracted nodes from piling on each other
+    function spreadForce(alpha) {
+        if (!selected) return;
+
+        const attractedNodes = nodes.filter(n => affinityById[n.id] && affinityById[n.id] > 0.35);
+        if (attractedNodes.length < 2) return;
+
+        // Push attracted nodes away from EACH OTHER (while orbit keeps them near selected)
+        for (let i = 0; i < attractedNodes.length; i++) {
+            for (let j = i + 1; j < attractedNodes.length; j++) {
+                const nodeA = attractedNodes[i];
+                const nodeB = attractedNodes[j];
+                if (!nodeA.x || !nodeB.x) continue;
+
+                const dx = nodeB.x - nodeA.x;
+                const dy = nodeB.y - nodeA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // If neighbors are too close, push them apart
+                if (distance < MIN_NEIGHBOR_DIST && distance > 0) {
+                    const spreadStrength = alpha * (1 - distance / MIN_NEIGHBOR_DIST) * 12;
+                    nodeA.vx -= (dx / distance) * spreadStrength;
+                    nodeA.vy -= (dy / distance) * spreadStrength;
+                    nodeB.vx += (dx / distance) * spreadStrength;
+                    nodeB.vy += (dy / distance) * spreadStrength;
+                }
+            }
+        }
+    }
+
+    // Custom charge - maintains base repulsion even for attracted nodes
+    function semanticCharge() {
+        const baseStrength = -120;
+
+        return d3.forceManyBody()
+            .strength(node => {
+                if (!selected) return baseStrength;
+
+                const affinity = affinityById[node.id];
+                if (affinity && affinity > 0.4) {
+                    // Keep moderate repulsion so they don't collapse
+                    return baseStrength * 0.5;
+                }
+                if (node.id === selected.id) {
+                    return baseStrength * 0.4;
+                }
+                return baseStrength;
+            });
+    }
+
+    simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.5))
+        .force('charge', semanticCharge())
+        .force('center', d3.forceCenter(currentWidth / 2, currentHeight / 2))
+        .force('collision', d3.forceCollide().radius(d => {
+            // Consistent collision radius for readability
+            const affinity = affinityById[d.id];
+            return affinity && affinity > 0.4 ? 30 : 26;
+        }).strength(0.9))
+        .force('magnetic', semanticMagneticForce)
+        .force('spread', spreadForce)
+        .force('x', d3.forceX(currentWidth / 2).strength(0.01))
+        .force('y', d3.forceY(currentHeight / 2).strength(0.01));
+
+    // Potential links (dashed, subtle)
+    const potentialLinkElements = g.append('g')
+        .selectAll('line')
+        .data(potentialLinks)
+        .join('line')
+        .attr('class', 'link potential')
+        .attr('stroke', '#334155')
+        .attr('stroke-width', 1);
+
+    // Actual derived links
+    linkElements = g.append('g')
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('class', 'link')
+        .attr('stroke', d => {
+            const colors = { implies: '#10b981', requires: '#f59e0b', resonates: '#ec4899', opposes: '#ef4444' };
+            return colors[d.type] || '#64748b';
+        })
+        .attr('stroke-width', 2)
+        .attr('marker-end', d => `url(#arrow-${d.type})`);
+
+    // Affinity glow rings (drawn first, behind nodes)
+    const affinityRings = g.append('g')
+        .selectAll('circle')
+        .data(nodes.filter(n => affinityById[n.id] && affinityById[n.id] > 0.4))
+        .join('circle')
+        .attr('r', d => 25 + affinityById[d.id] * 15)
+        .attr('fill', 'none')
+        .attr('stroke', d => TRADITIONS[d.tradition].color)
+        .attr('stroke-width', d => affinityById[d.id] * 4)
+        .attr('stroke-opacity', d => affinityById[d.id] * 0.5)
+        .attr('filter', 'url(#glow)');
+
+    // Add glow filter for affinity visualization
+    const defs = svg.select('defs');
+    if (defs.select('#glow').empty()) {
+        const filter = defs.append('filter').attr('id', 'glow');
+        filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'coloredBlur');
+        const feMerge = filter.append('feMerge');
+        feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+    }
+
+    // Connection lines showing productive affinity (drawn before nodes)
+    if (selected) {
+        const affinityLines = g.append('g')
+            .selectAll('line')
+            .data(productivePartners.filter(p => p.affinity > 0.45))
+            .join('line')
+            .attr('class', 'affinity-line')
+            .attr('stroke', d => {
+                // Color gradient based on affinity type
+                if (d.affinity > 0.7) return '#10b981'; // High = green (very productive)
+                if (d.affinity > 0.55) return '#f59e0b'; // Medium = amber
+                return '#6366f1'; // Lower = indigo
+            })
+            .attr('stroke-width', d => d.affinity * 3)
+            .attr('stroke-opacity', d => d.affinity * 0.6)
+            .attr('stroke-dasharray', d => d.affinity > 0.6 ? 'none' : '4,4');
+    }
+
+    // Nodes
+    nodeElements = g.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .join('g')
+        .attr('class', 'node')
+        .call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended))
+        .on('click', (event, d) => handleNodeClick(d))
+        .on('dblclick', (event, d) => {
+            event.stopPropagation();
+            // Double-click to derive if only one selected
+            if (state.selectedConcepts.length === 1) {
+                state.selectedConcepts.push(d);
+                updateSelectionPanel();
+                updateNodeSelection();
+                updateApplicableRules();
+                attemptDerivation();
+            }
+        })
+        .on('mouseenter', (event, d) => {
+            // Show insight tooltip on hover if this is a productive partner
+            if (selected && affinityById[d.id]) {
+                showAffinityTooltip(d, selected, affinityById[d.id], event);
+            }
+        })
+        .on('mouseleave', () => hideAffinityTooltip());
+
+    // Node circles with affinity-based sizing
+    nodeElements.append('circle')
+        .attr('r', d => {
+            const affinity = affinityById[d.id];
+            if (affinity && affinity > 0.4) {
+                return 20 + affinity * 8; // Productive partners appear larger
+            }
+            return 20;
+        })
+        .attr('fill', d => {
+            const affinity = affinityById[d.id];
+            if (affinity && affinity > 0.5) {
+                // More saturated fill for high-affinity concepts
+                return TRADITIONS[d.tradition].color + '45';
+            }
+            return TRADITIONS[d.tradition].color + '25';
+        })
+        .attr('stroke', d => TRADITIONS[d.tradition].color)
+        .attr('stroke-width', d => {
+            const affinity = affinityById[d.id];
+            return affinity && affinity > 0.5 ? 3 : 2;
+        });
+
+    nodeElements.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '0.35em')
+        .attr('font-size', d => {
+            const affinity = affinityById[d.id];
+            return affinity && affinity > 0.5 ? '13px' : '11px';
+        })
+        .attr('font-weight', d => {
+            const affinity = affinityById[d.id];
+            return affinity && affinity > 0.6 ? '600' : '400';
+        })
+        .text(d => d.symbol);
+
+    // Affinity percentage badge for high-affinity nodes
+    nodeElements.filter(d => affinityById[d.id] && affinityById[d.id] > 0.55)
+        .append('text')
+        .attr('x', 18)
+        .attr('y', -12)
+        .attr('font-size', '9px')
+        .attr('fill', '#10b981')
+        .attr('font-weight', '600')
+        .text(d => Math.round(affinityById[d.id] * 100) + '%');
+
+    simulation.on('tick', () => {
+        potentialLinkElements
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+
+        linkElements
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+
+        nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
+
+        // Update affinity rings position
+        affinityRings.attr('cx', d => d.x).attr('cy', d => d.y);
+
+        // Update affinity connection lines
+        if (selected) {
+            g.selectAll('.affinity-line')
+                .attr('x1', () => {
+                    const selNode = nodes.find(n => n.id === selected.id);
+                    return selNode ? selNode.x : 0;
+                })
+                .attr('y1', () => {
+                    const selNode = nodes.find(n => n.id === selected.id);
+                    return selNode ? selNode.y : 0;
+                })
+                .attr('x2', d => {
+                    const targetNode = nodes.find(n => n.id === d.concept.id);
+                    return targetNode ? targetNode.x : 0;
+                })
+                .attr('y2', d => {
+                    const targetNode = nodes.find(n => n.id === d.concept.id);
+                    return targetNode ? targetNode.y : 0;
+                });
+        }
+    });
+
+    updateNodeSelection();
+    updatePotentialIndicator();
+}
+
+function buildLinks() {
+    const links = [];
+    state.derivationChain.forEach(step => {
+        if (step.from && step.to) {
+            links.push({
+                source: step.from,
+                target: step.to,
+                type: step.type || 'implies'
+            });
+        }
+    });
+    return links;
+}
+
+function buildPotentialLinks() {
+    const links = [];
+    const selected = state.selectedConcepts[0];
+    if (!selected) return links;
+
+    // Find potential derivations from selected concept
+    INFERENCE_RULES.forEach(rule => {
+        if (rule.matches([selected]) && rule.output.concept) {
+            links.push({
+                source: selected.id,
+                target: rule.output.concept,
+                type: 'potential'
+            });
+        }
+    });
+
+    return links;
+}
+
+function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+}
+
+function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+}
+
+function handleNodeClick(concept) {
+    if (state.mode === 'derive') {
+        const idx = state.selectedConcepts.findIndex(c => c.id === concept.id);
+        if (idx >= 0) {
+            state.selectedConcepts.splice(idx, 1);
+        } else if (state.selectedConcepts.length < 2) {
+            state.selectedConcepts.push(concept);
+        } else {
+            state.selectedConcepts = [state.selectedConcepts[1], concept];
+        }
+        updateSelectionPanel();
+        updateNodeSelection();
+        updateApplicableRules();
+        updateGraph(); // Rebuild to show potential links and recalculate magnetic forces
+
+        // Restart simulation with high alpha to animate the magnetic attraction
+        if (simulation) {
+            simulation.alpha(0.8).restart();
+        }
+    }
+}
+
+function updateNodeSelection() {
+    if (!nodeElements) return;
+
+    const selected = state.selectedConcepts[0];
+    const compatibleIds = new Set();
+
+    if (selected) {
+        INFERENCE_RULES.forEach(rule => {
+            if (rule.matches([selected])) {
+                if (rule.output.concept) compatibleIds.add(rule.output.concept);
+            }
+            if (rule.inputs.includes(selected.id)) {
+                rule.inputs.forEach(id => {
+                    if (id !== selected.id && id !== 'any') compatibleIds.add(id);
+                });
+            }
+        });
+    }
+
+    nodeElements.classed('selected', d => state.selectedConcepts.some(c => c.id === d.id));
+    nodeElements.classed('compatible', d => compatibleIds.has(d.id) && !state.selectedConcepts.some(c => c.id === d.id));
+    nodeElements.classed('in-chain', d => state.derivationChain.some(step => step.from === d.id || step.to === d.id));
+}
+
+function updatePotentialIndicator() {
+    const indicator = document.getElementById('potential-indicator');
+    const selected = state.selectedConcepts[0];
+
+    if (selected) {
+        const partners = getProductivePartners(selected.id, 8);
+        const highAffinity = partners.filter(p => p.affinity > 0.5).length;
+        indicator.querySelector('.count').textContent = highAffinity;
+        indicator.style.display = highAffinity > 0 ? 'block' : 'none';
+
+        // Update insight panel
+        updateInsightPanel(selected, partners);
+    } else {
+        indicator.style.display = 'none';
+        clearInsightPanel();
+    }
+}
+
+// Tooltip for showing productive insights on hover
+let tooltipElement = null;
+
+function showAffinityTooltip(concept, selectedConcept, affinity, event) {
+    hideAffinityTooltip();
+
+    const insights = generateProductiveInsight(selectedConcept, concept, affinity);
+    if (insights.length === 0) return;
+
+    tooltipElement = document.createElement('div');
+    tooltipElement.className = 'affinity-tooltip';
+    tooltipElement.innerHTML = `
+        <div class="tooltip-header">
+            <span style="color: ${TRADITIONS[selectedConcept.tradition].color}">${selectedConcept.symbol}</span>
+            <span class="tooltip-arrow">⟷</span>
+            <span style="color: ${TRADITIONS[concept.tradition].color}">${concept.symbol}</span>
+            <span class="tooltip-affinity">${Math.round(affinity * 100)}%</span>
+        </div>
+        <div class="tooltip-title">${selectedConcept.name} + ${concept.name}</div>
+        <div class="tooltip-insights">
+            ${insights.map(i => `<div class="insight-item">• ${i}</div>`).join('')}
+        </div>
+    `;
+
+    document.body.appendChild(tooltipElement);
+
+    // Position near mouse
+    const rect = event.target.getBoundingClientRect();
+    tooltipElement.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltipElement.style.top = (rect.top - 10) + 'px';
+}
+
+function hideAffinityTooltip() {
+    if (tooltipElement) {
+        tooltipElement.remove();
+        tooltipElement = null;
+    }
+}
+
+// Update the insight panel with productive partners
+function updateInsightPanel(selected, partners) {
+    let panel = document.getElementById('insight-panel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'insight-panel';
+        document.getElementById('canvas-container').appendChild(panel);
+    }
+
+    const topPartners = partners.slice(0, 5);
+
+    panel.innerHTML = `
+        <div class="insight-header">
+            <span class="insight-symbol" style="color: ${TRADITIONS[selected.tradition].color}">${selected.symbol}</span>
+            <span class="insight-title">Productive Affinities</span>
+        </div>
+        <div class="insight-list">
+            ${topPartners.map(p => {
+                const insights = generateProductiveInsight(selected, p.concept, p.affinity);
+                const affinityColor = p.affinity > 0.65 ? '#10b981' : p.affinity > 0.5 ? '#f59e0b' : '#6366f1';
+                return `
+                    <div class="insight-partner" data-id="${p.concept.id}">
+                        <div class="partner-header">
+                            <span class="partner-symbol" style="color: ${TRADITIONS[p.concept.tradition].color}">${p.concept.symbol}</span>
+                            <span class="partner-name">${p.concept.name}</span>
+                            <span class="partner-affinity" style="color: ${affinityColor}">${Math.round(p.affinity * 100)}%</span>
+                        </div>
+                        ${insights.length > 0 ? `<div class="partner-insight">${insights[0]}</div>` : ''}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    // Click to select partner
+    panel.querySelectorAll('.insight-partner').forEach(el => {
+        el.addEventListener('click', () => {
+            const concept = CONCEPTS.find(c => c.id === el.dataset.id);
+            if (concept) handleNodeClick(concept);
+        });
+    });
+
+    panel.style.display = 'block';
+
+    // Add AI button if available
+    setTimeout(() => addAIButtonToInsightPanel(), 100);
+}
+
+function clearInsightPanel() {
+    const panel = document.getElementById('insight-panel');
+    if (panel) panel.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UI UPDATES
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initUI() {
+    const tabsContainer = document.getElementById('tradition-tabs');
+    tabsContainer.innerHTML = `<div class="tradition-tab active" data-tradition="all" style="background: #33415530; color: #94a3b8;">All</div>`;
+
+    Object.entries(TRADITIONS).forEach(([key, t]) => {
+        const tab = document.createElement('div');
+        tab.className = 'tradition-tab';
+        tab.dataset.tradition = key;
+        tab.textContent = t.name.split(' ')[0].substring(0, 8);
+        tab.style.backgroundColor = t.color + '30';
+        tab.style.color = t.color;
+        tab.addEventListener('click', () => {
+            state.activeTradition = state.activeTradition === key ? null : key;
+            updateTraditionTabs();
+            renderConceptList();
+        });
+        tabsContainer.appendChild(tab);
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value.toLowerCase();
+        renderConceptList();
+    });
+
+    document.getElementById('mode-derive').addEventListener('click', () => setMode('derive'));
+    document.getElementById('mode-explore').addEventListener('click', () => setMode('explore'));
+    document.getElementById('derive-btn').addEventListener('click', attemptDerivation);
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+        state.derivationChain = [];
+        state.selectedConcepts = [];
+        updateSelectionPanel();
+        updateChainDisplay();
+        updateNodeSelection();
+        updateGraph();
+    });
+
+    // Export button - show menu on click
+    const exportBtn = document.getElementById('btn-export');
+    exportBtn.setAttribute('data-export-btn', 'true');
+    exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showExportMenu();
+    });
+
+    document.getElementById('btn-toggle-workspace').addEventListener('click', toggleWorkspace);
+    document.getElementById('toggle-palette-btn').addEventListener('click', togglePalette);
+
+    // Share button - copy shareable link
+    document.getElementById('btn-share').addEventListener('click', shareDerivation);
+
+    renderConceptList();
+
+    // Check for shared state in URL
+    loadSharedState();
+}
+
+function toggleWorkspace() {
+    state.workspaceCollapsed = !state.workspaceCollapsed;
+    document.getElementById('workspace').classList.toggle('collapsed', state.workspaceCollapsed);
+    document.getElementById('btn-toggle-workspace').textContent = state.workspaceCollapsed ? 'Chain ▲' : 'Chain ▼';
+
+    setTimeout(() => {
+        const dims = getGraphDimensions();
+        svg.attr('width', dims.width).attr('height', dims.height);
+        simulation.force('center', d3.forceCenter(dims.width / 2, dims.height / 2));
+        simulation.alpha(0.3).restart();
+    }, 350);
+}
+
+function togglePalette() {
+    state.paletteCollapsed = !state.paletteCollapsed;
+    document.getElementById('palette').classList.toggle('collapsed', state.paletteCollapsed);
+
+    setTimeout(() => {
+        const dims = getGraphDimensions();
+        svg.attr('width', dims.width).attr('height', dims.height);
+        simulation.force('center', d3.forceCenter(dims.width / 2, dims.height / 2));
+        simulation.alpha(0.3).restart();
+    }, 350);
+}
+
+function setMode(mode) {
+    state.mode = mode;
+    document.getElementById('mode-derive').classList.toggle('active', mode === 'derive');
+    document.getElementById('mode-explore').classList.toggle('active', mode === 'explore');
+    document.getElementById('mode-indicator').className = mode;
+    document.getElementById('mode-indicator').textContent = mode === 'derive' ? 'Derive' : 'Explore';
+}
+
+function updateTraditionTabs() {
+    document.querySelectorAll('.tradition-tab').forEach(tab => {
+        const t = tab.dataset.tradition;
+        tab.classList.toggle('active', t === state.activeTradition || (t === 'all' && !state.activeTradition));
+    });
+}
+
+function renderConceptList() {
+    const container = document.getElementById('concept-list');
+    let concepts = [...CONCEPTS];
+
+    if (state.activeTradition) {
+        concepts = concepts.filter(c => c.tradition === state.activeTradition);
+    }
+
+    if (state.searchQuery) {
+        concepts = concepts.filter(c =>
+            c.name.toLowerCase().includes(state.searchQuery) ||
+            c.symbol.toLowerCase().includes(state.searchQuery) ||
+            c.keywords?.some(k => k.includes(state.searchQuery))
+        );
+    }
+
+    container.innerHTML = concepts.map(c => {
+        const t = TRADITIONS[c.tradition];
+        const isSelected = state.selectedConcepts.some(s => s.id === c.id);
+        return `
+            <div class="concept-item ${isSelected ? 'selected' : ''}" data-id="${c.id}">
+                <div class="symbol" style="color: ${t.color}">${c.symbol}</div>
+                <div class="info">
+                    <div class="name">${c.name}</div>
+                    <div class="tradition-tag" style="background: ${t.color}30; color: ${t.color}">${t.name.substring(0, 12)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.querySelectorAll('.concept-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const concept = CONCEPTS.find(c => c.id === item.dataset.id);
+            if (concept) handleNodeClick(concept);
+        });
+    });
+}
+
+function updateSelectionPanel() {
+    const slot1 = document.getElementById('slot-1');
+    const slot2 = document.getElementById('slot-2');
+
+    const c1 = state.selectedConcepts[0];
+    const c2 = state.selectedConcepts[1];
+
+    if (c1) {
+        const t1 = TRADITIONS[c1.tradition];
+        slot1.className = 'selection-slot filled';
+        slot1.innerHTML = `<div class="slot-symbol" style="color: ${t1.color}">${c1.symbol}</div><div class="slot-name">${c1.name}</div>`;
+    } else {
+        slot1.className = 'selection-slot active';
+        slot1.innerHTML = '<div class="slot-label">First</div>';
+    }
+
+    if (c2) {
+        const t2 = TRADITIONS[c2.tradition];
+        slot2.className = 'selection-slot filled';
+        slot2.innerHTML = `<div class="slot-symbol" style="color: ${t2.color}">${c2.symbol}</div><div class="slot-name">${c2.name}</div>`;
+    } else {
+        slot2.className = c1 ? 'selection-slot active' : 'selection-slot';
+        slot2.innerHTML = '<div class="slot-label">Second</div>';
+    }
+
+    document.getElementById('derive-btn').disabled = state.selectedConcepts.length === 0;
+    renderConceptList();
+}
+
+function updateApplicableRules() {
+    const container = document.getElementById('rules-content');
+
+    if (state.selectedConcepts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Select concepts to see rules</p></div>';
+        return;
+    }
+
+    const applicable = INFERENCE_RULES.filter(rule => rule.matches(state.selectedConcepts));
+
+    if (applicable.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No direct rules. Try creative derivation.</p></div>';
+        return;
+    }
+
+    container.innerHTML = applicable.map(rule => {
+        const t = rule.tradition === 'CROSS' ? { color: '#94a3b8', name: 'Cross' } : TRADITIONS[rule.tradition];
+        return `
+            <div class="rule-item applicable" data-rule="${rule.id}">
+                <div class="rule-name">${rule.name}<span class="rule-tradition" style="background: ${t.color}30; color: ${t.color}">${t.name.substring(0, 8)}</span></div>
+                <div class="rule-pattern">${rule.pattern}</div>
+                <div class="rule-desc">${rule.description}</div>
+            </div>
+        `;
+    }).join('');
+
+    container.querySelectorAll('.rule-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const rule = INFERENCE_RULES.find(r => r.id === item.dataset.rule);
+            if (rule) applyRule(rule);
+        });
+    });
+}
+
+function updateChainDisplay() {
+    const container = document.getElementById('chain-content');
+
+    if (state.derivationChain.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">⟹</div><p>Derive concepts to build a chain</p></div>';
+        return;
+    }
+
+    container.innerHTML = '<div class="derivation-chain">' +
+        state.derivationChain.map((step, i) => {
+            const borderColor = step.tradition === 'CROSS' ? '#94a3b8' : TRADITIONS[step.tradition]?.color || '#64748b';
+            return `
+                <div class="chain-step" style="border-color: ${borderColor}">
+                    <div class="step-number">${i + 1}</div>
+                    <div class="step-content">
+                        <div class="step-expression">${step.expression}</div>
+                        <div class="step-rule"><strong>${step.ruleName}</strong>: ${step.description}</div>
+                    </div>
+                </div>
+            `;
+        }).join('') + '</div>';
+
+    // Auto-save derivation chain
+    if (typeof saveCurrentDerivation === 'function') {
+        saveCurrentDerivation();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DERIVATION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function attemptDerivation() {
+    if (state.selectedConcepts.length === 0) return;
+
+    const applicable = INFERENCE_RULES.filter(rule => rule.matches(state.selectedConcepts));
+
+    if (applicable.length > 0) {
+        applyRule(applicable[0]);
+    } else if (state.selectedConcepts.length === 2) {
+        createCrossDerivation();
+    } else {
+        showNotification('No applicable rules found.', 'warning');
+    }
+}
+
+function applyRule(rule) {
+    const concepts = state.selectedConcepts;
+    const c1 = concepts[0];
+    const c2 = concepts[1];
+
+    let expression;
+    if (c2 && rule.output.transform.length === 2) {
+        expression = rule.output.transform(c1, c2);
+    } else {
+        expression = rule.output.transform(c1);
+    }
+
+    const step = {
+        from: c1.id,
+        to: rule.output.concept || (c2 ? c2.id : null),
+        expression: `${c1.symbol} ${rule.pattern.includes('≈') ? '≈' : '→'} ${expression}`,
+        ruleName: rule.name,
+        description: rule.description,
+        tradition: rule.tradition,
+        type: rule.pattern.includes('≈') ? 'resonates' : 'implies'
+    };
+
+    state.derivationChain.push(step);
+
+    if (rule.output.concept) {
+        const outputConcept = CONCEPTS.find(c => c.id === rule.output.concept);
+        if (outputConcept) {
+            state.selectedConcepts = [outputConcept];
+            showNotification(`Derived: ${outputConcept.name}`, 'success');
+        }
+    } else {
+        state.selectedConcepts = [];
+        showNotification('Cross-tradition resonance!', 'info');
+    }
+
+    // Open workspace to show result
+    if (state.workspaceCollapsed) {
+        toggleWorkspace();
+    }
+
+    updateSelectionPanel();
+    updateChainDisplay();
+    updateApplicableRules();
+    updateNodeSelection();
+    updateGraph();
+}
+
+function createCrossDerivation() {
+    const c1 = state.selectedConcepts[0];
+    const c2 = state.selectedConcepts[1];
+
+    if (c1.tradition === c2.tradition) {
+        showNotification('Select from different traditions for cross-derivation', 'warning');
+        return;
+    }
+
+    const step = {
+        from: c1.id,
+        to: c2.id,
+        expression: `${c1.symbol} ⟷ ${c2.symbol}`,
+        ruleName: 'Creative Synthesis',
+        description: `${c1.name} (${TRADITIONS[c1.tradition].name}) ↔ ${c2.name} (${TRADITIONS[c2.tradition].name})`,
+        tradition: 'CROSS',
+        type: 'resonates'
+    };
+
+    state.derivationChain.push(step);
+    state.selectedConcepts = [];
+
+    if (state.workspaceCollapsed) {
+        toggleWorkspace();
+    }
+
+    updateSelectionPanel();
+    updateChainDisplay();
+    updateNodeSelection();
+    updateGraph();
+
+    showNotification('Creative cross-tradition connection!', 'info');
+}
+
+function showNotification(message, type = 'info') {
+    // Use PhiLangToast if available
+    if (typeof PhiLangToast !== 'undefined') {
+        PhiLangToast[type] ? PhiLangToast[type](message) : PhiLangToast.info(message);
+        return;
+    }
+
+    // Fallback to original notification
+    const existing = document.querySelector('.result-notification');
+    if (existing) existing.remove();
+
+    const notif = document.createElement('div');
+    notif.className = `result-notification ${type}`;
+    notif.textContent = message;
+    document.body.appendChild(notif);
+
+    setTimeout(() => notif.remove(), 2500);
+}
+
+function exportChain(format = 'text') {
+    if (state.derivationChain.length === 0) {
+        showNotification('No chain to export', 'warning');
+        return;
+    }
+
+    // Use PhiLangExport if available
+    if (typeof PhiLangExport !== 'undefined') {
+        switch (format) {
+            case 'latex':
+                const latex = PhiLangExport.derivationToLatex(state.derivationChain, {
+                    title: generateDerivationTitle(),
+                    includeDescription: true,
+                    includeRules: true
+                });
+                PhiLangExport.download(latex, `derivation-${Date.now()}.tex`, 'application/x-latex');
+                return;
+
+            case 'markdown':
+                const md = PhiLangExport.derivationToMarkdown(state.derivationChain, {
+                    title: generateDerivationTitle()
+                });
+                PhiLangExport.download(md, `derivation-${Date.now()}.md`, 'text/markdown');
+                return;
+
+            case 'bibtex':
+                const bib = PhiLangExport.derivationToBibtex(state.derivationChain, {
+                    title: generateDerivationTitle()
+                });
+                PhiLangExport.copyToClipboard(bib);
+                showNotification('BibTeX copied to clipboard', 'success');
+                return;
+        }
+    }
+
+    // Default: plain text to clipboard
+    let text = '═══ PHILANG DERIVATION CHAIN ═══\n\n';
+    state.derivationChain.forEach((step, i) => {
+        text += `[${i + 1}] ${step.expression}\n    Rule: ${step.ruleName}\n    ${step.description}\n\n`;
+    });
+    text += '═══════════════════════════════\nGenerated by PhiLang Derivation Builder\n';
+
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification('Chain copied to clipboard!', 'success');
+    });
+}
+
+function showExportMenu() {
+    // Create export menu if it doesn't exist
+    let menu = document.getElementById('export-menu');
+    if (!menu) {
+        menu = document.createElement('div');
+        menu.id = 'export-menu';
+        menu.className = 'export-dropdown';
+        menu.innerHTML = `
+            <button data-export="text">Copy as Text</button>
+            <button data-export="markdown">Download Markdown</button>
+            <button data-export="latex">Download LaTeX</button>
+            <button data-export="bibtex">Copy BibTeX</button>
+        `;
+        document.body.appendChild(menu);
+
+        // Add click handlers for export buttons
+        menu.querySelectorAll('[data-export]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                exportChain(btn.dataset.export);
+                hideExportMenu();
+            });
+        });
+
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .export-dropdown {
+                position: fixed;
+                background: var(--obsidian, #16141c);
+                border: 1px solid var(--stone, #3d3750);
+                border-radius: 8px;
+                padding: 4px;
+                z-index: 1000;
+                display: none;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            }
+            .export-dropdown.visible {
+                display: block;
+            }
+            .export-dropdown button {
+                display: block;
+                width: 100%;
+                padding: 8px 16px;
+                background: none;
+                border: none;
+                color: var(--pearl, #f5f5f0);
+                text-align: left;
+                cursor: pointer;
+                border-radius: 4px;
+                font-family: inherit;
+                font-size: 0.875rem;
+            }
+            .export-dropdown button:hover {
+                background: rgba(201, 162, 39, 0.15);
+                color: var(--gold, #d4af37);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!menu.contains(e.target) && !e.target.closest('[data-export-btn]')) {
+                hideExportMenu();
+            }
+        });
+    }
+
+    // Position near the export button
+    const btn = document.querySelector('[data-export-btn]') || document.getElementById('btn-export');
+    if (btn) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = `${rect.bottom + 4}px`;
+        menu.style.left = `${rect.left}px`;
+    }
+
+    menu.classList.add('visible');
+}
+
+function hideExportMenu() {
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// URL STATE / SHARING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function shareDerivation() {
+    if (typeof PhiLangURLState === 'undefined') {
+        showNotification('Sharing not available', 'warning');
+        return;
+    }
+
+    if (state.derivationChain.length === 0) {
+        showNotification('No derivation to share', 'warning');
+        return;
+    }
+
+    // Create shareable state (minimal data)
+    const shareState = {
+        chain: state.derivationChain.map(step => ({
+            expression: step.expression,
+            ruleName: step.ruleName,
+            ruleId: step.ruleId,
+            description: step.description,
+            tradition: step.tradition,
+            conceptIds: step.concepts ? step.concepts.map(c => c.id) : []
+        })),
+        concepts: state.selectedConcepts.map(c => c.id)
+    };
+
+    PhiLangURLState.copyLink(shareState, 'd');
+}
+
+function loadSharedState() {
+    if (typeof PhiLangURLState === 'undefined') return;
+
+    const sharedState = PhiLangURLState.load('d');
+    if (!sharedState) return;
+
+    try {
+        // Restore selected concepts
+        if (sharedState.concepts && Array.isArray(sharedState.concepts)) {
+            state.selectedConcepts = sharedState.concepts
+                .map(id => CONCEPTS.find(c => c.id === id))
+                .filter(Boolean);
+        }
+
+        // Restore derivation chain
+        if (sharedState.chain && Array.isArray(sharedState.chain)) {
+            state.derivationChain = sharedState.chain.map(step => ({
+                ...step,
+                concepts: step.conceptIds
+                    ? step.conceptIds.map(id => CONCEPTS.find(c => c.id === id)).filter(Boolean)
+                    : []
+            }));
+        }
+
+        // Update UI
+        updateSelectionPanel();
+        updateChainDisplay();
+        updateNodeSelection();
+        updateGraph();
+
+        showNotification('Shared derivation loaded', 'success');
+
+        // Clear URL to avoid re-loading on refresh
+        PhiLangURLState.clear('d');
+    } catch (e) {
+        console.error('Failed to load shared state:', e);
+        showNotification('Failed to load shared derivation', 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLAUDE API INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+let useAPI = false;
+
+function checkAPIAvailability() {
+    useAPI = typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured();
+    return useAPI;
+}
+
+function initAPIIndicator() {
+    const container = document.getElementById('api-indicator');
+    if (typeof PhiLangAPI !== 'undefined') {
+        container.innerHTML = PhiLangAPI.createStatusIndicator();
+        PhiLangAPI.initStatusIndicator();
+        updateAPIIndicator();
+    } else {
+        container.innerHTML = `
+            <div class="philang-api-indicator" style="opacity: 0.5">
+                <div class="dot inactive"></div>
+                <span>No API</span>
+            </div>
+        `;
+    }
+}
+
+function updateAPIIndicator() {
+    const dot = document.querySelector('.philang-api-indicator .dot');
+    const span = document.querySelector('.philang-api-indicator span');
+    if (dot && typeof PhiLangAPI !== 'undefined') {
+        const configured = PhiLangAPI.isConfigured();
+        dot.className = 'dot ' + (configured ? 'active' : 'inactive');
+        span.textContent = configured ? 'Claude API' : 'Configure API';
+    }
+}
+
+// AI-powered explanation panel
+function createAIExplanationPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'ai-explanation';
+    panel.innerHTML = `
+        <div id="ai-explanation-header">
+            <span class="title">✦ Claude Insight</span>
+            <span class="close-btn" id="ai-explanation-close" aria-label="Close">✕</span>
+        </div>
+        <div id="ai-explanation-content"></div>
+    `;
+    document.getElementById('canvas-container').appendChild(panel);
+
+    // Add click handler for close button
+    document.getElementById('ai-explanation-close').addEventListener('click', hideAIExplanation);
+}
+
+function showAIExplanation(content) {
+    const panel = document.getElementById('ai-explanation');
+    const contentEl = document.getElementById('ai-explanation-content');
+
+    // Format PhiLang expressions
+    const formatted = content.replace(/`([^`]+)`/g, '<span class="philang-expr">$1</span>');
+    contentEl.innerHTML = formatted.replace(/\n/g, '<br>');
+    panel.classList.add('visible');
+}
+
+function showAILoading() {
+    const panel = document.getElementById('ai-explanation');
+    const contentEl = document.getElementById('ai-explanation-content');
+    contentEl.innerHTML = `
+        <div class="ai-loading">
+            <span class="ai-loading-dot"></span>
+            <span class="ai-loading-dot"></span>
+            <span class="ai-loading-dot"></span>
+            <span>Claude is contemplating...</span>
+        </div>
+    `;
+    panel.classList.add('visible');
+}
+
+function hideAIExplanation() {
+    const panel = document.getElementById('ai-explanation');
+    if (panel) panel.classList.remove('visible');
+}
+
+// Get AI explanation for connection
+async function getAIExplanation(concept1, concept2, affinity) {
+    if (!checkAPIAvailability()) return null;
+
+    try {
+        const sharedDims = [];
+        Object.entries(SEMANTIC_DIMENSIONS).forEach(([dim, concepts]) => {
+            if (concepts[concept1.id] && concepts[concept2.id]) {
+                sharedDims.push(dim);
+            }
+        });
+
+        showAILoading();
+
+        const response = await PhiLangAPI.explainConnection(
+            concept1.name,
+            concept2.name,
+            affinity,
+            sharedDims.length > 0 ? sharedDims : ['philosophical resonance']
+        );
+
+        showAIExplanation(response.content);
+        return response.content;
+    } catch (error) {
+        console.error('AI explanation error:', error);
+        hideAIExplanation();
+        return null;
+    }
+}
+
+// Generate AI derivation explanation
+async function getAIDerivation(concepts) {
+    if (!checkAPIAvailability()) return null;
+
+    try {
+        const conceptNames = concepts.map(c => c.name);
+        const context = concepts.length === 2
+            ? `These concepts come from ${TRADITIONS[concepts[0].tradition].name} and ${TRADITIONS[concepts[1].tradition].name} respectively.`
+            : `This concept is from ${TRADITIONS[concepts[0].tradition].name}.`;
+
+        showAILoading();
+
+        const response = await PhiLangAPI.generateDerivation(conceptNames, context);
+        showAIExplanation(response.content);
+        return response.content;
+    } catch (error) {
+        console.error('AI derivation error:', error);
+        hideAIExplanation();
+        return null;
+    }
+}
+
+// Add AI button to insight panel
+function addAIButtonToInsightPanel() {
+    const panel = document.getElementById('insight-panel');
+    if (!panel || !checkAPIAvailability()) return;
+
+    // Add AI explain button after header
+    const header = panel.querySelector('.insight-header');
+    if (header && !header.querySelector('.ai-explain-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'ai-explain-btn';
+        btn.style.cssText = 'margin-left: auto; padding: 4px 8px; background: #818cf830; border: 1px solid #818cf850; border-radius: 6px; color: #818cf8; font-size: 0.7rem; cursor: pointer;';
+        btn.textContent = '✦ AI Explain';
+        btn.addEventListener('click', async () => {
+            const selected = state.selectedConcepts[0];
+            if (selected) {
+                const partners = getProductivePartners(selected.id, 3);
+                if (partners.length > 0) {
+                    await getAIExplanation(selected, partners[0].concept, partners[0].affinity);
+                }
+            }
+        });
+        header.appendChild(btn);
+    }
+}
+
+// Enhanced cross-derivation with AI
+async function createCrossDerivationWithAI() {
+    const c1 = state.selectedConcepts[0];
+    const c2 = state.selectedConcepts[1];
+
+    if (c1.tradition === c2.tradition) {
+        showNotification('Select from different traditions for cross-derivation', 'warning');
+        return;
+    }
+
+    // Create the derivation step
+    const step = {
+        from: c1.id,
+        to: c2.id,
+        expression: `${c1.symbol} ⟷ ${c2.symbol}`,
+        ruleName: 'Creative Synthesis',
+        description: `${c1.name} (${TRADITIONS[c1.tradition].name}) ↔ ${c2.name} (${TRADITIONS[c2.tradition].name})`,
+        tradition: 'CROSS',
+        type: 'resonates'
+    };
+
+    state.derivationChain.push(step);
+    state.selectedConcepts = [];
+
+    if (state.workspaceCollapsed) {
+        toggleWorkspace();
+    }
+
+    updateSelectionPanel();
+    updateChainDisplay();
+    updateNodeSelection();
+    updateGraph();
+
+    showNotification('Creative cross-tradition connection!', 'info');
+
+    // Get AI explanation asynchronously
+    if (checkAPIAvailability()) {
+        const affinity = computeSemanticAffinity(c1.id, c2.id);
+        getAIExplanation(c1, c2, affinity);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+let currentDerivationId = null;
+
+async function initPersistence() {
+    if (typeof PhiLangPersistence === 'undefined') {
+        console.warn('Persistence not available');
+        const historyBtn = document.getElementById('btn-history');
+        if (historyBtn) historyBtn.style.display = 'none';
+        return;
+    }
+
+    try {
+        await PhiLangPersistence.init();
+        await loadDerivationHistory();
+        setupPersistenceUI();
+    } catch (error) {
+        console.error('Failed to initialize persistence:', error);
+    }
+}
+
+function setupPersistenceUI() {
+    document.getElementById('btn-history').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleHistoryDropdown();
+    });
+
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('history-dropdown');
+        const btn = document.getElementById('btn-history');
+        if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('btn-export-all').addEventListener('click', exportAllDerivations);
+
+    window.addEventListener('beforeunload', () => {
+        saveCurrentDerivation();
+    });
+}
+
+async function loadDerivationHistory() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const derivations = await PhiLangPersistence.Derivations.getAll(20);
+        renderDerivationHistory(derivations);
+    } catch (error) {
+        console.error('Failed to load derivations:', error);
+    }
+}
+
+function renderDerivationHistory(derivations) {
+    const list = document.getElementById('history-list');
+
+    if (!derivations || derivations.length === 0) {
+        list.innerHTML = `
+            <div style="text-align: center; color: #6b7280; font-size: 0.875rem; padding: 16px;">
+                No saved derivations yet.<br>
+                <span style="font-size: 0.75rem;">Your derivation chains will be saved here.</span>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = derivations.map(derivation => {
+        const date = new Date(derivation.createdAt);
+        const conceptCount = derivation.concepts ? derivation.concepts.length : 0;
+        const stepCount = derivation.steps ? derivation.steps.length : 0;
+        const traditionsDisplay = derivation.traditions && derivation.traditions.length > 0
+            ? derivation.traditions.slice(0, 3).map(t => {
+                const tradition = TRADITIONS[t];
+                return tradition ? `<span style="color:${tradition.color}; font-size: 0.875rem;">${tradition.icon || '●'}</span>` : '';
+            }).join(' ')
+            : '';
+
+        return `
+            <div class="derivation-item" data-derivation-id="${derivation.id}">
+                <div class="derivation-item-content">
+                    <div class="derivation-traditions">
+                        ${traditionsDisplay}
+                    </div>
+                    <div class="derivation-info">
+                        <div class="derivation-title">${escapeHtml(derivation.title || 'Untitled Derivation')}</div>
+                        <div class="derivation-meta">
+                            <span>${conceptCount} concepts</span>
+                            <span>•</span>
+                            <span>${stepCount} steps</span>
+                        </div>
+                        <div class="derivation-date">${formatRelativeDate(date)}</div>
+                    </div>
+                    <button class="delete-derivation" data-derivation-id="${derivation.id}"
+                            aria-label="Delete derivation" title="Delete derivation">×</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Show delete button on hover
+    list.querySelectorAll('.derivation-item').forEach(item => {
+        const deleteBtn = item.querySelector('.delete-derivation');
+        item.addEventListener('mouseenter', () => deleteBtn.style.opacity = '1');
+        item.addEventListener('mouseleave', () => deleteBtn.style.opacity = '0');
+
+        item.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-derivation')) {
+                loadDerivation(parseInt(item.dataset.derivationId));
+            }
+        });
+    });
+
+    list.querySelectorAll('.delete-derivation').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm('Delete this derivation?')) {
+                await deleteDerivation(parseInt(btn.dataset.derivationId));
+            }
+        });
+    });
+}
+
+async function saveCurrentDerivation() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+    if (state.derivationChain.length === 0) return;
+
+    try {
+        const traditions = [...new Set(state.derivationChain.flatMap(step => {
+            if (step.concepts) return step.concepts.map(c => c.tradition);
+            return [];
+        }))];
+
+        const derivationData = {
+            title: generateDerivationTitle(),
+            steps: state.derivationChain,
+            concepts: state.selectedConcepts.map(c => c.id),
+            traditions: traditions,
+            expression: state.derivationChain.map(s => s.expression || '').join(' → '),
+            notes: ''
+        };
+
+        if (currentDerivationId) {
+            derivationData.id = currentDerivationId;
+            await PhiLangPersistence.Derivations.update(derivationData);
+        } else {
+            currentDerivationId = await PhiLangPersistence.Derivations.save(derivationData);
+        }
+
+        console.log('Derivation saved:', currentDerivationId);
+        await loadDerivationHistory();
+        showNotification('Derivation saved', 'success');
+    } catch (error) {
+        console.error('Failed to save derivation:', error);
+        showNotification('Failed to save derivation', 'error');
+    }
+}
+
+function generateDerivationTitle() {
+    if (state.derivationChain.length > 0) {
+        const first = state.derivationChain[0];
+        if (first.concepts && first.concepts.length > 0) {
+            const names = first.concepts.slice(0, 2).map(c => c.name).join(' → ');
+            return names.length > 40 ? names.substring(0, 37) + '...' : names;
+        }
+        if (first.expression) {
+            return first.expression.length > 40 ? first.expression.substring(0, 37) + '...' : first.expression;
+        }
+    }
+    return `Derivation - ${new Date().toLocaleDateString()}`;
+}
+
+async function loadDerivation(derivationId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        await saveCurrentDerivation();
+
+        const derivation = await PhiLangPersistence.Derivations.get(derivationId);
+        if (!derivation) return;
+
+        currentDerivationId = derivationId;
+
+        // Restore derivation chain
+        state.derivationChain = derivation.steps || [];
+
+        // Restore selected concepts
+        if (derivation.concepts) {
+            state.selectedConcepts = derivation.concepts
+                .map(id => CONCEPTS.find(c => c.id === id))
+                .filter(Boolean);
+        }
+
+        // Update UI
+        updateSelectionPanel();
+        updateChainDisplay();
+        updateNodeSelection();
+        updateGraph();
+
+        // Close dropdown
+        document.getElementById('history-dropdown').classList.add('hidden');
+
+        showNotification('Derivation loaded', 'success');
+
+    } catch (error) {
+        console.error('Failed to load derivation:', error);
+        showNotification('Failed to load derivation', 'error');
+    }
+}
+
+async function deleteDerivation(derivationId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        await PhiLangPersistence.Derivations.delete(derivationId);
+
+        if (currentDerivationId === derivationId) {
+            currentDerivationId = null;
+        }
+
+        await loadDerivationHistory();
+        showNotification('Derivation deleted', 'info');
+    } catch (error) {
+        console.error('Failed to delete derivation:', error);
+    }
+}
+
+async function exportAllDerivations() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const data = await PhiLangPersistence.exportAll();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `philang-derivations-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showNotification('Derivations exported', 'success');
+    } catch (error) {
+        console.error('Failed to export:', error);
+        showNotification('Failed to export derivations', 'error');
+    }
+}
+
+function toggleHistoryDropdown() {
+    const dropdown = document.getElementById('history-dropdown');
+    dropdown.classList.toggle('hidden');
+    if (!dropdown.classList.contains('hidden')) {
+        loadDerivationHistory();
+    }
+}
+
+function formatRelativeDate(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+window.addEventListener('load', () => {
+    initGraph();
+    initUI();
+    initAPIIndicator();
+    initPersistence();
+    createAIExplanationPanel();
+    checkAPIAvailability();
+
+    // Add event listener for workspace toggle
+    document.getElementById('workspace-toggle').addEventListener('click', toggleWorkspace);
+
+    // Listen for API configuration changes
+    window.addEventListener('philang-api-configured', () => {
+        updateAPIIndicator();
+        checkAPIAvailability();
+    });
+
+    // Initialize keyboard shortcuts
+    if (typeof PhiLangShortcuts !== 'undefined') {
+        PhiLangShortcuts.init([
+            { key: 'c', description: 'Clear selection', action: clearSelection },
+            { key: 'x', description: 'Export chain', action: exportChain },
+            { key: 'f', description: 'Focus search', action: () => document.getElementById('concept-search')?.focus() },
+            { key: 'h', description: 'Toggle history', action: toggleHistoryDropdown },
+            { key: 'r', description: 'Reset graph', action: () => {
+                simulation.alpha(1).restart();
+                showNotification('Graph reset', 'info');
+            }},
+            { key: 'Backspace', description: 'Undo last step', action: undoLastStep },
+        ]);
+
+        // Show keyboard shortcuts hint for new users
+        if (PhiLangShortcuts.shouldShowHint()) {
+            setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+        }
+    }
+});
+
+window.addEventListener('resize', () => {
+    setTimeout(() => {
+        const dims = getGraphDimensions();
+        svg.attr('width', dims.width).attr('height', dims.height);
+        simulation.force('center', d3.forceCenter(dims.width / 2, dims.height / 2));
+        simulation.alpha(0.3).restart();
+    }, 100);
+});
+    </script>
+</body>
+</html>

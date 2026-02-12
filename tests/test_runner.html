@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Test Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            background: #0a0a0f;
+            color: #f5f5f0;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #4a9eff;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .summary {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: #9992a8;
+        }
+
+        .passed { color: #4ade80; }
+        .failed { color: #f87171; }
+        .pending { color: #fbbf24; }
+
+        .test-suite {
+            margin-bottom: 1.5rem;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .suite-header {
+            background: #1a1a2e;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .suite-header:hover {
+            background: #252540;
+        }
+
+        .suite-name {
+            font-weight: bold;
+        }
+
+        .suite-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .test-list {
+            padding: 0.5rem;
+        }
+
+        .test-item {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .test-name {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .test-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .test-error {
+            margin-left: 2rem;
+            padding: 0.5rem;
+            background: rgba(248, 113, 113, 0.1);
+            border-left: 3px solid #f87171;
+            font-size: 0.85rem;
+            color: #f87171;
+            white-space: pre-wrap;
+        }
+
+        .run-button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .run-button:hover {
+            background: #3a8eef;
+        }
+
+        .run-button:disabled {
+            background: #333;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a9eff, #4ade80);
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 PhiLang Test Runner</h1>
+
+    <button class="run-button" id="run-tests">▶ Run All Tests</button>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="summary" id="summary" style="display: none;">
+        <div class="summary-item">
+            <div class="summary-value passed" id="total-passed">0</div>
+            <div class="summary-label">Passed</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value failed" id="total-failed">0</div>
+            <div class="summary-label">Failed</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value" id="total-time">0</div>
+            <div class="summary-label">Time (ms)</div>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <!-- Load PhiLang modules -->
+    <script src="../philang_config.js"></script>
+    <script src="../philang_security.js"></script>
+    <script src="../philang_persistence.js"></script>
+    <script src="../philang_toast.js"></script>
+    <script src="../philang_ontology.js"></script>
+
+    <!-- Test Framework -->
+    <script src="philang_test_framework.js"></script>
+
+    <!-- Test Suites -->
+    <script src="test_security.js"></script>
+    <script src="test_config.js"></script>
+    <script src="test_persistence.js"></script>
+    <script src="test_ontology.js"></script>
+
+    <!-- Runner -->
+    <script>
+        document.getElementById('run-tests').addEventListener('click', async () => {
+            const button = document.getElementById('run-tests');
+            button.disabled = true;
+            button.textContent = '⟳ Running...';
+
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('summary').style.display = 'none';
+
+            const startTime = performance.now();
+
+            try {
+                await PhiLangTests.runAll((progress) => {
+                    document.getElementById('progress').style.width = `${progress}%`;
+                });
+
+                const results = PhiLangTests.getResults();
+                renderResults(results);
+
+                document.getElementById('summary').style.display = 'flex';
+                document.getElementById('total-passed').textContent = results.passed;
+                document.getElementById('total-failed').textContent = results.failed;
+                document.getElementById('total-time').textContent = Math.round(performance.now() - startTime);
+            } catch (error) {
+                console.error('Test runner error:', error);
+            }
+
+            button.disabled = false;
+            button.textContent = '▶ Run All Tests';
+        });
+
+        function renderResults(results) {
+            const container = document.getElementById('results');
+
+            for (const [suiteName, suite] of Object.entries(results.suites)) {
+                const suiteEl = document.createElement('div');
+                suiteEl.className = 'test-suite';
+
+                const passed = suite.tests.filter(t => t.passed).length;
+                const failed = suite.tests.filter(t => !t.passed).length;
+
+                suiteEl.innerHTML = `
+                    <div class="suite-header">
+                        <span class="suite-name">${suiteName}</span>
+                        <div class="suite-stats">
+                            <span class="passed">✓ ${passed}</span>
+                            <span class="failed">✗ ${failed}</span>
+                        </div>
+                    </div>
+                    <div class="test-list">
+                        ${suite.tests.map(test => `
+                            <div class="test-item">
+                                <span class="test-icon ${test.passed ? 'passed' : 'failed'}">
+                                    ${test.passed ? '✓' : '✗'}
+                                </span>
+                                <span class="test-name">${test.name}</span>
+                                <span class="test-time">${test.time}ms</span>
+                            </div>
+                            ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+                        `).join('')}
+                    </div>
+                `;
+
+                container.appendChild(suiteEl);
+            }
+        }
+    </script>
+</body>
+</html>

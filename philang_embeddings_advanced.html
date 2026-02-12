@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Advanced Embeddings — Deep Latent Structure Analysis</title>
+
+    <!-- Security: Unified CSP for PhiLang (includes unsafe-eval for React/Babel) -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- PhiLang Core Modules -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_api.js"></script>
+    <script src="philang_persistence.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_ui.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="philang-theme.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--void);
+            color: var(--pearl);
+            font-family: 'Crimson Pro', Georgia, serif;
+            min-height: 100vh;
+        }
+
+        /* Cosmic background */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 70% 50% at 20% 80%, rgba(201, 162, 39, 0.04) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar { width: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: var(--void); }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--silver); }
+
+        .gradient-bg {
+            /* Disabled animation for consistency */
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 4px currentColor); }
+            50% { filter: drop-shadow(0 0 12px currentColor); }
+        }
+        .pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+
+        .interpolation-path {
+            stroke-dasharray: 5;
+            animation: dash 1s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -10; }
+        }
+    </style>
+</head>
+<body class="cosmic-bg">
+    <!-- Luminous accent bar -->
+    <div class="luminous-bar"></div>
+
+    <!-- Navigation -->
+    <nav class="philang-nav" style="top: 2px;">
+        <div class="philang-nav-inner" style="max-width: 1200px;">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <a href="index.html" class="philang-logo">
+                    <span class="philang-logo-phi">φ</span>
+                    <span class="philang-logo-text">PHILANG</span>
+                </a>
+                <div class="nav-links" style="display: flex;">
+                    <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                    <a href="dialectical_dialogue.html" class="nav-link">Dialogue</a>
+                    <a href="socratic_counsel.html" class="nav-link">Counsel</a>
+                    <a href="philang_embeddings.html" class="nav-link">Embeddings</a>
+                    <a href="philang_embeddings_advanced.html" class="nav-link active">Advanced</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="root" style="padding-top: 50px;"></div>
+    <script type="text/babel">
+// ═══════════════════════════════════════════════════════════════════════════
+// PHILANG ONTOLOGY — Extended concept network
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITIONS = {
+  PHENOMENOLOGY: { name: 'Phenomenology', color: '#6366f1', shortName: 'Phen' },
+  SPINOZISM: { name: 'Spinozism', color: '#f59e0b', shortName: 'Spin' },
+  BUDDHISM: { name: 'Buddhism', color: '#10b981', shortName: 'Budd' },
+  PROCESS: { name: 'Process Philosophy', color: '#3b82f6', shortName: 'Proc' },
+  POSTSTRUCTURALISM: { name: 'Poststructuralism', color: '#ec4899', shortName: 'Post' },
+  HEGELIANISM: { name: 'Hegelianism', color: '#8b5cf6', shortName: 'Hege' },
+  HEIDEGGERIANISM: { name: 'Heideggerianism', color: '#ef4444', shortName: 'Heid' },
+  WITTGENSTEIN_EARLY: { name: 'Early Wittgenstein', color: '#06b6d4', shortName: 'W.Ea' },
+  WITTGENSTEIN_LATE: { name: 'Late Wittgenstein', color: '#14b8a6', shortName: 'W.La' },
+  KANTIANISM: { name: 'Kantianism', color: '#a855f7', shortName: 'Kant' },
+  PLATONISM: { name: 'Platonism', color: '#4f46e5', shortName: 'Plat' },
+  ARISTOTELIANISM: { name: 'Aristotelianism', color: '#059669', shortName: 'Aris' },
+  HERACLITEANISM: { name: 'Heracliteanism', color: '#dc2626', shortName: 'Hera' },
+};
+
+// Semantic feature dimensions for richer embeddings
+const SEMANTIC_AXES = [
+  { id: 'temporal', name: 'Temporality', poles: ['eternal', 'temporal'] },
+  { id: 'unity', name: 'Unity', poles: ['multiplicity', 'unity'] },
+  { id: 'presence', name: 'Presence', poles: ['absence', 'presence'] },
+  { id: 'subject', name: 'Subjectivity', poles: ['objective', 'subjective'] },
+  { id: 'activity', name: 'Activity', poles: ['passive', 'active'] },
+  { id: 'transcendence', name: 'Transcendence', poles: ['immanent', 'transcendent'] },
+  { id: 'knowledge', name: 'Knowledge', poles: ['ineffable', 'articulable'] },
+  { id: 'becoming', name: 'Becoming', poles: ['being', 'becoming'] },
+];
+
+const CONCEPTS = [
+  // Phenomenology
+  { id: 'self', symbol: 'Σ', name: 'Self', tradition: 'PHENOMENOLOGY',
+    semantics: { temporal: 0.3, unity: 0.7, presence: 0.8, subject: 0.95, activity: 0.6, transcendence: 0.3, knowledge: 0.6, becoming: 0.4 },
+    features: ['subject', 'experience', 'consciousness', 'ego', 'identity'] },
+  { id: 'other', symbol: 'Ω', name: 'Other', tradition: 'PHENOMENOLOGY',
+    semantics: { temporal: 0.3, unity: 0.3, presence: 0.7, subject: 0.8, activity: 0.5, transcendence: 0.6, knowledge: 0.4, becoming: 0.3 },
+    features: ['alterity', 'intersubjectivity', 'ethics', 'face', 'encounter'] },
+  { id: 'living_present', symbol: 'τ', name: 'Living Present', tradition: 'PHENOMENOLOGY',
+    semantics: { temporal: 0.9, unity: 0.6, presence: 0.95, subject: 0.7, activity: 0.7, transcendence: 0.2, knowledge: 0.5, becoming: 0.8 },
+    features: ['time', 'presence', 'retention', 'protention', 'flow'] },
+  { id: 'flesh', symbol: 'χ', name: 'Flesh', tradition: 'PHENOMENOLOGY',
+    semantics: { temporal: 0.4, unity: 0.5, presence: 0.8, subject: 0.6, activity: 0.5, transcendence: 0.2, knowledge: 0.3, becoming: 0.5 },
+    features: ['body', 'embodiment', 'chiasm', 'reversibility', 'touch'] },
+  { id: 'horizon', symbol: 'H', name: 'Horizon', tradition: 'PHENOMENOLOGY',
+    semantics: { temporal: 0.5, unity: 0.4, presence: 0.6, subject: 0.5, activity: 0.3, transcendence: 0.4, knowledge: 0.4, becoming: 0.6 },
+    features: ['context', 'background', 'possibility', 'world', 'fringe'] },
+
+  // Spinozism
+  { id: 'substance', symbol: '▣', name: 'Substance', tradition: 'SPINOZISM',
+    semantics: { temporal: 0.05, unity: 0.99, presence: 0.9, subject: 0.2, activity: 0.8, transcendence: 0.1, knowledge: 0.7, becoming: 0.1 },
+    features: ['monism', 'god', 'nature', 'infinite', 'unity', 'cause'] },
+  { id: 'mode', symbol: '◇', name: 'Mode', tradition: 'SPINOZISM',
+    semantics: { temporal: 0.7, unity: 0.3, presence: 0.7, subject: 0.4, activity: 0.5, transcendence: 0.1, knowledge: 0.6, becoming: 0.6 },
+    features: ['particular', 'finite', 'modification', 'expression', 'affection'] },
+  { id: 'conatus', symbol: 'κ', name: 'Conatus', tradition: 'SPINOZISM',
+    semantics: { temporal: 0.6, unity: 0.5, presence: 0.7, subject: 0.5, activity: 0.9, transcendence: 0.1, knowledge: 0.5, becoming: 0.7 },
+    features: ['striving', 'power', 'persistence', 'desire', 'essence'] },
+  { id: 'intuitive_knowledge', symbol: 'K₃', name: 'Intuitive Knowledge', tradition: 'SPINOZISM',
+    semantics: { temporal: 0.1, unity: 0.8, presence: 0.9, subject: 0.6, activity: 0.7, transcendence: 0.3, knowledge: 0.95, becoming: 0.2 },
+    features: ['knowledge', 'eternity', 'blessedness', 'third_kind', 'adequate'] },
+
+  // Buddhism
+  { id: 'emptiness', symbol: 'śū', name: 'Emptiness', tradition: 'BUDDHISM',
+    semantics: { temporal: 0.2, unity: 0.5, presence: 0.3, subject: 0.2, activity: 0.3, transcendence: 0.8, knowledge: 0.4, becoming: 0.5 },
+    features: ['void', 'no_self', 'dependent', 'liberation', 'sunyata'] },
+  { id: 'dependent_origination', symbol: 'प्र', name: 'Dependent Origination', tradition: 'BUDDHISM',
+    semantics: { temporal: 0.7, unity: 0.4, presence: 0.5, subject: 0.2, activity: 0.6, transcendence: 0.3, knowledge: 0.6, becoming: 0.8 },
+    features: ['causation', 'interdependence', 'arising', 'conditions', 'links'] },
+  { id: 'tetralemma', symbol: '◈', name: 'Tetralemma', tradition: 'BUDDHISM',
+    semantics: { temporal: 0.2, unity: 0.5, presence: 0.4, subject: 0.3, activity: 0.4, transcendence: 0.9, knowledge: 0.3, becoming: 0.4 },
+    features: ['negation', 'logic', 'four_corners', 'transcendence', 'catuskoti'] },
+  { id: 'buddha_nature', symbol: '◎', name: 'Buddha Nature', tradition: 'BUDDHISM',
+    semantics: { temporal: 0.1, unity: 0.7, presence: 0.6, subject: 0.4, activity: 0.4, transcendence: 0.7, knowledge: 0.5, becoming: 0.3 },
+    features: ['potential', 'awakening', 'inherent', 'luminosity', 'tathagatagarbha'] },
+
+  // Process Philosophy
+  { id: 'actual_entity', symbol: '⦿', name: 'Actual Entity', tradition: 'PROCESS',
+    semantics: { temporal: 0.8, unity: 0.6, presence: 0.9, subject: 0.7, activity: 0.8, transcendence: 0.2, knowledge: 0.5, becoming: 0.9 },
+    features: ['occasion', 'experience', 'becoming', 'drops', 'concrete'] },
+  { id: 'prehension', symbol: '⥤', name: 'Prehension', tradition: 'PROCESS',
+    semantics: { temporal: 0.7, unity: 0.4, presence: 0.7, subject: 0.6, activity: 0.7, transcendence: 0.2, knowledge: 0.4, becoming: 0.8 },
+    features: ['feeling', 'grasping', 'data', 'relation', 'vector'] },
+  { id: 'concrescence', symbol: '⤳', name: 'Concrescence', tradition: 'PROCESS',
+    semantics: { temporal: 0.9, unity: 0.7, presence: 0.8, subject: 0.6, activity: 0.9, transcendence: 0.2, knowledge: 0.4, becoming: 0.95 },
+    features: ['becoming', 'process', 'satisfaction', 'unity', 'phases'] },
+  { id: 'creativity', symbol: 'ℂ', name: 'Creativity', tradition: 'PROCESS',
+    semantics: { temporal: 0.6, unity: 0.5, presence: 0.7, subject: 0.3, activity: 0.95, transcendence: 0.4, knowledge: 0.3, becoming: 0.9 },
+    features: ['novelty', 'ultimate', 'many_one', 'advance', 'category'] },
+  { id: 'eternal_object', symbol: '∞ₒ', name: 'Eternal Object', tradition: 'PROCESS',
+    semantics: { temporal: 0.05, unity: 0.6, presence: 0.4, subject: 0.2, activity: 0.2, transcendence: 0.6, knowledge: 0.7, becoming: 0.1 },
+    features: ['potential', 'form', 'ingression', 'pure', 'abstract'] },
+
+  // Poststructuralism
+  { id: 'fold', symbol: '⌒', name: 'Fold', tradition: 'POSTSTRUCTURALISM',
+    semantics: { temporal: 0.5, unity: 0.4, presence: 0.5, subject: 0.4, activity: 0.6, transcendence: 0.3, knowledge: 0.4, becoming: 0.7 },
+    features: ['inside', 'outside', 'topology', 'deleuze', 'subjectivation'] },
+  { id: 'virtual', symbol: 'ν', name: 'Virtual', tradition: 'POSTSTRUCTURALISM',
+    semantics: { temporal: 0.4, unity: 0.4, presence: 0.3, subject: 0.3, activity: 0.7, transcendence: 0.5, knowledge: 0.4, becoming: 0.8 },
+    features: ['potential', 'differential', 'intensity', 'real', 'actualization'] },
+  { id: 'trace', symbol: '†', name: 'Trace', tradition: 'POSTSTRUCTURALISM',
+    semantics: { temporal: 0.6, unity: 0.3, presence: 0.2, subject: 0.3, activity: 0.4, transcendence: 0.5, knowledge: 0.3, becoming: 0.6 },
+    features: ['absence', 'presence', 'derrida', 'differance', 'mark'] },
+  { id: 'plane_immanence', symbol: 'Π∞', name: 'Plane of Immanence', tradition: 'POSTSTRUCTURALISM',
+    semantics: { temporal: 0.3, unity: 0.6, presence: 0.6, subject: 0.2, activity: 0.5, transcendence: 0.05, knowledge: 0.5, becoming: 0.6 },
+    features: ['immanence', 'concepts', 'field', 'infinite', 'philosophy'] },
+  { id: 'rhizome', symbol: '⋔', name: 'Rhizome', tradition: 'POSTSTRUCTURALISM',
+    semantics: { temporal: 0.5, unity: 0.2, presence: 0.5, subject: 0.2, activity: 0.7, transcendence: 0.2, knowledge: 0.4, becoming: 0.8 },
+    features: ['multiplicity', 'connection', 'heterogeneous', 'rupture', 'map'] },
+
+  // Hegelianism
+  { id: 'aufhebung', symbol: '⍟', name: 'Aufhebung', tradition: 'HEGELIANISM',
+    semantics: { temporal: 0.7, unity: 0.7, presence: 0.6, subject: 0.5, activity: 0.8, transcendence: 0.5, knowledge: 0.7, becoming: 0.8 },
+    features: ['sublation', 'preserve', 'cancel', 'elevate', 'dialectic'] },
+  { id: 'determinate_negation', symbol: '¬ᵈ', name: 'Determinate Negation', tradition: 'HEGELIANISM',
+    semantics: { temporal: 0.6, unity: 0.5, presence: 0.5, subject: 0.4, activity: 0.8, transcendence: 0.4, knowledge: 0.7, becoming: 0.8 },
+    features: ['negation', 'specific', 'productive', 'development', 'result'] },
+  { id: 'spirit', symbol: '𝔊', name: 'Spirit', tradition: 'HEGELIANISM',
+    semantics: { temporal: 0.6, unity: 0.8, presence: 0.7, subject: 0.8, activity: 0.9, transcendence: 0.6, knowledge: 0.9, becoming: 0.7 },
+    features: ['geist', 'absolute', 'self_knowing', 'history', 'freedom'] },
+  { id: 'contradiction', symbol: '⊠', name: 'Contradiction', tradition: 'HEGELIANISM',
+    semantics: { temporal: 0.6, unity: 0.3, presence: 0.5, subject: 0.4, activity: 0.8, transcendence: 0.4, knowledge: 0.6, becoming: 0.9 },
+    features: ['opposition', 'dialectic', 'movement', 'tension', 'motor'] },
+  { id: 'becoming', symbol: '⥁', name: 'Becoming', tradition: 'HEGELIANISM',
+    semantics: { temporal: 0.8, unity: 0.5, presence: 0.5, subject: 0.3, activity: 0.9, transcendence: 0.3, knowledge: 0.5, becoming: 0.99 },
+    features: ['being', 'nothing', 'process', 'movement', 'transition'] },
+
+  // Heideggerianism
+  { id: 'being', symbol: '𝔖', name: 'Being', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.5, unity: 0.6, presence: 0.7, subject: 0.3, activity: 0.4, transcendence: 0.6, knowledge: 0.4, becoming: 0.5 },
+    features: ['sein', 'ontology', 'question', 'fundamental', 'meaning'] },
+  { id: 'dasein', symbol: '𝔇', name: 'Dasein', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.8, unity: 0.6, presence: 0.8, subject: 0.9, activity: 0.7, transcendence: 0.4, knowledge: 0.5, becoming: 0.7 },
+    features: ['existence', 'human', 'being_there', 'care', 'thrown'] },
+  { id: 'care', symbol: '⦿c', name: 'Care', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.7, unity: 0.6, presence: 0.7, subject: 0.8, activity: 0.7, transcendence: 0.3, knowledge: 0.4, becoming: 0.6 },
+    features: ['sorge', 'concern', 'existence', 'structure', 'ahead'] },
+  { id: 'clearing', symbol: '⌾', name: 'Clearing', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.4, unity: 0.5, presence: 0.8, subject: 0.4, activity: 0.5, transcendence: 0.5, knowledge: 0.6, becoming: 0.5 },
+    features: ['lichtung', 'opening', 'truth', 'disclosure', 'light'] },
+  { id: 'aletheia', symbol: 'ἀ', name: 'Aletheia', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.4, unity: 0.5, presence: 0.7, subject: 0.3, activity: 0.5, transcendence: 0.5, knowledge: 0.7, becoming: 0.5 },
+    features: ['truth', 'unconcealment', 'disclosure', 'hiddenness', 'greek'] },
+  { id: 'ereignis', symbol: '𝔈', name: 'Ereignis', tradition: 'HEIDEGGERIANISM',
+    semantics: { temporal: 0.7, unity: 0.6, presence: 0.8, subject: 0.5, activity: 0.6, transcendence: 0.6, knowledge: 0.4, becoming: 0.7 },
+    features: ['event', 'appropriation', 'enowning', 'belonging', 'own'] },
+
+  // Early Wittgenstein
+  { id: 'world', symbol: '𝕎', name: 'World', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.3, unity: 0.8, presence: 0.7, subject: 0.2, activity: 0.3, transcendence: 0.4, knowledge: 0.6, becoming: 0.2 },
+    features: ['totality', 'facts', 'all', 'limit', 'logical'] },
+  { id: 'fact', symbol: '𝔉', name: 'Fact', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.3, unity: 0.5, presence: 0.8, subject: 0.1, activity: 0.3, transcendence: 0.3, knowledge: 0.7, becoming: 0.2 },
+    features: ['state', 'case', 'atomic', 'obtaining', 'existence'] },
+  { id: 'proposition', symbol: '𝔓', name: 'Proposition', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.2, unity: 0.6, presence: 0.6, subject: 0.3, activity: 0.4, transcendence: 0.3, knowledge: 0.8, becoming: 0.2 },
+    features: ['picture', 'sense', 'truth', 'logical', 'sign'] },
+  { id: 'shows', symbol: '⧓', name: 'Shows', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.2, unity: 0.5, presence: 0.6, subject: 0.2, activity: 0.3, transcendence: 0.7, knowledge: 0.2, becoming: 0.2 },
+    features: ['display', 'manifest', 'unsayable', 'form', 'logical'] },
+  { id: 'silence', symbol: '⊘', name: 'Silence', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.2, unity: 0.6, presence: 0.3, subject: 0.3, activity: 0.1, transcendence: 0.9, knowledge: 0.1, becoming: 0.2 },
+    features: ['unsayable', 'limit', 'mystical', 'ethics', 'pass_over'] },
+  { id: 'mystical', symbol: '⤒', name: 'Mystical', tradition: 'WITTGENSTEIN_EARLY',
+    semantics: { temporal: 0.1, unity: 0.7, presence: 0.5, subject: 0.4, activity: 0.2, transcendence: 0.95, knowledge: 0.1, becoming: 0.2 },
+    features: ['wonder', 'existence', 'ineffable', 'limit', 'feeling'] },
+
+  // Late Wittgenstein
+  { id: 'language_game', symbol: '𝔖𝔭', name: 'Language-game', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.6, unity: 0.4, presence: 0.7, subject: 0.5, activity: 0.8, transcendence: 0.1, knowledge: 0.5, becoming: 0.6 },
+    features: ['practice', 'use', 'activity', 'social', 'primitive'] },
+  { id: 'use', symbol: '℧', name: 'Use', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.6, unity: 0.4, presence: 0.7, subject: 0.4, activity: 0.8, transcendence: 0.1, knowledge: 0.6, becoming: 0.6 },
+    features: ['meaning', 'practice', 'context', 'application', 'employment'] },
+  { id: 'form_life', symbol: '𝔏', name: 'Form of Life', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.5, unity: 0.6, presence: 0.7, subject: 0.5, activity: 0.6, transcendence: 0.1, knowledge: 0.4, becoming: 0.5 },
+    features: ['social', 'shared', 'practice', 'agreement', 'natural'] },
+  { id: 'family_resemblance', symbol: '≋', name: 'Family Resemblance', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.4, unity: 0.3, presence: 0.5, subject: 0.3, activity: 0.4, transcendence: 0.2, knowledge: 0.5, becoming: 0.4 },
+    features: ['similarity', 'overlap', 'network', 'no_essence', 'criss_cross'] },
+  { id: 'therapy', symbol: '⤥', name: 'Therapy', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.5, unity: 0.4, presence: 0.6, subject: 0.5, activity: 0.7, transcendence: 0.2, knowledge: 0.6, becoming: 0.6 },
+    features: ['cure', 'philosophical', 'dissolve', 'peace', 'clarity'] },
+  { id: 'hinge', symbol: '⊢ₕ', name: 'Hinge', tradition: 'WITTGENSTEIN_LATE',
+    semantics: { temporal: 0.3, unity: 0.5, presence: 0.6, subject: 0.3, activity: 0.3, transcendence: 0.3, knowledge: 0.4, becoming: 0.3 },
+    features: ['bedrock', 'certainty', 'doubt', 'framework', 'riverbed'] },
+
+  // Kantianism
+  { id: 'transcendental', symbol: '𝕿', name: 'Transcendental', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.1, unity: 0.7, presence: 0.5, subject: 0.6, activity: 0.5, transcendence: 0.7, knowledge: 0.8, becoming: 0.2 },
+    features: ['conditions', 'possibility', 'a_priori', 'knowledge', 'subject'] },
+  { id: 'phenomenon', symbol: 'φₖ', name: 'Phenomenon', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.6, unity: 0.4, presence: 0.8, subject: 0.5, activity: 0.4, transcendence: 0.2, knowledge: 0.7, becoming: 0.5 },
+    features: ['appearance', 'sensibility', 'experience', 'object', 'intuition'] },
+  { id: 'noumenon', symbol: 'νₖ', name: 'Noumenon', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.1, unity: 0.6, presence: 0.3, subject: 0.2, activity: 0.3, transcendence: 0.9, knowledge: 0.1, becoming: 0.1 },
+    features: ['thing_itself', 'unknowable', 'limit', 'thought', 'negative'] },
+  { id: 'category', symbol: 'Ꮯ', name: 'Category', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.1, unity: 0.6, presence: 0.5, subject: 0.5, activity: 0.6, transcendence: 0.4, knowledge: 0.8, becoming: 0.2 },
+    features: ['concept', 'pure', 'understanding', 'judgment', 'synthesis'] },
+  { id: 'schema', symbol: 'σₖ', name: 'Schema', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.7, unity: 0.5, presence: 0.5, subject: 0.5, activity: 0.6, transcendence: 0.4, knowledge: 0.6, becoming: 0.5 },
+    features: ['mediate', 'imagination', 'time', 'concept', 'rule'] },
+  { id: 'apperception', symbol: '𝔄ₜ', name: 'Apperception', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.3, unity: 0.9, presence: 0.7, subject: 0.95, activity: 0.7, transcendence: 0.5, knowledge: 0.7, becoming: 0.3 },
+    features: ['unity', 'i_think', 'synthesis', 'consciousness', 'transcendental'] },
+  { id: 'categorical_imperative', symbol: '⊨ᶜ', name: 'Categorical Imperative', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.1, unity: 0.8, presence: 0.6, subject: 0.6, activity: 0.8, transcendence: 0.6, knowledge: 0.7, becoming: 0.2 },
+    features: ['duty', 'universal', 'moral', 'law', 'reason'] },
+  { id: 'sublime', symbol: '𝔖ᵤ', name: 'Sublime', tradition: 'KANTIANISM',
+    semantics: { temporal: 0.3, unity: 0.4, presence: 0.7, subject: 0.7, activity: 0.5, transcendence: 0.8, knowledge: 0.4, becoming: 0.4 },
+    features: ['overwhelming', 'magnitude', 'power', 'reason', 'boundless'] },
+
+  // Platonism
+  { id: 'form', symbol: '△', name: 'Form', tradition: 'PLATONISM',
+    semantics: { temporal: 0.05, unity: 0.9, presence: 0.8, subject: 0.3, activity: 0.2, transcendence: 0.9, knowledge: 0.9, becoming: 0.05 },
+    features: ['eidos', 'eternal', 'paradigm', 'intelligible', 'archetype'] },
+  { id: 'participation', symbol: '⊂ₚ', name: 'Participation', tradition: 'PLATONISM',
+    semantics: { temporal: 0.5, unity: 0.5, presence: 0.6, subject: 0.3, activity: 0.4, transcendence: 0.6, knowledge: 0.5, becoming: 0.4 },
+    features: ['methexis', 'share', 'image', 'particular', 'imitation'] },
+  { id: 'the_good', symbol: '☉', name: 'The Good', tradition: 'PLATONISM',
+    semantics: { temporal: 0.02, unity: 0.99, presence: 0.95, subject: 0.2, activity: 0.3, transcendence: 0.99, knowledge: 0.95, becoming: 0.02 },
+    features: ['agathon', 'sun', 'highest', 'illumination', 'beyond_being'] },
+  { id: 'anamnesis', symbol: '⟲', name: 'Anamnesis', tradition: 'PLATONISM',
+    semantics: { temporal: 0.4, unity: 0.6, presence: 0.5, subject: 0.7, activity: 0.5, transcendence: 0.7, knowledge: 0.8, becoming: 0.3 },
+    features: ['recollection', 'memory', 'soul', 'learning', 'prior'] },
+  { id: 'eros', symbol: '♡', name: 'Eros', tradition: 'PLATONISM',
+    semantics: { temporal: 0.5, unity: 0.6, presence: 0.7, subject: 0.6, activity: 0.8, transcendence: 0.7, knowledge: 0.5, becoming: 0.6 },
+    features: ['love', 'desire', 'ascent', 'beauty', 'lack'] },
+  { id: 'dialectic_plato', symbol: '⇅', name: 'Dialectic', tradition: 'PLATONISM',
+    semantics: { temporal: 0.3, unity: 0.7, presence: 0.6, subject: 0.5, activity: 0.7, transcendence: 0.6, knowledge: 0.85, becoming: 0.4 },
+    features: ['division', 'collection', 'method', 'ascent', 'reason'] },
+
+  // Aristotelianism
+  { id: 'ousia', symbol: '⦰', name: 'Ousia', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.3, unity: 0.8, presence: 0.9, subject: 0.3, activity: 0.5, transcendence: 0.3, knowledge: 0.7, becoming: 0.4 },
+    features: ['substance', 'essence', 'primary', 'being', 'what_it_is'] },
+  { id: 'hylomorphism', symbol: '⧈', name: 'Hylomorphism', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.5, unity: 0.7, presence: 0.8, subject: 0.3, activity: 0.5, transcendence: 0.2, knowledge: 0.6, becoming: 0.5 },
+    features: ['matter', 'form', 'composite', 'unity', 'structure'] },
+  { id: 'actuality', symbol: 'ἐν', name: 'Actuality', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.4, unity: 0.7, presence: 0.9, subject: 0.3, activity: 0.9, transcendence: 0.3, knowledge: 0.7, becoming: 0.5 },
+    features: ['energeia', 'act', 'fulfillment', 'work', 'complete'] },
+  { id: 'potentiality', symbol: 'δύ', name: 'Potentiality', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.6, unity: 0.5, presence: 0.4, subject: 0.3, activity: 0.4, transcendence: 0.3, knowledge: 0.5, becoming: 0.8 },
+    features: ['dynamis', 'power', 'capacity', 'change', 'matter'] },
+  { id: 'telos', symbol: '⊚', name: 'Telos', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.3, unity: 0.7, presence: 0.6, subject: 0.3, activity: 0.6, transcendence: 0.4, knowledge: 0.6, becoming: 0.4 },
+    features: ['end', 'purpose', 'final_cause', 'goal', 'for_sake_of'] },
+  { id: 'eudaimonia', symbol: '☀', name: 'Eudaimonia', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.4, unity: 0.7, presence: 0.8, subject: 0.6, activity: 0.8, transcendence: 0.4, knowledge: 0.6, becoming: 0.4 },
+    features: ['happiness', 'flourishing', 'good_life', 'virtue', 'activity'] },
+  { id: 'nous', symbol: 'ν', name: 'Nous', tradition: 'ARISTOTELIANISM',
+    semantics: { temporal: 0.2, unity: 0.8, presence: 0.8, subject: 0.5, activity: 0.7, transcendence: 0.6, knowledge: 0.95, becoming: 0.2 },
+    features: ['intellect', 'mind', 'reason', 'divine', 'unmoved'] },
+
+  // Heracliteanism
+  { id: 'flux', symbol: '≋', name: 'Flux', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.95, unity: 0.4, presence: 0.6, subject: 0.2, activity: 0.9, transcendence: 0.3, knowledge: 0.4, becoming: 0.99 },
+    features: ['flow', 'change', 'river', 'panta_rhei', 'impermanence'] },
+  { id: 'logos_h', symbol: 'λ', name: 'Logos', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.2, unity: 0.8, presence: 0.7, subject: 0.3, activity: 0.6, transcendence: 0.5, knowledge: 0.8, becoming: 0.5 },
+    features: ['reason', 'word', 'order', 'rational', 'measure'] },
+  { id: 'fire', symbol: '🔥', name: 'Fire', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.9, unity: 0.5, presence: 0.8, subject: 0.2, activity: 0.95, transcendence: 0.4, knowledge: 0.4, becoming: 0.95 },
+    features: ['element', 'primal', 'transformation', 'ever_living', 'exchange'] },
+  { id: 'strife', symbol: '⚔', name: 'Strife', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.7, unity: 0.3, presence: 0.7, subject: 0.2, activity: 0.9, transcendence: 0.3, knowledge: 0.4, becoming: 0.85 },
+    features: ['war', 'conflict', 'tension', 'polemos', 'father'] },
+  { id: 'unity_opposites', symbol: '⊕', name: 'Unity of Opposites', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.3, unity: 0.9, presence: 0.6, subject: 0.2, activity: 0.5, transcendence: 0.6, knowledge: 0.7, becoming: 0.6 },
+    features: ['opposites', 'harmony', 'identity', 'one', 'same'] },
+  { id: 'hidden_harmony', symbol: '⫰', name: 'Hidden Harmony', tradition: 'HERACLITEANISM',
+    semantics: { temporal: 0.2, unity: 0.85, presence: 0.4, subject: 0.2, activity: 0.4, transcendence: 0.7, knowledge: 0.6, becoming: 0.4 },
+    features: ['harmony', 'hidden', 'superior', 'attunement', 'non_apparent'] },
+];
+
+// Semantic relationships for training
+const RELATIONSHIPS = [
+  // Phenomenology internal
+  { source: 'self', target: 'other', weight: 0.85, type: 'dialectic' },
+  { source: 'self', target: 'flesh', weight: 0.8, type: 'embodiment' },
+  { source: 'living_present', target: 'horizon', weight: 0.8, type: 'temporal' },
+  { source: 'flesh', target: 'other', weight: 0.75, type: 'encounter' },
+
+  // Spinozism internal
+  { source: 'substance', target: 'mode', weight: 0.9, type: 'modification' },
+  { source: 'conatus', target: 'mode', weight: 0.85, type: 'striving' },
+  { source: 'intuitive_knowledge', target: 'substance', weight: 0.8, type: 'knowledge' },
+
+  // Buddhism internal
+  { source: 'emptiness', target: 'dependent_origination', weight: 0.95, type: 'mutual' },
+  { source: 'tetralemma', target: 'emptiness', weight: 0.8, type: 'method' },
+  { source: 'buddha_nature', target: 'emptiness', weight: 0.75, type: 'ground' },
+
+  // Process internal
+  { source: 'actual_entity', target: 'prehension', weight: 0.9, type: 'constitution' },
+  { source: 'concrescence', target: 'creativity', weight: 0.85, type: 'process' },
+  { source: 'eternal_object', target: 'actual_entity', weight: 0.7, type: 'ingression' },
+  { source: 'prehension', target: 'concrescence', weight: 0.85, type: 'phase' },
+
+  // Poststructuralism internal
+  { source: 'fold', target: 'virtual', weight: 0.8, type: 'topology' },
+  { source: 'trace', target: 'virtual', weight: 0.7, type: 'differance' },
+  { source: 'plane_immanence', target: 'virtual', weight: 0.85, type: 'field' },
+  { source: 'rhizome', target: 'plane_immanence', weight: 0.8, type: 'structure' },
+
+  // Hegelianism internal
+  { source: 'aufhebung', target: 'determinate_negation', weight: 0.9, type: 'dialectic' },
+  { source: 'spirit', target: 'aufhebung', weight: 0.85, type: 'development' },
+  { source: 'contradiction', target: 'becoming', weight: 0.85, type: 'movement' },
+  { source: 'becoming', target: 'aufhebung', weight: 0.8, type: 'result' },
+
+  // Heideggerianism internal
+  { source: 'being', target: 'dasein', weight: 0.9, type: 'question' },
+  { source: 'dasein', target: 'care', weight: 0.9, type: 'structure' },
+  { source: 'clearing', target: 'aletheia', weight: 0.85, type: 'disclosure' },
+  { source: 'ereignis', target: 'being', weight: 0.8, type: 'appropriation' },
+
+  // Early Wittgenstein internal
+  { source: 'world', target: 'fact', weight: 0.9, type: 'composition' },
+  { source: 'proposition', target: 'fact', weight: 0.85, type: 'picture' },
+  { source: 'shows', target: 'silence', weight: 0.85, type: 'limit' },
+  { source: 'mystical', target: 'silence', weight: 0.9, type: 'unsayable' },
+
+  // Late Wittgenstein internal
+  { source: 'language_game', target: 'use', weight: 0.95, type: 'meaning' },
+  { source: 'form_life', target: 'language_game', weight: 0.9, type: 'context' },
+  { source: 'family_resemblance', target: 'language_game', weight: 0.8, type: 'structure' },
+  { source: 'therapy', target: 'hinge', weight: 0.7, type: 'method' },
+
+  // Kantianism internal
+  { source: 'transcendental', target: 'category', weight: 0.9, type: 'structure' },
+  { source: 'phenomenon', target: 'noumenon', weight: 0.85, type: 'limit' },
+  { source: 'schema', target: 'category', weight: 0.85, type: 'application' },
+  { source: 'apperception', target: 'transcendental', weight: 0.9, type: 'unity' },
+  { source: 'categorical_imperative', target: 'transcendental', weight: 0.75, type: 'practical' },
+
+  // Cross-tradition bridges
+  { source: 'self', target: 'dasein', weight: 0.7, type: 'cross' },
+  { source: 'self', target: 'apperception', weight: 0.75, type: 'cross' },
+  { source: 'living_present', target: 'concrescence', weight: 0.65, type: 'cross' },
+  { source: 'substance', target: 'being', weight: 0.6, type: 'cross' },
+  { source: 'substance', target: 'plane_immanence', weight: 0.65, type: 'cross' },
+  { source: 'emptiness', target: 'trace', weight: 0.6, type: 'cross' },
+  { source: 'emptiness', target: 'silence', weight: 0.55, type: 'cross' },
+  { source: 'dependent_origination', target: 'rhizome', weight: 0.6, type: 'cross' },
+  { source: 'concrescence', target: 'becoming', weight: 0.75, type: 'cross' },
+  { source: 'creativity', target: 'virtual', weight: 0.7, type: 'cross' },
+  { source: 'aufhebung', target: 'concrescence', weight: 0.6, type: 'cross' },
+  { source: 'clearing', target: 'plane_immanence', weight: 0.55, type: 'cross' },
+  { source: 'aletheia', target: 'shows', weight: 0.6, type: 'cross' },
+  { source: 'noumenon', target: 'mystical', weight: 0.65, type: 'cross' },
+  { source: 'noumenon', target: 'emptiness', weight: 0.5, type: 'cross' },
+  { source: 'form_life', target: 'spirit', weight: 0.5, type: 'cross' },
+  { source: 'hinge', target: 'horizon', weight: 0.55, type: 'cross' },
+  { source: 'transcendental', target: 'horizon', weight: 0.6, type: 'cross' },
+  { source: 'eternal_object', target: 'noumenon', weight: 0.5, type: 'cross' },
+  { source: 'buddha_nature', target: 'substance', weight: 0.45, type: 'cross' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADVANCED EMBEDDING ENGINE — Multi-layer with t-SNE
+// ═══════════════════════════════════════════════════════════════════════════
+
+class AdvancedEmbeddingEngine {
+  constructor(concepts, relationships, config = {}) {
+    this.concepts = concepts;
+    this.relationships = relationships;
+    this.embeddingDim = config.embeddingDim || 64;
+    this.semanticWeight = config.semanticWeight || 0.3;
+    this.relationWeight = config.relationWeight || 0.5;
+    this.traditionWeight = config.traditionWeight || 0.2;
+
+    this.conceptIndex = {};
+    this.embeddings = {};
+    this.contextEmbeddings = {}; // For skip-gram context vectors
+    this.loss = [];
+    this.epoch = 0;
+
+    // Build indices
+    concepts.forEach((c, i) => {
+      this.conceptIndex[c.id] = i;
+    });
+
+    this.initializeEmbeddings();
+  }
+
+  // Xavier initialization
+  initializeEmbeddings() {
+    const scale = Math.sqrt(2.0 / this.embeddingDim);
+
+    this.concepts.forEach(c => {
+      // Main embedding
+      this.embeddings[c.id] = Array(this.embeddingDim).fill(0).map(() =>
+        (Math.random() - 0.5) * scale
+      );
+
+      // Context embedding for skip-gram
+      this.contextEmbeddings[c.id] = Array(this.embeddingDim).fill(0).map(() =>
+        (Math.random() - 0.5) * scale * 0.5
+      );
+
+      // Initialize with semantic priors
+      if (c.semantics) {
+        const semanticKeys = Object.keys(c.semantics);
+        semanticKeys.forEach((key, i) => {
+          if (i < this.embeddingDim) {
+            this.embeddings[c.id][i] += (c.semantics[key] - 0.5) * scale * 2;
+          }
+        });
+      }
+    });
+  }
+
+  // Vector operations
+  dot(a, b) {
+    return a.reduce((sum, v, i) => sum + v * b[i], 0);
+  }
+
+  norm(v) {
+    return Math.sqrt(this.dot(v, v)) + 1e-8;
+  }
+
+  normalize(v) {
+    const n = this.norm(v);
+    return v.map(x => x / n);
+  }
+
+  cosine(a, b) {
+    return this.dot(a, b) / (this.norm(a) * this.norm(b));
+  }
+
+  sigmoid(x) {
+    return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x))));
+  }
+
+  // Get full embedding with semantic components
+  getEmbedding(conceptId) {
+    const concept = this.concepts.find(c => c.id === conceptId);
+    if (!concept) return null;
+
+    const baseEmb = this.embeddings[conceptId];
+
+    // Add tradition signal
+    const traditionIdx = Object.keys(TRADITIONS).indexOf(concept.tradition);
+    const traditionSignal = Array(this.embeddingDim).fill(0);
+    if (traditionIdx >= 0 && traditionIdx < this.embeddingDim) {
+      traditionSignal[traditionIdx] = 0.5;
+    }
+
+    // Combine
+    return baseEmb.map((v, i) => v + traditionSignal[i] * this.traditionWeight);
+  }
+
+  // Training with combined objectives
+  trainStep(lr = 0.02) {
+    let totalLoss = 0;
+    const gradients = {};
+
+    // Initialize gradients
+    this.concepts.forEach(c => {
+      gradients[c.id] = Array(this.embeddingDim).fill(0);
+    });
+
+    // 1. Relationship-based loss (main signal)
+    this.relationships.forEach(rel => {
+      const srcEmb = this.getEmbedding(rel.source);
+      const tgtEmb = this.getEmbedding(rel.target);
+      if (!srcEmb || !tgtEmb) return;
+
+      const sim = this.cosine(srcEmb, tgtEmb);
+      const target = rel.weight;
+      const error = target - sim;
+
+      totalLoss += error * error * this.relationWeight;
+
+      // Gradient computation
+      const normSrc = this.norm(srcEmb);
+      const normTgt = this.norm(tgtEmb);
+
+      for (let i = 0; i < this.embeddingDim; i++) {
+        const gradSrc = error * (tgtEmb[i] / (normSrc * normTgt) -
+                                sim * srcEmb[i] / (normSrc * normSrc));
+        const gradTgt = error * (srcEmb[i] / (normSrc * normTgt) -
+                                sim * tgtEmb[i] / (normTgt * normTgt));
+
+        gradients[rel.source][i] += gradSrc * this.relationWeight;
+        gradients[rel.target][i] += gradTgt * this.relationWeight;
+      }
+    });
+
+    // 2. Semantic coherence loss
+    this.concepts.forEach(c => {
+      if (!c.semantics) return;
+
+      const emb = this.embeddings[c.id];
+      const semanticKeys = Object.keys(c.semantics);
+
+      semanticKeys.forEach((key, i) => {
+        if (i >= this.embeddingDim) return;
+
+        const target = (c.semantics[key] - 0.5) * 2; // Scale to [-1, 1]
+        const actual = emb[i];
+        const error = target - actual;
+
+        totalLoss += error * error * this.semanticWeight * 0.1;
+        gradients[c.id][i] += error * this.semanticWeight * 0.1;
+      });
+    });
+
+    // 3. Negative sampling (push different traditions apart)
+    const traditions = {};
+    this.concepts.forEach(c => {
+      if (!traditions[c.tradition]) traditions[c.tradition] = [];
+      traditions[c.tradition].push(c.id);
+    });
+
+    const tradKeys = Object.keys(traditions);
+    for (let i = 0; i < tradKeys.length; i++) {
+      for (let j = i + 1; j < tradKeys.length; j++) {
+        // Sample one from each tradition
+        const src = traditions[tradKeys[i]][Math.floor(Math.random() * traditions[tradKeys[i]].length)];
+        const tgt = traditions[tradKeys[j]][Math.floor(Math.random() * traditions[tradKeys[j]].length)];
+
+        const srcEmb = this.getEmbedding(src);
+        const tgtEmb = this.getEmbedding(tgt);
+        const sim = this.cosine(srcEmb, tgtEmb);
+
+        // Push apart if too similar (target: 0.2 baseline)
+        if (sim > 0.3) {
+          const error = 0.2 - sim;
+          totalLoss += error * error * 0.1;
+
+          const normSrc = this.norm(srcEmb);
+          const normTgt = this.norm(tgtEmb);
+
+          for (let k = 0; k < this.embeddingDim; k++) {
+            gradients[src][k] += error * (tgtEmb[k] / (normSrc * normTgt) -
+                                         sim * srcEmb[k] / (normSrc * normSrc)) * 0.1;
+            gradients[tgt][k] += error * (srcEmb[k] / (normSrc * normTgt) -
+                                         sim * tgtEmb[k] / (normTgt * normTgt)) * 0.1;
+          }
+        }
+      }
+    }
+
+    // Apply gradients with clipping
+    Object.keys(gradients).forEach(id => {
+      const gradNorm = this.norm(gradients[id]);
+      const clipVal = 1.0;
+      const scale = gradNorm > clipVal ? clipVal / gradNorm : 1.0;
+
+      for (let i = 0; i < this.embeddingDim; i++) {
+        this.embeddings[id][i] += lr * gradients[id][i] * scale;
+      }
+    });
+
+    this.epoch++;
+    this.loss.push(totalLoss);
+    return totalLoss;
+  }
+
+  // Train multiple epochs
+  train(epochs, lr = 0.02, callback = null) {
+    const decay = 0.995;
+    for (let i = 0; i < epochs; i++) {
+      const loss = this.trainStep(lr * Math.pow(decay, i));
+      if (callback && i % 10 === 0) callback(i, loss);
+    }
+  }
+
+  // t-SNE projection
+  tsneProject(perplexity = 15, iterations = 300) {
+    const n = this.concepts.length;
+    const embeddings = this.concepts.map(c => this.getEmbedding(c.id));
+
+    // Compute pairwise distances
+    const distances = [];
+    for (let i = 0; i < n; i++) {
+      distances[i] = [];
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          distances[i][j] = 0;
+        } else {
+          const diff = embeddings[i].map((v, k) => v - embeddings[j][k]);
+          distances[i][j] = Math.sqrt(this.dot(diff, diff));
+        }
+      }
+    }
+
+    // Compute affinities with adaptive sigma
+    const P = [];
+    for (let i = 0; i < n; i++) {
+      P[i] = [];
+
+      // Binary search for sigma
+      let sigmaMin = 0.01, sigmaMax = 100, sigma = 1;
+      const targetEntropy = Math.log(perplexity);
+
+      for (let iter = 0; iter < 50; iter++) {
+        sigma = (sigmaMin + sigmaMax) / 2;
+
+        // Compute conditional probabilities
+        let sumExp = 0;
+        for (let j = 0; j < n; j++) {
+          if (i !== j) {
+            sumExp += Math.exp(-distances[i][j] * distances[i][j] / (2 * sigma * sigma));
+          }
+        }
+
+        // Compute entropy
+        let entropy = 0;
+        for (let j = 0; j < n; j++) {
+          if (i !== j) {
+            const pij = Math.exp(-distances[i][j] * distances[i][j] / (2 * sigma * sigma)) / sumExp;
+            if (pij > 1e-10) entropy -= pij * Math.log(pij);
+          }
+        }
+
+        if (Math.abs(entropy - targetEntropy) < 0.01) break;
+        if (entropy > targetEntropy) sigmaMax = sigma;
+        else sigmaMin = sigma;
+      }
+
+      // Final probabilities
+      let sumExp = 0;
+      for (let j = 0; j < n; j++) {
+        if (i !== j) {
+          sumExp += Math.exp(-distances[i][j] * distances[i][j] / (2 * sigma * sigma));
+        }
+      }
+      for (let j = 0; j < n; j++) {
+        if (i === j) P[i][j] = 0;
+        else P[i][j] = Math.exp(-distances[i][j] * distances[i][j] / (2 * sigma * sigma)) / sumExp;
+      }
+    }
+
+    // Symmetrize
+    const Psym = [];
+    for (let i = 0; i < n; i++) {
+      Psym[i] = [];
+      for (let j = 0; j < n; j++) {
+        Psym[i][j] = (P[i][j] + P[j][i]) / (2 * n);
+      }
+    }
+
+    // Initialize Y randomly
+    let Y = [];
+    for (let i = 0; i < n; i++) {
+      Y[i] = [Math.random() * 0.01, Math.random() * 0.01];
+    }
+
+    // Gradient descent
+    const lr = 100;
+    const momentum = 0.8;
+    let gains = Y.map(() => [1, 1]);
+    let velocities = Y.map(() => [0, 0]);
+
+    for (let iter = 0; iter < iterations; iter++) {
+      // Compute Q
+      const Q = [];
+      let sumQ = 0;
+      for (let i = 0; i < n; i++) {
+        Q[i] = [];
+        for (let j = 0; j < n; j++) {
+          if (i === j) Q[i][j] = 0;
+          else {
+            const d2 = Math.pow(Y[i][0] - Y[j][0], 2) + Math.pow(Y[i][1] - Y[j][1], 2);
+            Q[i][j] = 1 / (1 + d2);
+            sumQ += Q[i][j];
+          }
+        }
+      }
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          Q[i][j] /= sumQ;
+        }
+      }
+
+      // Compute gradients
+      const gradY = Y.map(() => [0, 0]);
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          if (i === j) continue;
+          const mult = 4 * (Psym[i][j] - Q[i][j]) * Q[i][j] * (1 + Q[i][j]);
+          gradY[i][0] += mult * (Y[i][0] - Y[j][0]);
+          gradY[i][1] += mult * (Y[i][1] - Y[j][1]);
+        }
+      }
+
+      // Update with momentum
+      for (let i = 0; i < n; i++) {
+        for (let d = 0; d < 2; d++) {
+          const sign = Math.sign(gradY[i][d]) === Math.sign(velocities[i][d]) ? 1 : -1;
+          gains[i][d] = Math.max(0.1, sign > 0 ? gains[i][d] * 0.8 : gains[i][d] + 0.2);
+          velocities[i][d] = momentum * velocities[i][d] - lr * gains[i][d] * gradY[i][d];
+          Y[i][d] += velocities[i][d];
+        }
+      }
+
+      // Center
+      const meanY = [0, 0];
+      for (let i = 0; i < n; i++) {
+        meanY[0] += Y[i][0];
+        meanY[1] += Y[i][1];
+      }
+      meanY[0] /= n;
+      meanY[1] /= n;
+      for (let i = 0; i < n; i++) {
+        Y[i][0] -= meanY[0];
+        Y[i][1] -= meanY[1];
+      }
+    }
+
+    return this.concepts.map((c, i) => ({
+      ...c,
+      x: Y[i][0],
+      y: Y[i][1]
+    }));
+  }
+
+  // PCA projection (faster alternative)
+  pcaProject() {
+    const n = this.concepts.length;
+    const embeddings = this.concepts.map(c => this.getEmbedding(c.id));
+
+    // Center data
+    const mean = Array(this.embeddingDim).fill(0);
+    embeddings.forEach(e => e.forEach((v, i) => mean[i] += v / n));
+    const centered = embeddings.map(e => e.map((v, i) => v - mean[i]));
+
+    // Power iteration for top 2 PCs
+    let pc1 = Array(this.embeddingDim).fill(0).map(() => Math.random() - 0.5);
+    let pc2 = Array(this.embeddingDim).fill(0).map(() => Math.random() - 0.5);
+
+    for (let iter = 0; iter < 100; iter++) {
+      // PC1
+      const newPc1 = Array(this.embeddingDim).fill(0);
+      centered.forEach(e => {
+        const proj = this.dot(e, pc1);
+        e.forEach((v, i) => newPc1[i] += v * proj);
+      });
+      pc1 = this.normalize(newPc1);
+
+      // PC2 orthogonal to PC1
+      const newPc2 = Array(this.embeddingDim).fill(0);
+      centered.forEach(e => {
+        const proj = this.dot(e, pc2);
+        e.forEach((v, i) => newPc2[i] += v * proj);
+      });
+      const overlap = this.dot(newPc2, pc1);
+      const orthPc2 = newPc2.map((v, i) => v - overlap * pc1[i]);
+      pc2 = this.normalize(orthPc2);
+    }
+
+    return this.concepts.map((c, i) => ({
+      ...c,
+      x: this.dot(centered[i], pc1),
+      y: this.dot(centered[i], pc2)
+    }));
+  }
+
+  // Find similar concepts
+  findSimilar(conceptId, topK = 8) {
+    const target = this.getEmbedding(conceptId);
+    if (!target) return [];
+
+    return this.concepts
+      .filter(c => c.id !== conceptId)
+      .map(c => ({
+        concept: c,
+        similarity: this.cosine(target, this.getEmbedding(c.id))
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+  }
+
+  // Analogy completion
+  analogy(aId, bId, cId, topK = 5) {
+    const a = this.getEmbedding(aId);
+    const b = this.getEmbedding(bId);
+    const c = this.getEmbedding(cId);
+    if (!a || !b || !c) return [];
+
+    const target = b.map((v, i) => v - a[i] + c[i]);
+
+    return this.concepts
+      .filter(x => x.id !== aId && x.id !== bId && x.id !== cId)
+      .map(x => ({
+        concept: x,
+        similarity: this.cosine(target, this.getEmbedding(x.id))
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+  }
+
+  // Interpolation between concepts
+  interpolate(startId, endId, steps = 5) {
+    const start = this.getEmbedding(startId);
+    const end = this.getEmbedding(endId);
+    if (!start || !end) return [];
+
+    const results = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const interp = start.map((v, j) => v * (1 - t) + end[j] * t);
+
+      // Find nearest concept
+      const nearest = this.concepts
+        .map(c => ({
+          concept: c,
+          similarity: this.cosine(interp, this.getEmbedding(c.id))
+        }))
+        .sort((a, b) => b.similarity - a.similarity)[0];
+
+      results.push({
+        t,
+        embedding: interp,
+        nearest: nearest.concept,
+        similarity: nearest.similarity
+      });
+    }
+    return results;
+  }
+
+  // Cluster analysis
+  findClusters(k = 6) {
+    const points = this.concepts.map(c => ({
+      id: c.id,
+      embedding: this.getEmbedding(c.id)
+    }));
+
+    // K-means++
+    const centroids = [];
+    centroids.push([...points[Math.floor(Math.random() * points.length)].embedding]);
+
+    while (centroids.length < k) {
+      const distances = points.map(p => {
+        const minDist = Math.min(...centroids.map(c => {
+          const diff = p.embedding.map((v, i) => v - c[i]);
+          return this.dot(diff, diff);
+        }));
+        return { point: p, d2: minDist };
+      });
+
+      const totalD2 = distances.reduce((s, d) => s + d.d2, 0);
+      let r = Math.random() * totalD2;
+      for (const d of distances) {
+        r -= d.d2;
+        if (r <= 0) {
+          centroids.push([...d.point.embedding]);
+          break;
+        }
+      }
+    }
+
+    // Iterate
+    let assignments = [];
+    for (let iter = 0; iter < 50; iter++) {
+      assignments = points.map(p => {
+        let minDist = Infinity, cluster = 0;
+        centroids.forEach((c, i) => {
+          const d = 1 - this.cosine(p.embedding, c);
+          if (d < minDist) { minDist = d; cluster = i; }
+        });
+        return { ...p, cluster };
+      });
+
+      // Update centroids
+      const newCentroids = Array(k).fill(null).map(() => Array(this.embeddingDim).fill(0));
+      const counts = Array(k).fill(0);
+
+      assignments.forEach(a => {
+        counts[a.cluster]++;
+        a.embedding.forEach((v, i) => newCentroids[a.cluster][i] += v);
+      });
+
+      for (let i = 0; i < k; i++) {
+        if (counts[i] > 0) {
+          centroids[i] = newCentroids[i].map(v => v / counts[i]);
+        }
+      }
+    }
+
+    return assignments;
+  }
+
+  // Semantic axis projection
+  projectOnAxis(axisId) {
+    const axisIdx = SEMANTIC_AXES.findIndex(a => a.id === axisId);
+    if (axisIdx < 0) return [];
+
+    return this.concepts
+      .map(c => ({
+        concept: c,
+        value: c.semantics ? c.semantics[axisId] || 0.5 : 0.5
+      }))
+      .sort((a, b) => a.value - b.value);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REACT COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function EmbeddingVisualization({ points, selectedId, onSelect, clusters, interpolationPath }) {
+  const svgRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!svgRef.current || !points.length) return;
+
+    const svg = d3.select(svgRef.current);
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+
+    const xExtent = d3.extent(points, d => d.x);
+    const yExtent = d3.extent(points, d => d.y);
+    const padding = 0.15;
+    const xRange = xExtent[1] - xExtent[0];
+    const yRange = yExtent[1] - yExtent[0];
+
+    const xScale = d3.scaleLinear()
+      .domain([xExtent[0] - xRange * padding, xExtent[1] + xRange * padding])
+      .range([60, width - 60]);
+    const yScale = d3.scaleLinear()
+      .domain([yExtent[0] - yRange * padding, yExtent[1] + yRange * padding])
+      .range([height - 60, 60]);
+
+    svg.selectAll('*').remove();
+
+    const zoom = d3.zoom()
+      .scaleExtent([0.5, 5])
+      .on('zoom', (event) => g.attr('transform', event.transform));
+
+    svg.call(zoom);
+
+    const g = svg.append('g');
+
+    // Cluster hulls
+    if (clusters) {
+      const clusterGroups = {};
+      clusters.forEach(c => {
+        if (!clusterGroups[c.cluster]) clusterGroups[c.cluster] = [];
+        const point = points.find(p => p.id === c.id);
+        if (point) clusterGroups[c.cluster].push(point);
+      });
+
+      const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+
+      Object.entries(clusterGroups).forEach(([cid, cpoints]) => {
+        if (cpoints.length < 3) return;
+
+        const hullPoints = cpoints.map(p => [xScale(p.x), yScale(p.y)]);
+        const hull = d3.polygonHull(hullPoints);
+
+        if (hull) {
+          g.append('path')
+            .datum(hull)
+            .attr('d', d => `M${d.join('L')}Z`)
+            .attr('fill', colors[cid % colors.length])
+            .attr('fill-opacity', 0.08)
+            .attr('stroke', colors[cid % colors.length])
+            .attr('stroke-opacity', 0.25)
+            .attr('stroke-width', 1.5);
+        }
+      });
+    }
+
+    // Interpolation path
+    if (interpolationPath && interpolationPath.length > 1) {
+      const lineGenerator = d3.line()
+        .x(d => xScale(d.x))
+        .y(d => yScale(d.y))
+        .curve(d3.curveCatmullRom);
+
+      // Get coordinates of the path points (using nearest concepts)
+      const pathPoints = interpolationPath.map(ip => {
+        const p = points.find(pt => pt.id === ip.nearest.id);
+        return p ? { x: p.x, y: p.y } : { x: 0, y: 0 };
+      });
+
+      g.append('path')
+        .datum(pathPoints)
+        .attr('d', lineGenerator)
+        .attr('fill', 'none')
+        .attr('stroke', '#fbbf24')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '5,5')
+        .attr('class', 'interpolation-path');
+    }
+
+    // Points
+    const nodes = g.selectAll('g.node')
+      .data(points)
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', d => `translate(${xScale(d.x)}, ${yScale(d.y)})`)
+      .style('cursor', 'pointer')
+      .on('click', (e, d) => onSelect(d.id));
+
+    nodes.append('circle')
+      .attr('r', d => d.id === selectedId ? 14 : 9)
+      .attr('fill', d => TRADITIONS[d.tradition].color)
+      .attr('stroke', d => d.id === selectedId ? 'white' : 'rgba(255,255,255,0.2)')
+      .attr('stroke-width', d => d.id === selectedId ? 3 : 1)
+      .attr('opacity', 0.9);
+
+    nodes.append('text')
+      .attr('x', 14)
+      .attr('y', 4)
+      .attr('font-size', '11px')
+      .attr('fill', '#9ca3af')
+      .text(d => d.symbol);
+
+    nodes.append('title')
+      .text(d => `${d.name}\n${TRADITIONS[d.tradition].name}`);
+
+  }, [points, selectedId, clusters, interpolationPath]);
+
+  return (
+    <svg
+      ref={svgRef}
+      className="w-full h-full bg-gray-900/30 rounded-xl"
+      style={{ minHeight: '550px' }}
+    />
+  );
+}
+
+function TrainingPanel({ engine, onTrain, isTraining, epoch, loss, onSave, onLoad, savedModels }) {
+  const [showModels, setShowModels] = React.useState(false);
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <h3 className="font-semibold mb-3 text-indigo-300">Training Controls</h3>
+
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => onTrain(100)}
+          disabled={isTraining}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            isTraining ? 'bg-gray-600' : 'bg-emerald-600/80 hover:bg-emerald-500'
+          }`}
+        >
+          +100
+        </button>
+        <button
+          onClick={() => onTrain(500)}
+          disabled={isTraining}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            isTraining ? 'bg-gray-600' : 'bg-indigo-600/80 hover:bg-indigo-500'
+          }`}
+        >
+          +500
+        </button>
+        <button
+          onClick={() => onTrain(1000)}
+          disabled={isTraining}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            isTraining ? 'bg-gray-600' : 'bg-purple-600/80 hover:bg-purple-500'
+          }`}
+        >
+          +1000
+        </button>
+      </div>
+
+      {/* Save/Load Controls */}
+      <div className="flex gap-2 mb-4 border-t border-gray-700/30 pt-3">
+        <button
+          onClick={onSave}
+          disabled={isTraining || epoch < 100}
+          className={`flex-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
+            isTraining || epoch < 100 ? 'bg-gray-700 text-gray-500' : 'bg-amber-600/60 hover:bg-amber-500'
+          }`}
+        >
+          💾 Save
+        </button>
+        <button
+          onClick={() => setShowModels(!showModels)}
+          disabled={!savedModels || savedModels.length === 0}
+          className={`flex-1 px-3 py-1.5 rounded-lg text-sm transition-all ${
+            !savedModels || savedModels.length === 0 ? 'bg-gray-700 text-gray-500' : 'bg-cyan-600/60 hover:bg-cyan-500'
+          }`}
+        >
+          📂 Load {savedModels && savedModels.length > 0 ? `(${savedModels.length})` : ''}
+        </button>
+      </div>
+
+      {/* Saved Models List */}
+      {showModels && savedModels && savedModels.length > 0 && (
+        <div className="mb-4 max-h-32 overflow-y-auto border border-gray-700/30 rounded-lg">
+          {savedModels.map(model => (
+            <div
+              key={model.id}
+              onClick={() => { onLoad(model.id); setShowModels(false); }}
+              className="p-2 hover:bg-gray-700/50 cursor-pointer border-b border-gray-700/30 last:border-b-0"
+            >
+              <div className="text-sm text-gray-200">{model.name}</div>
+              <div className="text-xs text-gray-500">
+                Epoch {model.epochs} • Loss {model.loss?.toFixed(4) || 'N/A'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p className="text-gray-500">Epoch</p>
+          <p className="text-xl font-mono text-white">{epoch}</p>
+        </div>
+        <div>
+          <p className="text-gray-500">Loss</p>
+          <p className="text-xl font-mono text-white">{loss.toFixed(4)}</p>
+        </div>
+      </div>
+
+      {engine && engine.loss.length > 20 && (
+        <div className="mt-3">
+          <div className="h-12 flex items-end gap-0.5">
+            {engine.loss.slice(-40).map((l, i) => {
+              const maxL = Math.max(...engine.loss.slice(-40));
+              return (
+                <div
+                  key={i}
+                  className="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t"
+                  style={{
+                    height: `${Math.max(2, (l / maxL) * 100)}%`,
+                    opacity: 0.4 + i / 80
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SimilarityPanel({ engine, selectedId }) {
+  if (!selectedId || !engine) return null;
+
+  const concept = CONCEPTS.find(c => c.id === selectedId);
+  const similar = engine.findSimilar(selectedId, 8);
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <div className="flex items-center gap-3 mb-4">
+        <span
+          className="text-3xl pulse-glow"
+          style={{ color: TRADITIONS[concept.tradition].color }}
+        >
+          {concept.symbol}
+        </span>
+        <div>
+          <h3 className="font-semibold text-white">{concept.name}</h3>
+          <p className="text-sm text-gray-400">{TRADITIONS[concept.tradition].name}</p>
+        </div>
+      </div>
+
+      <h4 className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+        Nearest Neighbors
+      </h4>
+
+      <div className="space-y-1.5">
+        {similar.map(({ concept: c, similarity }) => (
+          <div
+            key={c.id}
+            className="flex items-center justify-between p-2 rounded-lg bg-gray-700/30 hover:bg-gray-700/50 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="text-sm"
+                style={{ color: TRADITIONS[c.tradition].color }}
+              >
+                {c.symbol}
+              </span>
+              <span className="text-sm text-gray-300">{c.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-16 h-1.5 rounded-full bg-gray-600 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                  style={{ width: `${similarity * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-500 w-8 text-right">
+                {(similarity * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {concept.semantics && (
+        <div className="mt-4">
+          <h4 className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+            Semantic Profile
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            {SEMANTIC_AXES.slice(0, 6).map(axis => (
+              <div key={axis.id} className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-16 truncate">{axis.name}</span>
+                <div className="flex-1 h-1 rounded-full bg-gray-600 overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-500"
+                    style={{ width: `${(concept.semantics[axis.id] || 0.5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InterpolationPanel({ engine, concepts, onInterpolate }) {
+  const [startId, setStartId] = React.useState('');
+  const [endId, setEndId] = React.useState('');
+  const [path, setPath] = React.useState([]);
+
+  const compute = () => {
+    if (!startId || !endId || !engine) return;
+    const result = engine.interpolate(startId, endId, 7);
+    setPath(result);
+    onInterpolate(result);
+  };
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <h3 className="font-semibold mb-3 text-amber-300">Semantic Interpolation</h3>
+      <p className="text-xs text-gray-400 mb-3">
+        Trace a path through embedding space between two concepts
+      </p>
+
+      <div className="flex gap-2 mb-3">
+        <select
+          value={startId}
+          onChange={e => setStartId(e.target.value)}
+          className="flex-1 bg-gray-700/50 rounded-lg px-2 py-1.5 text-sm border border-gray-600"
+        >
+          <option value="">Start...</option>
+          {concepts.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol} {c.name}</option>
+          ))}
+        </select>
+        <span className="text-gray-500 self-center">→</span>
+        <select
+          value={endId}
+          onChange={e => setEndId(e.target.value)}
+          className="flex-1 bg-gray-700/50 rounded-lg px-2 py-1.5 text-sm border border-gray-600"
+        >
+          <option value="">End...</option>
+          {concepts.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol} {c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        onClick={compute}
+        disabled={!startId || !endId}
+        className="w-full py-2 bg-amber-600/80 hover:bg-amber-500 disabled:bg-gray-600 rounded-lg text-sm transition-all mb-3"
+      >
+        Interpolate
+      </button>
+
+      {path.length > 0 && (
+        <div className="space-y-1">
+          {path.map((p, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 p-1.5 rounded bg-gray-700/30"
+            >
+              <span className="text-xs text-gray-500 w-8">{(p.t * 100).toFixed(0)}%</span>
+              <span
+                className="text-sm"
+                style={{ color: TRADITIONS[p.nearest.tradition].color }}
+              >
+                {p.nearest.symbol}
+              </span>
+              <span className="text-xs text-gray-400">{p.nearest.name}</span>
+              <span className="text-xs text-gray-600 ml-auto">
+                {(p.similarity * 100).toFixed(0)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnalogyPanel({ engine, concepts }) {
+  const [a, setA] = React.useState('');
+  const [b, setB] = React.useState('');
+  const [c, setC] = React.useState('');
+  const [results, setResults] = React.useState([]);
+
+  const compute = () => {
+    if (!a || !b || !c || !engine) return;
+    setResults(engine.analogy(a, b, c, 5));
+  };
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <h3 className="font-semibold mb-3 text-pink-300">Philosophical Analogies</h3>
+      <p className="text-xs text-gray-400 mb-3">
+        A : B :: C : ?
+      </p>
+
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <select
+          value={a}
+          onChange={e => setA(e.target.value)}
+          className="bg-gray-700/50 rounded-lg px-2 py-1.5 text-sm border border-gray-600"
+        >
+          <option value="">A</option>
+          {concepts.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol}</option>
+          ))}
+        </select>
+        <select
+          value={b}
+          onChange={e => setB(e.target.value)}
+          className="bg-gray-700/50 rounded-lg px-2 py-1.5 text-sm border border-gray-600"
+        >
+          <option value="">B</option>
+          {concepts.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol}</option>
+          ))}
+        </select>
+        <select
+          value={c}
+          onChange={e => setC(e.target.value)}
+          className="bg-gray-700/50 rounded-lg px-2 py-1.5 text-sm border border-gray-600"
+        >
+          <option value="">C</option>
+          {concepts.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol}</option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        onClick={compute}
+        disabled={!a || !b || !c}
+        className="w-full py-2 bg-pink-600/80 hover:bg-pink-500 disabled:bg-gray-600 rounded-lg text-sm transition-all mb-3"
+      >
+        Find Analogy
+      </button>
+
+      {results.length > 0 && (
+        <div className="space-y-1">
+          {results.map(({ concept: r, similarity }) => (
+            <div
+              key={r.id}
+              className="flex items-center justify-between p-1.5 rounded bg-gray-700/30"
+            >
+              <div className="flex items-center gap-2">
+                <span style={{ color: TRADITIONS[r.tradition].color }}>{r.symbol}</span>
+                <span className="text-sm text-gray-300">{r.name}</span>
+              </div>
+              <span className="text-xs text-gray-500">{(similarity * 100).toFixed(0)}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClusterAnalysis({ clusters }) {
+  if (!clusters) return null;
+
+  const groups = {};
+  clusters.forEach(c => {
+    if (!groups[c.cluster]) groups[c.cluster] = [];
+    const concept = CONCEPTS.find(con => con.id === c.id);
+    if (concept) groups[c.cluster].push(concept);
+  });
+
+  const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+
+  const analyzeTraditions = (concepts) => {
+    const counts = {};
+    concepts.forEach(c => {
+      counts[c.tradition] = (counts[c.tradition] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2);
+  };
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <h3 className="font-semibold mb-3 text-cyan-300">Latent Clusters</h3>
+
+      <div className="space-y-3">
+        {Object.entries(groups).map(([cid, concepts]) => {
+          const dominant = analyzeTraditions(concepts);
+          return (
+            <div
+              key={cid}
+              className="p-2 rounded-lg border"
+              style={{
+                borderColor: colors[cid % colors.length] + '60',
+                backgroundColor: colors[cid % colors.length] + '10'
+              }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: colors[cid % colors.length] }}
+                >
+                  Cluster {parseInt(cid) + 1}
+                </span>
+                <span className="text-xs text-gray-500">{concepts.length}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-1 mb-1">
+                {concepts.slice(0, 6).map(c => (
+                  <span
+                    key={c.id}
+                    className="px-1 py-0.5 rounded text-xs"
+                    style={{
+                      backgroundColor: TRADITIONS[c.tradition].color + '30',
+                      color: TRADITIONS[c.tradition].color
+                    }}
+                  >
+                    {c.symbol}
+                  </span>
+                ))}
+                {concepts.length > 6 && (
+                  <span className="text-xs text-gray-600">+{concepts.length - 6}</span>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500">
+                {dominant.map(([t]) => TRADITIONS[t].shortName).join(' · ')}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SemanticAxisView({ engine, concepts }) {
+  const [selectedAxis, setSelectedAxis] = React.useState('temporal');
+  const projection = engine ? engine.projectOnAxis(selectedAxis) : [];
+  const axis = SEMANTIC_AXES.find(a => a.id === selectedAxis);
+
+  return (
+    <div className="bg-gray-800/40 backdrop-blur rounded-xl p-4 border border-gray-700/50">
+      <h3 className="font-semibold mb-3 text-teal-300">Semantic Axis Projection</h3>
+
+      <select
+        value={selectedAxis}
+        onChange={e => setSelectedAxis(e.target.value)}
+        className="w-full bg-gray-700/50 rounded-lg px-3 py-2 text-sm border border-gray-600 mb-3"
+      >
+        {SEMANTIC_AXES.map(a => (
+          <option key={a.id} value={a.id}>{a.name}: {a.poles[0]} ↔ {a.poles[1]}</option>
+        ))}
+      </select>
+
+      {axis && (
+        <div className="relative">
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span>{axis.poles[0]}</span>
+            <span>{axis.poles[1]}</span>
+          </div>
+          <div className="h-8 bg-gray-700/30 rounded-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/50 to-amber-900/50" />
+            {projection.slice(0, 20).map(({ concept: c, value }) => (
+              <div
+                key={c.id}
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border border-white/30"
+                style={{
+                  left: `${value * 100}%`,
+                  backgroundColor: TRADITIONS[c.tradition].color
+                }}
+                title={`${c.name}: ${(value * 100).toFixed(0)}%`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// API Status Indicator Component
+function APIIndicator() {
+  const [configured, setConfigured] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkAPI = () => {
+      setConfigured(typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured());
+    };
+    checkAPI();
+
+    window.addEventListener('philang-api-configured', checkAPI);
+    return () => window.removeEventListener('philang-api-configured', checkAPI);
+  }, []);
+
+  const handleClick = () => {
+    if (typeof PhiLangAPI !== 'undefined') {
+      PhiLangAPI.showConfigModal();
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 border border-gray-700 rounded-full cursor-pointer hover:border-indigo-500 transition-all"
+    >
+      <div className={`w-2 h-2 rounded-full ${configured ? 'bg-green-400 shadow-lg shadow-green-500/50' : 'bg-red-400'}`} />
+      <span className="text-xs text-gray-400">{configured ? 'Claude API' : 'Configure API'}</span>
+    </div>
+  );
+}
+
+// AI-Powered Analysis Panel - Enhanced with Expandable View
+function AIAnalysisPanel({ engine, concepts, selectedId, clusters }) {
+  const [analysis, setAnalysis] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
+  const [analysisType, setAnalysisType] = React.useState(null);
+
+  const isAPIReady = typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured();
+
+  // Deep cluster analysis with philosophical discourse
+  const analyzeCluster = async () => {
+    if (!isAPIReady || !clusters || !engine) return;
+    setLoading(true);
+    setAnalysisType('cluster');
+
+    try {
+      const groups = {};
+      clusters.forEach(c => {
+        if (!groups[c.cluster]) groups[c.cluster] = [];
+        const concept = concepts.find(con => con.id === c.id);
+        if (concept) groups[c.cluster].push(concept);
+      });
+
+      // Analyze all significant clusters
+      const significantClusters = Object.entries(groups)
+        .filter(([_, members]) => members.length >= 2)
+        .sort((a, b) => b[1].length - a[1].length)
+        .slice(0, 3);
+
+      const clusterDescriptions = significantClusters.map(([id, members], idx) => {
+        const traditions = [...new Set(members.map(m => m.tradition))];
+        return `Cluster ${idx + 1} (${members.length} concepts): ${members.map(m => `${m.name} [${m.symbol}]`).join(', ')}. Traditions: ${traditions.join(', ')}`;
+      }).join('\n\n');
+
+      const deepPrompt = `You are analyzing philosophical concept embeddings that have been clustered based on semantic similarity in a 64-dimensional latent space.
+
+CLUSTER DATA:
+${clusterDescriptions}
+
+Provide a DEEP philosophical analysis addressing:
+
+1. **Ontological Unity**: What underlying metaphysical structure unites concepts within each cluster? Why do these concepts occupy similar regions in semantic space?
+
+2. **Cross-Traditional Dialogue**: Where concepts from different traditions cluster together, what does this reveal about hidden agreements or convergences in the history of philosophy?
+
+3. **Conceptual Tensions**: Are there unexpected pairings that reveal productive tensions? What new philosophical questions emerge from these proximities?
+
+4. **PhiLang Expressions**: Express key relationships using PhiLang notation (e.g., "emptiness ⊗ dependent-origination → ¬substance" or "Σ ⋈ Ω within H[τ]").
+
+5. **Philosophical Implications**: What does this clustering suggest about the deep structure of philosophical thought itself?
+
+Be substantive and develop your arguments with specific reference to the concepts' meanings and their relationships. This should read as genuine philosophical discourse, not a summary.`;
+
+      const response = await PhiLangAPI.sendMessage(
+        [{ role: 'user', content: deepPrompt }],
+        PhiLangAPI.SYSTEM_PROMPTS.embeddings(),
+        { maxTokens: 1500 }
+      );
+      setAnalysis({ type: 'cluster', content: response.content, title: 'Cluster Analysis: Deep Structure' });
+    } catch (err) {
+      console.error('Cluster analysis error:', err);
+      setAnalysis({ type: 'error', content: 'Analysis failed. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  // Deep similarity analysis with philosophical discourse
+  const analyzeSimilarity = async () => {
+    if (!isAPIReady || !selectedId || !engine) return;
+    setLoading(true);
+    setAnalysisType('similarity');
+
+    try {
+      const selected = concepts.find(c => c.id === selectedId);
+      const similar = engine.findSimilar(selectedId, 5);
+      const distant = engine.findSimilar(selectedId, concepts.length - 1).slice(-3);
+
+      if (selected && similar.length > 0) {
+        const semanticProfile = selected.semantics ?
+          Object.entries(selected.semantics)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([axis, val]) => `${axis}: ${(val * 100).toFixed(0)}%`)
+            .join(', ')
+          : 'N/A';
+
+        const deepPrompt = `You are analyzing the concept "${selected.name}" (${selected.symbol}) from the ${selected.tradition} tradition in a 64-dimensional philosophical embedding space.
+
+CONCEPT PROFILE:
+- Name: ${selected.name}
+- Symbol: ${selected.symbol}
+- Tradition: ${selected.tradition}
+- Semantic Features: ${selected.features?.join(', ') || 'N/A'}
+- Semantic Axes: ${semanticProfile}
+
+NEAREST NEIGHBORS (most similar):
+${similar.map((s, i) => `${i + 1}. ${s.concept.name} [${s.concept.symbol}] - ${s.concept.tradition} (similarity: ${(s.similarity * 100).toFixed(1)}%)`).join('\n')}
+
+MOST DISTANT (least similar):
+${distant.map((s, i) => `${i + 1}. ${s.concept.name} [${s.concept.symbol}] - ${s.concept.tradition}`).join('\n')}
+
+Provide a SUBSTANTIVE philosophical analysis:
+
+1. **The Concept Itself**: What is the philosophical significance of ${selected.name}? How does it function within ${selected.tradition}?
+
+2. **Semantic Neighbors**: Why do these specific concepts cluster near ${selected.name}? What deep structural or functional similarities explain their proximity? Consider both same-tradition and cross-tradition neighbors.
+
+3. **Productive Dialogues**: What conversations could emerge between ${selected.name} and its neighbors? What would Husserl say to Nagarjuna if their concepts occupy adjacent space?
+
+4. **Oppositions and Contrasts**: The distant concepts reveal what ${selected.name} is NOT. What does this opposition illuminate about the concept's essential nature?
+
+5. **PhiLang Formalization**: Express the key relationships discovered using PhiLang operators:
+   - Use → for derivation
+   - Use ⊗ for synthesis
+   - Use ¬ for negation
+   - Use ⟨ ⟩ for epoché/bracketing
+   - Use ∘ for composition
+
+Develop your analysis as genuine philosophical discourse, drawing on the traditions involved.`;
+
+        const response = await PhiLangAPI.sendMessage(
+          [{ role: 'user', content: deepPrompt }],
+          PhiLangAPI.SYSTEM_PROMPTS.embeddings(),
+          { maxTokens: 1500 }
+        );
+        setAnalysis({ type: 'similarity', content: response.content, title: `Analysis: ${selected.name}` });
+      }
+    } catch (err) {
+      console.error('Similarity analysis error:', err);
+      setAnalysis({ type: 'error', content: 'Analysis failed. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  // Deep structural analysis
+  const analyzeStructure = async () => {
+    if (!isAPIReady || !engine) return;
+    setLoading(true);
+    setAnalysisType('structure');
+
+    try {
+      // Get concepts from each tradition
+      const byTradition = {};
+      concepts.forEach(c => {
+        if (!byTradition[c.tradition]) byTradition[c.tradition] = [];
+        byTradition[c.tradition].push(c);
+      });
+
+      // Find cross-tradition pairs with high similarity
+      const crossPairs = [];
+      concepts.forEach(c1 => {
+        const nearest = engine.findSimilar(c1.id, 3);
+        nearest.forEach(n => {
+          if (n.concept.tradition !== c1.tradition && n.similarity > 0.7) {
+            crossPairs.push({
+              from: c1,
+              to: n.concept,
+              similarity: n.similarity
+            });
+          }
+        });
+      });
+
+      const topPairs = crossPairs
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 8);
+
+      const deepPrompt = `You are examining the DEEP STRUCTURE of philosophical thought as revealed by concept embeddings across ${Object.keys(byTradition).length} traditions.
+
+TRADITIONS REPRESENTED:
+${Object.entries(byTradition).map(([t, cs]) => `- ${t}: ${cs.length} concepts (${cs.slice(0, 3).map(c => c.name).join(', ')}...)`).join('\n')}
+
+STRONGEST CROSS-TRADITION CONNECTIONS:
+${topPairs.map(p => `• ${p.from.name} (${p.from.tradition}) ↔ ${p.to.name} (${p.to.tradition}) — ${(p.similarity * 100).toFixed(0)}% similar`).join('\n')}
+
+Provide a COMPREHENSIVE philosophical discourse on:
+
+1. **The Architecture of Thought**: What does this embedding space reveal about the hidden architecture of philosophical thinking across traditions? Are there universal structures?
+
+2. **Unexpected Convergences**: The cross-tradition connections above suggest deep agreements. Develop the philosophical significance of 2-3 of these connections in detail.
+
+3. **The Topology of Philosophy**: Describe the "shape" of this philosophical space. Where are the dense regions (consensus)? Where are the sparse regions (unexplored territory)?
+
+4. **Productive Tensions**: Where do traditions diverge most sharply? What does this tell us about fundamental philosophical choices?
+
+5. **Synthetic Possibilities**: Based on these embeddings, what NEW philosophical positions might emerge from synthesizing concepts that the embedding space places in proximity?
+
+6. **PhiLang Formalization**: Express the most significant structural relationships using PhiLang notation. Create 3-4 expressions that capture deep philosophical truths revealed by this analysis.
+
+This should be a substantive philosophical essay, not a list. Develop arguments, make connections, and draw conclusions.`;
+
+      const response = await PhiLangAPI.sendMessage(
+        [{ role: 'user', content: deepPrompt }],
+        PhiLangAPI.SYSTEM_PROMPTS.embeddings(),
+        { maxTokens: 2000 }
+      );
+      setAnalysis({ type: 'structure', content: response.content, title: 'Deep Structure Analysis' });
+    } catch (err) {
+      console.error('Structure analysis error:', err);
+      setAnalysis({ type: 'error', content: 'Analysis failed. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  // Render formatted content with markdown-like styling
+  const renderContent = (content) => {
+    return content.split('\n').map((line, i) => {
+      // Headers
+      if (line.startsWith('**') && line.endsWith('**')) {
+        return <h4 key={i} className="text-gold font-semibold mt-4 mb-2 font-display">{line.replace(/\*\*/g, '')}</h4>;
+      }
+      if (line.match(/^\d+\.\s*\*\*/)) {
+        const cleaned = line.replace(/\*\*/g, '').replace(/^\d+\.\s*/, '');
+        return <h4 key={i} className="text-gold font-semibold mt-4 mb-2 font-display">{cleaned}</h4>;
+      }
+      // PhiLang expressions
+      if (line.includes('→') || line.includes('⊗') || line.includes('¬') || line.includes('⟨') || line.includes('∘')) {
+        return <p key={i} className="font-mono text-emerald-400 bg-emerald-900/20 px-3 py-1 rounded my-2 text-sm">{line}</p>;
+      }
+      // Bullet points
+      if (line.startsWith('•') || line.startsWith('-')) {
+        return <p key={i} className="ml-4 my-1">{line}</p>;
+      }
+      // Bold text inline
+      if (line.includes('**')) {
+        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        return (
+          <p key={i} className="my-1">
+            {parts.map((part, j) =>
+              part.startsWith('**') ? <strong key={j} className="text-pearl">{part.replace(/\*\*/g, '')}</strong> : part
+            )}
+          </p>
+        );
+      }
+      // Regular paragraph
+      return line ? <p key={i} className="my-1">{line}</p> : <br key={i} />;
+    });
+  };
+
+  // Expanded modal view
+  if (expanded && analysis) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(10, 10, 12, 0.95)' }}>
+        <div
+          className="w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl border overflow-hidden"
+          style={{
+            background: 'linear-gradient(180deg, rgba(22, 20, 28, 0.98) 0%, rgba(15, 14, 19, 0.99) 100%)',
+            borderColor: 'rgba(201, 162, 39, 0.3)',
+            boxShadow: '0 0 60px rgba(201, 162, 39, 0.15)'
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(61, 55, 80, 0.4)' }}>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" style={{ color: '#c9a227' }}>✦</span>
+              <div>
+                <h2 className="font-display text-xl" style={{ color: '#f0ede6' }}>{analysis.title || 'AI Philosophical Insight'}</h2>
+                <p className="text-sm" style={{ color: '#9992a8' }}>Deep analysis powered by Claude</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExpanded(false)}
+              className="px-4 py-2 rounded-lg text-sm transition-all"
+              style={{
+                background: 'rgba(61, 55, 80, 0.4)',
+                color: '#d4d0e0',
+                border: '1px solid rgba(61, 55, 80, 0.5)'
+              }}
+            >
+              Close
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin" style={{ color: '#9992a8', lineHeight: '1.8' }}>
+            {renderContent(analysis.content)}
+          </div>
+
+          {/* Footer with actions */}
+          <div className="px-6 py-4 border-t flex items-center justify-between" style={{ borderColor: 'rgba(61, 55, 80, 0.4)' }}>
+            <div className="flex gap-2">
+              <button
+                onClick={analyzeCluster}
+                disabled={loading || !clusters}
+                className="px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50"
+                style={{
+                  background: analysisType === 'cluster' ? 'rgba(201, 162, 39, 0.2)' : 'rgba(22, 20, 28, 0.8)',
+                  border: '1px solid rgba(61, 55, 80, 0.4)',
+                  color: '#d4d0e0'
+                }}
+              >
+                Clusters
+              </button>
+              <button
+                onClick={analyzeSimilarity}
+                disabled={loading || !selectedId}
+                className="px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50"
+                style={{
+                  background: analysisType === 'similarity' ? 'rgba(201, 162, 39, 0.2)' : 'rgba(22, 20, 28, 0.8)',
+                  border: '1px solid rgba(61, 55, 80, 0.4)',
+                  color: '#d4d0e0'
+                }}
+              >
+                Selection
+              </button>
+              <button
+                onClick={analyzeStructure}
+                disabled={loading}
+                className="px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50"
+                style={{
+                  background: analysisType === 'structure' ? 'rgba(201, 162, 39, 0.2)' : 'rgba(22, 20, 28, 0.8)',
+                  border: '1px solid rgba(61, 55, 80, 0.4)',
+                  color: '#d4d0e0'
+                }}
+              >
+                Deep Structure
+              </button>
+            </div>
+            <span className="text-xs" style={{ color: '#3d3750' }}>● Claude</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Compact panel view
+  return (
+    <div
+      className="rounded-xl p-4 border transition-all"
+      style={{
+        background: 'linear-gradient(180deg, rgba(22, 20, 28, 0.8) 0%, rgba(30, 27, 39, 0.6) 100%)',
+        borderColor: 'rgba(201, 162, 39, 0.25)'
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold flex items-center gap-2 font-display" style={{ color: '#c9a227' }}>
+          <span>✦</span> AI Insight
+        </h3>
+        <div className="flex items-center gap-2">
+          {analysis && (
+            <button
+              onClick={() => setExpanded(true)}
+              className="px-2 py-1 rounded text-xs transition-all hover:bg-gold/20"
+              style={{ color: '#c9a227', border: '1px solid rgba(201, 162, 39, 0.3)' }}
+            >
+              Expand ↗
+            </button>
+          )}
+          {!isAPIReady && (
+            <span className="text-xs" style={{ color: '#3d3750' }}>Configure API to enable</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={analyzeCluster}
+          disabled={!isAPIReady || loading || !clusters}
+          className="flex-1 py-2 rounded-lg text-xs transition-all disabled:opacity-40"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 105, 20, 0.5) 0%, rgba(201, 162, 39, 0.3) 100%)',
+            color: '#f0ede6'
+          }}
+        >
+          Clusters
+        </button>
+        <button
+          onClick={analyzeSimilarity}
+          disabled={!isAPIReady || loading || !selectedId}
+          className="flex-1 py-2 rounded-lg text-xs transition-all disabled:opacity-40"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 105, 20, 0.5) 0%, rgba(201, 162, 39, 0.3) 100%)',
+            color: '#f0ede6'
+          }}
+        >
+          Selection
+        </button>
+        <button
+          onClick={analyzeStructure}
+          disabled={!isAPIReady || loading}
+          className="flex-1 py-2 rounded-lg text-xs transition-all disabled:opacity-40"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 105, 20, 0.5) 0%, rgba(201, 162, 39, 0.3) 100%)',
+            color: '#f0ede6'
+          }}
+        >
+          Structure
+        </button>
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 py-6">
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#c9a227' }} />
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#c9a227', animationDelay: '0.2s' }} />
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#c9a227', animationDelay: '0.4s' }} />
+          <span className="text-xs ml-2" style={{ color: '#9992a8' }}>Claude is contemplating...</span>
+        </div>
+      )}
+
+      {analysis && !loading && (
+        <div>
+          <div className="text-xs leading-relaxed max-h-48 overflow-y-auto scrollbar-thin pr-2" style={{ color: '#9992a8' }}>
+            {analysis.content.slice(0, 600)}
+            {analysis.content.length > 600 && '...'}
+          </div>
+          <button
+            onClick={() => setExpanded(true)}
+            className="mt-3 w-full py-2 rounded-lg text-sm transition-all"
+            style={{
+              background: 'linear-gradient(135deg, rgba(139, 105, 20, 0.4) 0%, rgba(201, 162, 39, 0.2) 100%)',
+              border: '1px solid rgba(201, 162, 39, 0.3)',
+              color: '#c9a227'
+            }}
+          >
+            Read Full Analysis ↗
+          </button>
+        </div>
+      )}
+
+      {!analysis && !loading && isAPIReady && (
+        <p className="text-xs text-center py-4" style={{ color: '#3d3750' }}>
+          Select a concept, enable clusters, or analyze structure
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Main App
+function App() {
+  const [engine, setEngine] = React.useState(null);
+  const [points, setPoints] = React.useState([]);
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [isTraining, setIsTraining] = React.useState(false);
+  const [epoch, setEpoch] = React.useState(0);
+  const [loss, setLoss] = React.useState(0);
+  const [clusters, setClusters] = React.useState(null);
+  const [showClusters, setShowClusters] = React.useState(false);
+  const [projectionType, setProjectionType] = React.useState('pca');
+  const [interpolationPath, setInterpolationPath] = React.useState([]);
+  const [savedModels, setSavedModels] = React.useState([]);
+
+  // Load saved models list on mount
+  React.useEffect(() => {
+    const loadSavedModels = async () => {
+      if (typeof PhiLangPersistence !== 'undefined') {
+        try {
+          await PhiLangPersistence.init();
+          const models = await PhiLangPersistence.Embeddings.getAll(10);
+          setSavedModels(models);
+        } catch (e) {
+          console.error('Failed to load saved models:', e);
+        }
+      }
+    };
+    loadSavedModels();
+  }, []);
+
+  React.useEffect(() => {
+    const eng = new AdvancedEmbeddingEngine(CONCEPTS, RELATIONSHIPS, {
+      embeddingDim: 64,
+      semanticWeight: 0.3,
+      relationWeight: 0.5,
+      traditionWeight: 0.2
+    });
+
+    eng.train(300, 0.03);
+    setEngine(eng);
+    setEpoch(eng.epoch);
+    setLoss(eng.loss[eng.loss.length - 1] || 0);
+    setPoints(eng.pcaProject());
+  }, []);
+
+  const handleTrain = async (epochs) => {
+    if (!engine || isTraining) return;
+    setIsTraining(true);
+
+    const batch = 20;
+    for (let i = 0; i < epochs; i += batch) {
+      await new Promise(r => setTimeout(r, 30));
+      engine.train(batch, 0.02);
+      setEpoch(engine.epoch);
+      setLoss(engine.loss[engine.loss.length - 1] || 0);
+
+      if (i % 100 === 0) {
+        updateProjection();
+      }
+    }
+
+    updateProjection();
+    setIsTraining(false);
+
+    if (showClusters) {
+      setClusters(engine.findClusters(6));
+    }
+  };
+
+  const updateProjection = () => {
+    if (!engine) return;
+    if (projectionType === 'tsne') {
+      setPoints(engine.tsneProject(15, 200));
+    } else {
+      setPoints(engine.pcaProject());
+    }
+  };
+
+  const toggleClusters = () => {
+    if (!showClusters && engine) {
+      setClusters(engine.findClusters(6));
+    }
+    setShowClusters(!showClusters);
+  };
+
+  const handleProjectionChange = (type) => {
+    setProjectionType(type);
+    if (engine) {
+      if (type === 'tsne') {
+        setPoints(engine.tsneProject(15, 200));
+      } else {
+        setPoints(engine.pcaProject());
+      }
+    }
+  };
+
+  // Save current model to IndexedDB
+  const handleSaveModel = async () => {
+    if (!engine || typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+      const modelData = {
+        name: `Model @ ${new Date().toLocaleString()}`,
+        embeddings: engine.embeddings,
+        contextEmbeddings: engine.contextEmbeddings,
+        traditionEmbeddings: engine.traditionEmbeddings,
+        featureEmbeddings: engine.featureEmbeddings,
+        epoch: engine.epoch,
+        loss: engine.loss[engine.loss.length - 1],
+        embeddingDim: engine.embeddingDim,
+        semanticWeight: engine.semanticWeight,
+        relationWeight: engine.relationWeight,
+        traditionWeight: engine.traditionWeight
+      };
+
+      await PhiLangPersistence.Embeddings.save(modelData);
+      const models = await PhiLangPersistence.Embeddings.getAll(10);
+      setSavedModels(models);
+      if (typeof PhiLangToast !== 'undefined') PhiLangToast.saved('Model');
+    } catch (e) {
+      console.error('Failed to save model:', e);
+      if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to save model');
+    }
+  };
+
+  // Load a model from IndexedDB
+  const handleLoadModel = async (modelId) => {
+    if (!engine || typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+      const model = await PhiLangPersistence.Embeddings.get(modelId);
+      if (!model) return;
+
+      // Restore embeddings
+      if (model.embeddings) {
+        Object.assign(engine.embeddings, model.embeddings);
+      }
+      if (model.contextEmbeddings) {
+        Object.assign(engine.contextEmbeddings, model.contextEmbeddings);
+      }
+      if (model.traditionEmbeddings) {
+        Object.assign(engine.traditionEmbeddings, model.traditionEmbeddings);
+      }
+      if (model.featureEmbeddings) {
+        Object.assign(engine.featureEmbeddings, model.featureEmbeddings);
+      }
+
+      // Update epoch tracking
+      engine.epoch = model.epoch || model.epochs || 0;
+      engine.loss = model.loss ? [model.loss] : [0];
+
+      setEpoch(engine.epoch);
+      setLoss(model.loss || 0);
+      updateProjection();
+
+      if (showClusters) {
+        setClusters(engine.findClusters(6));
+      }
+
+      if (typeof PhiLangToast !== 'undefined') PhiLangToast.loaded('Model');
+    } catch (e) {
+      console.error('Failed to load model:', e);
+      if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to load model');
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="page-header" style={{ borderBottom: '1px solid rgba(61, 55, 80, 0.3)', background: 'rgba(15, 14, 19, 0.5)' }}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-xl flex items-center gap-3 font-display" style={{ color: 'var(--pearl)' }}>
+              <span style={{ color: 'var(--gold)', fontSize: '1.75rem' }}>✧</span>
+              Advanced Embeddings
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--silver)' }}>Deep Latent Structure Analysis • 64D Semantic Space</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <APIIndicator />
+
+            <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(61, 55, 80, 0.4)' }}>
+              <button
+                onClick={() => handleProjectionChange('pca')}
+                className="px-3 py-1.5 text-sm transition-all"
+                style={{
+                  background: projectionType === 'pca' ? 'linear-gradient(135deg, var(--ember) 0%, var(--gold) 100%)' : 'rgba(22, 20, 28, 0.8)',
+                  color: projectionType === 'pca' ? 'var(--void)' : 'var(--silver)'
+                }}
+              >
+                PCA
+              </button>
+              <button
+                onClick={() => handleProjectionChange('tsne')}
+                className="px-3 py-1.5 text-sm transition-all"
+                style={{
+                  background: projectionType === 'tsne' ? 'linear-gradient(135deg, var(--ember) 0%, var(--gold) 100%)' : 'rgba(22, 20, 28, 0.8)',
+                  color: projectionType === 'tsne' ? 'var(--void)' : 'var(--silver)'
+                }}
+              >
+                t-SNE
+              </button>
+            </div>
+
+            <button
+              onClick={toggleClusters}
+              className="px-4 py-1.5 rounded-lg text-sm transition-all"
+              style={{
+                background: showClusters ? 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)' : 'rgba(22, 20, 28, 0.8)',
+                color: showClusters ? 'white' : 'var(--silver)',
+                border: showClusters ? 'none' : '1px solid rgba(61, 55, 80, 0.4)'
+              }}
+            >
+              Clusters
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto p-6">
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Visualization */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800/20 rounded-xl border border-gray-700/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold text-gray-300">
+                  Embedding Space ({projectionType.toUpperCase()})
+                </h2>
+                <div className="flex gap-3 text-xs">
+                  {Object.entries(TRADITIONS).slice(0, 5).map(([k, t]) => (
+                    <div key={k} className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
+                      <span className="text-gray-500">{t.shortName}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <EmbeddingVisualization
+                points={points}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                clusters={showClusters ? clusters : null}
+                interpolationPath={interpolationPath}
+              />
+            </div>
+          </div>
+
+          {/* Side Panel */}
+          <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin pr-2">
+            <TrainingPanel
+              engine={engine}
+              onTrain={handleTrain}
+              isTraining={isTraining}
+              epoch={epoch}
+              loss={loss}
+              onSave={handleSaveModel}
+              onLoad={handleLoadModel}
+              savedModels={savedModels}
+            />
+
+            {selectedId && (
+              <SimilarityPanel engine={engine} selectedId={selectedId} />
+            )}
+
+            <InterpolationPanel
+              engine={engine}
+              concepts={CONCEPTS}
+              onInterpolate={setInterpolationPath}
+            />
+
+            <AnalogyPanel engine={engine} concepts={CONCEPTS} />
+
+            {showClusters && <ClusterAnalysis clusters={clusters} />}
+
+            <AIAnalysisPanel
+              engine={engine}
+              concepts={CONCEPTS}
+              selectedId={selectedId}
+              clusters={showClusters ? clusters : null}
+            />
+
+            <SemanticAxisView engine={engine} concepts={CONCEPTS} />
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-6 flex flex-wrap justify-center gap-4">
+          {Object.entries(TRADITIONS).map(([k, t]) => (
+            <div key={k} className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+              <span className="text-xs text-gray-500">{t.name}</span>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-12 py-8 text-center" style={{ borderTop: '1px solid rgba(61, 55, 80, 0.3)', background: 'linear-gradient(180deg, transparent 0%, rgba(10, 10, 12, 0.5) 100%)' }}>
+        <p className="font-display tracking-wider" style={{ color: 'var(--silver)' }}>PhiLang Advanced Embeddings — 64D vectors with semantic priors</p>
+        <p className="mt-2 text-xs" style={{ color: 'var(--stone)' }}>
+          {CONCEPTS.length} concepts • {RELATIONSHIPS.length} relationships • {SEMANTIC_AXES.length} semantic axes
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// Initialize keyboard shortcuts after React mounts
+if (typeof PhiLangShortcuts !== 'undefined') {
+    PhiLangShortcuts.init([
+        { key: 't', description: 'Train (one epoch)', action: () => document.querySelector('[data-action="train"]')?.click() },
+        { key: 'c', description: 'Toggle clusters', action: () => document.querySelector('[data-action="clusters"]')?.click() },
+        { key: 'f', description: 'Focus search', action: () => document.querySelector('input[placeholder*="Search"]')?.focus() },
+        { key: 'g b', description: 'Go to basic embeddings', action: () => window.location.href = 'philang_embeddings.html' },
+    ]);
+
+    // Show keyboard shortcuts hint for new users
+    if (PhiLangShortcuts.shouldShowHint()) {
+        setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+    }
+}
+    </script>
+</body>
+</html>

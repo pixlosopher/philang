@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Socratic Counsel — Philosophical Therapy</title>
+
+    <!-- Security: Unified CSP for PhiLang -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PhiLang Core Modules -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_api.js"></script>
+    <script src="philang_persistence.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_export.js"></script>
+    <script src="philang_ui.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="philang-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--void);
+            color: var(--pearl);
+            min-height: 100vh;
+        }
+
+        /* Cosmic background */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201, 162, 39, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--silver); }
+
+        /* Glowing orb effect for the counselor */
+        .counsel-orb {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--gold) 0%, var(--ember) 50%, #5c4710 100%);
+            box-shadow: 0 0 30px rgba(201, 162, 39, 0.4), 0 0 60px rgba(201, 162, 39, 0.2);
+            animation: orb-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes orb-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(201, 162, 39, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(201, 162, 39, 0.6); }
+        }
+
+        /* Thinking animation */
+        .thinking-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* Message animations */
+        @keyframes message-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-animate { animation: message-in 0.4s ease-out; }
+
+        /* Tradition accent colors */
+        .tradition-socratic { --accent: var(--gold); }
+        .tradition-stoic { --accent: #64748b; }
+        .tradition-existential { --accent: #ef4444; }
+        .tradition-phenomenological { --accent: #6366f1; }
+        .tradition-buddhist { --accent: #10b981; }
+        .tradition-wittgensteinian { --accent: #14b8a6; }
+        .tradition-psychoanalytic { --accent: #8b5cf6; }
+
+        .counsel-message {
+            border-left: 3px solid var(--accent, var(--gold));
+            background: linear-gradient(90deg, rgba(22, 20, 28, 0.7) 0%, rgba(30, 27, 39, 0.5) 100%);
+            border-radius: 0 12px 12px 0;
+        }
+
+        /* Insight card glow */
+        .insight-card {
+            background: rgba(22, 20, 28, 0.6);
+            border: 1px solid rgba(61, 55, 80, 0.3);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .insight-card:hover {
+            border-color: rgba(201, 162, 39, 0.3);
+        }
+
+        /* Question prompt styling */
+        .question-prompt {
+            background: rgba(22, 20, 28, 0.6);
+            border-left: 3px solid var(--gold);
+        }
+
+        /* Reflection textarea */
+        .reflection-input {
+            background: rgba(15, 14, 19, 0.8);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 12px;
+            transition: all 0.3s;
+            font-family: 'Crimson Pro', Georgia, serif;
+            color: var(--pearl);
+        }
+        .reflection-input:focus {
+            outline: none;
+            border-color: rgba(201, 162, 39, 0.5);
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.1);
+        }
+        .reflection-input::placeholder {
+            color: var(--stone);
+        }
+
+        /* Aporia moment */
+        .aporia-moment {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px dashed rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+        }
+
+        /* Progress path */
+        .session-path {
+            background: linear-gradient(90deg, var(--ember) 0%, var(--gold) 100%);
+        }
+
+        /* API Status indicator */
+        .philang-api-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            background: rgba(22, 20, 28, 0.8);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .philang-api-indicator:hover {
+            border-color: rgba(201, 162, 39, 0.4);
+            background: rgba(201, 162, 39, 0.08);
+        }
+
+        .philang-api-indicator .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .philang-api-indicator .dot.active {
+            background: var(--gold);
+            box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+        }
+
+        .philang-api-indicator .dot.inactive {
+            background: #ef4444;
+        }
+
+        .philang-api-indicator span {
+            color: var(--silver);
+        }
+
+        /* Streaming cursor animation */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .streaming-message .animate-pulse {
+            animation: blink 0.8s infinite;
+            color: var(--gold);
+        }
+    </style>
+</head>
+<body class="cosmic-bg">
+    <!-- Luminous accent bar -->
+    <div class="luminous-bar"></div>
+
+    <div id="app" class="min-h-screen flex flex-col pt-[2px]">
+        <!-- Navigation -->
+        <nav class="philang-nav">
+            <div class="philang-nav-inner max-w-4xl">
+                <div class="flex items-center gap-8">
+                    <a href="index.html" class="philang-logo">
+                        <span class="philang-logo-phi">φ</span>
+                        <span class="philang-logo-text hidden sm:inline">PHILANG</span>
+                    </a>
+                    <div class="nav-links hidden sm:flex">
+                        <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                        <a href="dialectical_dialogue.html" class="nav-link">Dialogue</a>
+                        <a href="socratic_counsel.html" class="nav-link active">Counsel</a>
+                        <a href="philang_embeddings.html" class="nav-link">Embeddings</a>
+                        <a href="philang_embeddings_advanced.html" class="nav-link">Advanced</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="api-indicator"></div>
+                    <!-- Mobile Menu Toggle -->
+                    <button id="mobile-menu-btn" class="sm:hidden flex flex-col gap-1.5 p-2" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav">
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Navigation Overlay -->
+        <nav id="mobile-nav" class="fixed inset-0 bg-[var(--void)]/95 backdrop-blur-lg z-[9999] hidden sm:hidden" role="navigation" aria-label="Mobile navigation">
+            <div class="flex flex-col items-center justify-center h-full gap-6">
+                <a href="index.html" class="text-2xl font-display text-[var(--gold)]">φ PHILANG</a>
+                <a href="derivation_graph.html" class="text-xl nav-link">Derivation</a>
+                <a href="dialectical_dialogue.html" class="text-xl nav-link">Dialogue</a>
+                <a href="socratic_counsel.html" class="text-xl nav-link text-[var(--gold)]">Counsel</a>
+                <a href="philang_embeddings.html" class="text-xl nav-link">Embeddings</a>
+                <a href="philang_embeddings_advanced.html" class="text-xl nav-link">Advanced</a>
+                <button id="mobile-menu-close" class="absolute top-6 right-6 text-3xl text-[var(--pearl)]" aria-label="Close navigation menu">&times;</button>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <header class="page-header">
+            <div class="page-header-inner max-w-4xl">
+                <div class="flex items-center gap-4">
+                    <div class="counsel-orb"></div>
+                    <div>
+                        <h1 class="page-title" style="padding:0;">Socratic Counsel</h1>
+                        <p class="page-subtitle">Philosophical Therapy Interface</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="tradition-select" class="input" style="width: auto; padding: 0.5rem 1rem; font-size: 0.875rem;">
+                        <option value="socratic">Socratic (Elenchus)</option>
+                        <option value="stoic">Stoic (Premeditatio)</option>
+                        <option value="existential">Existential (Authentic Choice)</option>
+                        <option value="phenomenological">Phenomenological (Description)</option>
+                        <option value="buddhist">Buddhist (Mindful Inquiry)</option>
+                        <option value="wittgensteinian">Wittgensteinian (Therapeutic)</option>
+                        <option value="psychoanalytic">Psychoanalytic (Depth)</option>
+                    </select>
+                    <button id="btn-new-session" class="btn btn-ghost">
+                        New Session
+                    </button>
+                    <div class="relative">
+                        <button id="btn-history" class="btn btn-ghost" title="Session History">
+                            <span style="font-size: 1.1em;">📜</span>
+                        </button>
+                        <div id="history-dropdown" class="hidden absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-gray-900/95 border border-gray-700 rounded-xl shadow-2xl z-50 backdrop-blur-sm">
+                            <div class="p-3 border-b border-gray-700/50">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-300">Previous Sessions</span>
+                                    <div class="flex gap-2">
+                                        <button id="btn-export-current" class="text-xs text-emerald-400 hover:text-emerald-300" title="Export current session">Export MD</button>
+                                        <button id="btn-export-all" class="text-xs text-indigo-400 hover:text-indigo-300">Export All</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="history-list" class="p-2">
+                                <div class="text-center text-gray-500 text-sm py-4">Loading sessions...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex max-w-4xl mx-auto w-full">
+            <!-- Dialogue Area -->
+            <section class="flex-1 flex flex-col">
+                <!-- Session Progress -->
+                <div id="session-progress" class="px-6 py-3 border-b border-gray-800/30 hidden">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">Session Progress</span>
+                        <div class="flex items-center gap-4">
+                            <span id="phase-indicator" class="text-indigo-400">Opening</span>
+                            <div class="w-48 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                <div id="progress-bar" class="session-path h-full rounded-full transition-all duration-500" style="width: 10%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <!-- Welcome State -->
+                    <div id="welcome-state" class="h-full flex flex-col items-center justify-center text-center px-8">
+                        <div class="counsel-orb mb-6"></div>
+                        <h2 class="text-2xl font-light mb-4 text-gray-200">Welcome to Philosophical Counsel</h2>
+                        <p class="text-gray-400 max-w-lg mb-8 leading-relaxed">
+                            This is a space for examined reflection. Through careful questioning in various philosophical traditions,
+                            we will explore your concerns together—not to provide answers, but to deepen understanding.
+                        </p>
+                        <div class="grid grid-cols-2 gap-4 max-w-xl w-full">
+                            <button class="concern-starter p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-left transition-all border border-gray-700/50 hover:border-indigo-500/30" data-concern="meaning">
+                                <div class="text-indigo-400 mb-2">✦</div>
+                                <div class="font-medium mb-1">Questions of Meaning</div>
+                                <div class="text-sm text-gray-500">Purpose, significance, what matters</div>
+                            </button>
+                            <button class="concern-starter p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-left transition-all border border-gray-700/50 hover:border-indigo-500/30" data-concern="choice">
+                                <div class="text-amber-400 mb-2">⚖</div>
+                                <div class="font-medium mb-1">Difficult Choices</div>
+                                <div class="text-sm text-gray-500">Decisions, dilemmas, what to do</div>
+                            </button>
+                            <button class="concern-starter p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-left transition-all border border-gray-700/50 hover:border-indigo-500/30" data-concern="self">
+                                <div class="text-purple-400 mb-2">◎</div>
+                                <div class="font-medium mb-1">Understanding Oneself</div>
+                                <div class="text-sm text-gray-500">Identity, authenticity, who I am</div>
+                            </button>
+                            <button class="concern-starter p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-left transition-all border border-gray-700/50 hover:border-indigo-500/30" data-concern="suffering">
+                                <div class="text-emerald-400 mb-2">❋</div>
+                                <div class="font-medium mb-1">Facing Difficulty</div>
+                                <div class="text-sm text-gray-500">Pain, loss, anxiety, struggle</div>
+                            </button>
+                        </div>
+                        <p class="text-gray-500 text-sm mt-6">Or simply begin by sharing what's on your mind...</p>
+                    </div>
+
+                    <!-- Messages will be inserted here -->
+                    <div id="messages-stream" class="space-y-4 hidden"></div>
+                </div>
+
+                <!-- Input Area -->
+                <div id="input-area" class="p-4 border-t border-gray-800/50">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="relative">
+                            <textarea
+                                id="user-input"
+                                class="reflection-input w-full rounded-xl px-4 py-3 pr-24 text-gray-200 resize-none"
+                                placeholder="Share your thoughts..."
+                                rows="3"
+                            ></textarea>
+                            <button
+                                id="btn-send"
+                                class="absolute right-3 bottom-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                            >
+                                Reflect
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+                            <span>Press Enter to send, Shift+Enter for new line</span>
+                            <button id="btn-pause" class="hover:text-gray-300 transition-colors hidden">
+                                ⏸ Pause for reflection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Insights Sidebar -->
+            <aside id="insights-sidebar" class="w-72 border-l border-gray-800/50 p-4 overflow-y-auto hidden">
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Session Insights</h3>
+
+                <!-- Key Beliefs Examined -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span>◇</span> Beliefs Examined
+                    </h4>
+                    <div id="beliefs-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Assumptions Uncovered -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span>⟐</span> Assumptions Uncovered
+                    </h4>
+                    <div id="assumptions-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Tensions Identified -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span>⊗</span> Tensions
+                    </h4>
+                    <div id="tensions-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Emerging Clarity -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span>✧</span> Emerging Clarity
+                    </h4>
+                    <div id="clarity-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Session Summary -->
+                <div class="mt-auto pt-4 border-t border-gray-800/50">
+                    <button id="btn-summary" class="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-all">
+                        Generate Summary
+                    </button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// PHILOSOPHICAL COUNSELING TRADITIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const COUNSEL_TRADITIONS = {
+    socratic: {
+        id: 'socratic',
+        name: 'Socratic',
+        subtitle: 'The Examined Life',
+        color: '#f59e0b',
+        icon: '☉',
+        method: 'elenchus',
+        description: 'Through questioning, we discover what we thought we knew but did not.',
+        principles: [
+            'I know that I know nothing',
+            'The unexamined life is not worth living',
+            'True wisdom is knowing the limits of one\'s knowledge'
+        ],
+        phases: ['Opening', 'Definition Seeking', 'Testing', 'Aporia', 'Reexamination', 'Insight'],
+        questionTypes: {
+            clarifying: [
+                "What do you mean when you say '{term}'?",
+                "Can you give me an example of what you mean?",
+                "How would you define '{term}' more precisely?",
+                "When you say '{term}', are you referring to {interpretation_a} or {interpretation_b}?"
+            ],
+            probing_assumptions: [
+                "What are you assuming when you say that?",
+                "Is that assumption always true?",
+                "What would have to be the case for that to be true?",
+                "Where does this belief come from?"
+            ],
+            testing: [
+                "But consider this case: {counterexample}. Does your definition still hold?",
+                "If that were true, wouldn't it follow that {implication}?",
+                "Can you think of an exception to what you've said?",
+                "How would you respond to someone who claimed the opposite?"
+            ],
+            deepening: [
+                "And why is that important to you?",
+                "What is it about {topic} that concerns you most deeply?",
+                "If you achieved that, what would it give you?",
+                "What lies beneath this concern?"
+            ]
+        },
+        responseTemplates: {
+            opening: "Welcome, friend. You come to me with something on your mind. Before we proceed, tell me: what is it that troubles you? Or perhaps—what question do you find yourself unable to answer?",
+            seeking_definition: "Interesting. You speak of {concept}. But tell me, what do you understand by this word? How would you define {concept} for someone who had never encountered it?",
+            testing: "I see. So you say that {user_claim}. But consider: {test_case}. How does your understanding account for this?",
+            aporia: "We seem to have reached an impasse (ἀπορία). What you initially claimed appears to conflict with what we discovered through examination. This confusion, though uncomfortable, is the beginning of wisdom. Let us sit with it a moment.",
+            reexamination: "Perhaps we began with a false assumption. Let us return to the beginning with fresh eyes. What if {alternative_view}?",
+            insight: "Ah! Do you see it now? Through our questioning, something has come to light that was hidden before. Tell me what you now understand that you did not before."
+        }
+    },
+
+    stoic: {
+        id: 'stoic',
+        name: 'Stoic',
+        subtitle: 'Tranquility Through Reason',
+        color: '#64748b',
+        icon: '⬡',
+        method: 'premeditatio',
+        description: 'Distinguish what is within your control from what is not, and find peace.',
+        principles: [
+            'Some things are within our control, others are not',
+            'It is not things that disturb us, but our judgments about things',
+            'Virtue is the only true good'
+        ],
+        phases: ['Presenting', 'Dichotomy of Control', 'Examining Judgments', 'Reframing', 'Acceptance', 'Action'],
+        questionTypes: {
+            control_distinction: [
+                "Is this something within your control, or outside it?",
+                "What part of this situation can you actually influence?",
+                "What would remain even if everything external were taken away?",
+                "Can you separate your response from what happened?"
+            ],
+            judgment_examination: [
+                "What judgment are you making about this event?",
+                "Is it the event itself that disturbs you, or your interpretation of it?",
+                "How else might this situation be viewed?",
+                "What would a wise person think about this?"
+            ],
+            virtue_focus: [
+                "Regardless of the outcome, how can you act virtuously here?",
+                "What would courage/justice/wisdom/temperance look like in this situation?",
+                "What kind of person do you want to become through this?",
+                "How might this difficulty be an opportunity for growth?"
+            ],
+            acceptance: [
+                "If this cannot be changed, what would acceptance look like?",
+                "How might you work with this rather than against it?",
+                "What can you learn from what fate has presented?",
+                "How might this be part of a larger whole you cannot see?"
+            ]
+        },
+        responseTemplates: {
+            opening: "You bring to me a weight that troubles your tranquility. Before we examine it, let me ask: is the disturbance in the thing itself, or in your judgment about it? Tell me what concerns you.",
+            dichotomy: "Let us apply the fundamental distinction. Of what you've described, what is truly within your control? Your actions, your judgments, your will—these are yours. What else?",
+            judgment: "You say {user_claim}. But notice: this is a judgment you are adding to the bare facts. The facts are: {facts}. The judgment you add is: {judgment}. Is this judgment necessary?",
+            reframe: "Consider: the Stoics taught that every obstacle can become the way. Marcus Aurelius wrote, 'The impediment to action advances action. What stands in the way becomes the way.' How might this difficulty serve you?",
+            acceptance: "There is a deep peace that comes from aligning our will with nature. What we cannot change, we can accept. What remains is: what action is available to you, here, now?"
+        }
+    },
+
+    existential: {
+        id: 'existential',
+        name: 'Existential',
+        subtitle: 'Freedom and Responsibility',
+        color: '#ef4444',
+        icon: '∃',
+        method: 'authentic_confrontation',
+        description: 'Face your freedom, your finitude, and the weight of creating your own meaning.',
+        principles: [
+            'Existence precedes essence',
+            'We are condemned to be free',
+            'Anxiety reveals our authentic possibilities'
+        ],
+        phases: ['Inauthenticity', 'Confrontation', 'Anxiety', 'Choice', 'Commitment', 'Authenticity'],
+        questionTypes: {
+            freedom: [
+                "What choices are you avoiding?",
+                "If you were completely free to choose, what would you do?",
+                "What are you pretending you cannot change?",
+                "How are you hiding from your own freedom?"
+            ],
+            authenticity: [
+                "Is this truly your choice, or are you following what 'they' say?",
+                "When have you felt most yourself?",
+                "What would it mean to take full responsibility for this?",
+                "Who are you when no one is watching?"
+            ],
+            finitude: [
+                "If you knew you would die tomorrow, would you still do this?",
+                "What becomes essential when you contemplate your mortality?",
+                "How does the awareness of death clarify what matters?",
+                "What would you regret not having done?"
+            ],
+            meaning: [
+                "There is no given meaning—what meaning will you create?",
+                "What project gives your life significance?",
+                "What are you willing to commit to, knowing it may fail?",
+                "How do you respond to the absurdity of existence?"
+            ]
+        },
+        responseTemplates: {
+            opening: "We meet here, two beings thrown into existence without our consent, facing the weight of our freedom. What brings you to this moment of reflection? What calls you to examine your life?",
+            confrontation: "You speak of {topic} as though it were decided for you. But notice: you are the one choosing. Even not choosing is a choice. What would it mean to fully own this?",
+            anxiety: "The anxiety you feel—this is not a problem to be solved. It is the dizziness of freedom, the awareness that you must choose and nothing can choose for you. Can you stay with this feeling?",
+            choice: "Now we arrive at the moment of decision. There are no guarantees, no certainties. You must leap. The question is not whether you might fail, but what you are willing to stake yourself on.",
+            authenticity: "To be authentic is not to find your 'true self'—it is to create yourself through your choices. Who will you become through this choice?"
+        }
+    },
+
+    phenomenological: {
+        id: 'phenomenological',
+        name: 'Phenomenological',
+        subtitle: 'Return to Experience',
+        color: '#6366f1',
+        icon: 'Σ',
+        method: 'description',
+        description: 'Set aside theories and return to the things themselves as they appear.',
+        principles: [
+            'To the things themselves',
+            'Bracket assumptions to see what appears',
+            'Describe, don\'t explain'
+        ],
+        phases: ['Natural Attitude', 'Bracketing', 'Description', 'Variation', 'Essence', 'Return'],
+        questionTypes: {
+            bracketing: [
+                "Can you set aside what you think you know and simply describe what you experience?",
+                "What if you suspended your theories about this—what would remain?",
+                "Before any interpretation, what actually appears?",
+                "What do you directly experience, before adding any story?"
+            ],
+            description: [
+                "Describe exactly what you feel, without explaining it.",
+                "What is the texture of this experience?",
+                "Where in your body do you notice this?",
+                "If this feeling had a shape, color, or weight, what would it be?"
+            ],
+            variation: [
+                "Could you imagine this differently? What would change and what would remain?",
+                "What is essential to this experience, and what is accidental?",
+                "In what other situations have you felt something similar?",
+                "What would be lost if you took away {element}?"
+            ],
+            essence: [
+                "What seems to be at the core of this experience?",
+                "What makes this experience what it is?",
+                "What structure underlies what you've described?",
+                "What has revealed itself through this careful attention?"
+            ]
+        },
+        responseTemplates: {
+            opening: "Let us set aside our usual ways of thinking and return to experience itself. I invite you to describe, as carefully as possible, what you are living through. Don't explain—just describe.",
+            bracketing: "You've offered an interpretation. Let us bracket that for now—set it aside without denying it. What remains when we look at the experience itself, prior to this interpretation?",
+            description: "Stay with the phenomenon. You say {user_description}. Can you describe this more fully? What is the texture, the feel, the lived quality of this experience?",
+            variation: "Let us vary the phenomenon in imagination. What if {variation}? Does the essential character of your experience remain, or does it change?",
+            essence: "Through our careful description, something has come to light. The phenomenon reveals itself as {essence}. Does this resonate with your lived sense of it?"
+        }
+    },
+
+    buddhist: {
+        id: 'buddhist',
+        name: 'Buddhist',
+        subtitle: 'Mindful Investigation',
+        color: '#10b981',
+        icon: '◎',
+        method: 'mindful_inquiry',
+        description: 'Observe the arising and passing of experience without grasping or aversion.',
+        principles: [
+            'All conditioned phenomena are impermanent',
+            'Suffering arises from craving and aversion',
+            'There is a path to the cessation of suffering'
+        ],
+        phases: ['Suffering', 'Observation', 'Craving/Aversion', 'Impermanence', 'Non-Self', 'Release'],
+        questionTypes: {
+            suffering: [
+                "Where is the suffering located in this experience?",
+                "What is the quality of this dukkha—is it sharp, dull, heavy?",
+                "When you look directly at the pain, what do you notice?",
+                "Is this the actual experience, or your resistance to it?"
+            ],
+            craving_aversion: [
+                "What are you grasping for here?",
+                "What are you trying to push away?",
+                "If you released this craving, what would happen?",
+                "Can you observe the wanting without acting on it?"
+            ],
+            impermanence: [
+                "Has this experience remained constant, or has it changed?",
+                "What was this feeling like five minutes ago? What will it be in five minutes?",
+                "Can you find anything permanent in what you're describing?",
+                "If everything changes, what does that mean for this problem?"
+            ],
+            non_self: [
+                "Who is the one experiencing this?",
+                "Is this thought 'you', or something arising in awareness?",
+                "If you are the observer of this experience, can you be the experience itself?",
+                "What remains when you don't identify with this feeling?"
+            ]
+        },
+        responseTemplates: {
+            opening: "You come carrying something. Before we discuss it, let us pause and breathe. Notice this moment—the body sitting, the breath moving. Now, gently, what suffering brings you here?",
+            observation: "Let us observe this together. You describe {experience}. As you attend to it now, with gentle awareness, what do you notice? Don't try to change it—simply observe.",
+            craving: "I notice a quality of wanting in what you describe—perhaps wanting things to be different than they are. This is natural. Can you feel the craving itself? What is it like?",
+            impermanence: "You speak of {concern} as though it were solid and permanent. But watch carefully: even now, isn't it shifting, changing? Nothing lasts—not joy, not sorrow. What does this reveal?",
+            release: "Consider: what would it be like to release your grip on this? Not to give up or resign, but to hold it more lightly? What happens when you stop fighting what is?"
+        }
+    },
+
+    wittgensteinian: {
+        id: 'wittgensteinian',
+        name: 'Wittgensteinian',
+        subtitle: 'Therapeutic Clarity',
+        color: '#14b8a6',
+        icon: '𝔏',
+        method: 'language_therapy',
+        description: 'Philosophical problems arise from language gone on holiday. Clarity dissolves them.',
+        principles: [
+            'Philosophical problems arise from misunderstanding our language',
+            'Don\'t ask for the meaning, ask for the use',
+            'Philosophy leaves everything as it is'
+        ],
+        phases: ['Problem', 'Language Examination', 'Use Analysis', 'Picture Critique', 'Dissolution', 'Peace'],
+        questionTypes: {
+            language_use: [
+                "How do you normally use this word in everyday life?",
+                "In what situation would you actually say this?",
+                "What language-game are you playing here?",
+                "Who taught you to speak this way about {topic}?"
+            ],
+            misleading_pictures: [
+                "What picture is holding you captive here?",
+                "Are you perhaps confusing a metaphor for a literal truth?",
+                "What image comes to mind when you say '{term}'? Is that image helping or hindering?",
+                "What if this word worked differently than you imagine?"
+            ],
+            ordinary_language: [
+                "Bring this back to the everyday. What ordinary situation does this remind you of?",
+                "Before philosophy complicated things, how would you simply put this?",
+                "If a child asked you this, what would you say?",
+                "What would a practical person do here?"
+            ],
+            dissolution: [
+                "Is this a genuine problem, or a confusion born of language?",
+                "What if the question itself is malformed?",
+                "When you look at actual practice, does this problem still arise?",
+                "Perhaps the question dissolves when we see how language actually works?"
+            ]
+        },
+        responseTemplates: {
+            opening: "What brings you to philosophy today? Often, what seems like a deep problem is a confusion born of how we're using words. Let's look carefully at what you're saying.",
+            examination: "You say '{user_claim}'. But notice the words you're using. In everyday life, when would you actually say this? What situation calls for these words?",
+            picture: "I suspect a picture is holding you captive. When you say '{term}', you imagine {picture}. But is that how the word actually works? Consider: {alternative_use}.",
+            ordinary: "Let's bring this back to earth. Forget the philosophical formulations. In your ordinary life, what concrete situation are you actually dealing with?",
+            dissolution: "Perhaps the problem isn't as deep as it seemed. When we see how our language actually works, the question doesn't require answering—it dissolves. Do you feel the release?"
+        }
+    },
+
+    psychoanalytic: {
+        id: 'psychoanalytic',
+        name: 'Psychoanalytic',
+        subtitle: 'Depth Exploration',
+        color: '#8b5cf6',
+        icon: '⧗',
+        method: 'depth_inquiry',
+        description: 'What we hide from ourselves shapes us. Bringing it to light transforms us.',
+        principles: [
+            'The unconscious speaks in symptoms and slips',
+            'What we resist, persists',
+            'The past lives in the present'
+        ],
+        phases: ['Surface', 'Association', 'Resistance', 'Depth', 'Recognition', 'Working Through'],
+        questionTypes: {
+            association: [
+                "What does this remind you of?",
+                "What comes to mind, without filtering?",
+                "If you follow this feeling, where does it lead?",
+                "What's the first memory that surfaces?"
+            ],
+            resistance: [
+                "I notice you moved away from that topic. What's there?",
+                "What are you avoiding thinking about?",
+                "What would be difficult to admit?",
+                "What don't you want me to ask?"
+            ],
+            depth: [
+                "What might be beneath this surface feeling?",
+                "When else have you felt this way?",
+                "Who does this situation remind you of?",
+                "What childhood experience does this echo?"
+            ],
+            patterns: [
+                "Is this a familiar pattern for you?",
+                "How do you typically respond in situations like this?",
+                "What role are you playing? What role are others playing?",
+                "What keeps repeating in your life?"
+            ]
+        },
+        responseTemplates: {
+            opening: "Take your time. There's no rush here. Begin wherever feels natural—what surfaces when you turn your attention inward?",
+            association: "You mentioned {element}. Stay with that for a moment. What associations arise? Don't censor—just notice what comes.",
+            resistance: "I notice something interesting. When we approached {topic}, something shifted. What do you imagine might be there that we're circling around?",
+            depth: "This surface concern may be pointing to something deeper. The feeling you describe—{feeling}—where else in your life have you known it?",
+            pattern: "A pattern seems to be emerging. You've described this dynamic before, in different forms. What if this is an old script, playing out again?"
+        }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONCERN DOMAINS — What brings people to philosophical counsel
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CONCERN_DOMAINS = {
+    meaning: {
+        name: 'Questions of Meaning',
+        keywords: ['purpose', 'meaning', 'significance', 'point', 'why', 'matters', 'worthwhile'],
+        openingQuestions: [
+            "What feels meaningless to you right now?",
+            "When did you last feel a sense of purpose?",
+            "What would make your life feel significant?"
+        ]
+    },
+    choice: {
+        name: 'Difficult Choices',
+        keywords: ['decide', 'choice', 'option', 'should', 'dilemma', 'path', 'either', 'or'],
+        openingQuestions: [
+            "What decision weighs on you?",
+            "What makes this choice so difficult?",
+            "What would you lose with each option?"
+        ]
+    },
+    self: {
+        name: 'Understanding Oneself',
+        keywords: ['who am i', 'identity', 'self', 'authentic', 'true', 'really', 'pretend'],
+        openingQuestions: [
+            "Who are you, when everything else is stripped away?",
+            "When do you feel most yourself?",
+            "What parts of yourself do you hide?"
+        ]
+    },
+    suffering: {
+        name: 'Facing Difficulty',
+        keywords: ['pain', 'hurt', 'loss', 'grief', 'anxiety', 'fear', 'struggle', 'hard'],
+        openingQuestions: [
+            "What pain are you carrying?",
+            "What do you fear most in this situation?",
+            "What have you lost that you're mourning?"
+        ]
+    },
+    relationship: {
+        name: 'Relationships',
+        keywords: ['relationship', 'friend', 'family', 'love', 'trust', 'betrayal', 'conflict'],
+        openingQuestions: [
+            "What troubles you about this relationship?",
+            "What do you need that you're not receiving?",
+            "What would understanding look like here?"
+        ]
+    },
+    value: {
+        name: 'Values & Ethics',
+        keywords: ['right', 'wrong', 'should', 'moral', 'ethical', 'good', 'duty', 'responsibility'],
+        openingQuestions: [
+            "What do you believe is right here?",
+            "Whose voices influence your sense of what you should do?",
+            "What would integrity look like in this situation?"
+        ]
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOCRATIC COUNSEL ENGINE - With Claude API Integration
+// ═══════════════════════════════════════════════════════════════════════════
+
+class SocraticCounselEngine {
+    constructor() {
+        this.session = null;
+        this.tradition = COUNSEL_TRADITIONS.socratic;
+        this.insights = {
+            beliefs: [],
+            assumptions: [],
+            tensions: [],
+            clarity: []
+        };
+        this.useAPI = false;
+        this.conversationHistory = [];
+        this.isProcessing = false;
+    }
+
+    setTradition(traditionId) {
+        this.tradition = COUNSEL_TRADITIONS[traditionId] || COUNSEL_TRADITIONS.socratic;
+    }
+
+    checkAPIAvailability() {
+        this.useAPI = typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured();
+        return this.useAPI;
+    }
+
+    startSession(concernType = null) {
+        this.session = {
+            tradition: this.tradition,
+            concernType,
+            phase: 0,
+            messages: [],
+            keyTerms: [],
+            claims: [],
+            questionCount: 0,
+            startTime: Date.now()
+        };
+        this.insights = { beliefs: [], assumptions: [], tensions: [], clarity: [] };
+        this.conversationHistory = [];
+        this.checkAPIAvailability();
+
+        return this.generateOpening(concernType);
+    }
+
+    generateOpening(concernType) {
+        const tradition = this.tradition;
+        let opening = tradition.responseTemplates.opening;
+
+        if (concernType && CONCERN_DOMAINS[concernType]) {
+            const domain = CONCERN_DOMAINS[concernType];
+            const additionalQ = domain.openingQuestions[Math.floor(Math.random() * domain.openingQuestions.length)];
+            opening += `\n\n${additionalQ}`;
+        }
+
+        const message = {
+            type: 'counsel',
+            tradition: tradition.id,
+            content: opening,
+            phase: tradition.phases[0],
+            timestamp: Date.now()
+        };
+
+        this.session.messages.push(message);
+
+        // Add to conversation history for API context
+        this.conversationHistory.push({
+            role: 'assistant',
+            content: opening
+        });
+
+        return message;
+    }
+
+    // Async version for API integration
+    async processUserInputAsync(input) {
+        if (this.isProcessing) return null;
+        this.isProcessing = true;
+
+        const userMessage = {
+            type: 'user',
+            content: input,
+            timestamp: Date.now()
+        };
+        this.session.messages.push(userMessage);
+
+        // Add to conversation history
+        this.conversationHistory.push({
+            role: 'user',
+            content: input
+        });
+
+        // Analyze input locally (quick)
+        const analysis = this.analyzeInput(input);
+        this.session.keyTerms = [...new Set([...this.session.keyTerms, ...analysis.keyTerms])];
+        if (analysis.claim) this.session.claims.push(analysis.claim);
+        this.extractInsights(input, analysis);
+
+        try {
+            // Use Claude API if available
+            if (this.useAPI) {
+                const sessionContext = {
+                    phase: this.tradition.phases[this.session.phase],
+                    domain: this.session.concernType,
+                    beliefs: this.insights.beliefs.map(b => b.text.slice(0, 50)),
+                    assumptions: this.insights.assumptions.map(a => a.text.slice(0, 50)),
+                    tensions: this.insights.tensions.map(t => t.text)
+                };
+
+                const response = await PhiLangAPI.counselResponse(
+                    input,
+                    this.tradition.id,
+                    this.conversationHistory.slice(0, -1), // Exclude current message (added separately)
+                    sessionContext,
+                    { stream: false }
+                );
+
+                // Extract AI-generated insights
+                const aiInsights = PhiLangAPI.extractInsights(response.content);
+                this.mergeAIInsights(aiInsights, input);
+
+                // Update phase
+                this.session.questionCount++;
+                this.session.phase = Math.min(this.session.phase + 1, this.tradition.phases.length - 1);
+
+                const message = {
+                    type: 'counsel',
+                    tradition: this.tradition.id,
+                    content: response.content,
+                    phase: this.tradition.phases[this.session.phase],
+                    fromAPI: true,
+                    timestamp: Date.now()
+                };
+
+                this.session.messages.push(message);
+                this.conversationHistory.push({
+                    role: 'assistant',
+                    content: response.content
+                });
+
+                this.isProcessing = false;
+                return message;
+            }
+        } catch (error) {
+            console.error('API error, falling back to rule-based:', error);
+        }
+
+        // Fallback to rule-based
+        this.isProcessing = false;
+        return this.processUserInputFallback(input, analysis);
+    }
+
+    // Original synchronous method (fallback)
+    processUserInput(input) {
+        const userMessage = {
+            type: 'user',
+            content: input,
+            timestamp: Date.now()
+        };
+        this.session.messages.push(userMessage);
+
+        const analysis = this.analyzeInput(input);
+        this.session.keyTerms = [...new Set([...this.session.keyTerms, ...analysis.keyTerms])];
+        if (analysis.claim) this.session.claims.push(analysis.claim);
+        this.extractInsights(input, analysis);
+
+        return this.processUserInputFallback(input, analysis);
+    }
+
+    processUserInputFallback(input, analysis) {
+        const responseType = this.determineResponseType(analysis);
+        return this.generateResponse(responseType, analysis, input);
+    }
+
+    mergeAIInsights(aiInsights, userInput) {
+        // Add PhiLang concepts as emerging clarity
+        if (aiInsights.philangExpressions.length > 0) {
+            aiInsights.philangExpressions.forEach(expr => {
+                if (!this.insights.clarity.includes(expr)) {
+                    this.insights.clarity.push(`PhiLang: ${expr}`);
+                }
+            });
+        }
+
+        // Add questions as prompts for further inquiry
+        if (aiInsights.questions.length > 0 && this.insights.clarity.length < 5) {
+            this.insights.clarity.push(`Key question: ${aiInsights.questions[0]}`);
+        }
+    }
+
+    // Stream response for real-time display
+    async processUserInputStreaming(input, onChunk) {
+        if (this.isProcessing) return null;
+        this.isProcessing = true;
+
+        const userMessage = {
+            type: 'user',
+            content: input,
+            timestamp: Date.now()
+        };
+        this.session.messages.push(userMessage);
+        this.conversationHistory.push({ role: 'user', content: input });
+
+        const analysis = this.analyzeInput(input);
+        this.session.keyTerms = [...new Set([...this.session.keyTerms, ...analysis.keyTerms])];
+        if (analysis.claim) this.session.claims.push(analysis.claim);
+        this.extractInsights(input, analysis);
+
+        if (!this.useAPI) {
+            this.isProcessing = false;
+            return this.processUserInputFallback(input, analysis);
+        }
+
+        try {
+            const sessionContext = {
+                phase: this.tradition.phases[this.session.phase],
+                domain: this.session.concernType,
+                beliefs: this.insights.beliefs.map(b => b.text.slice(0, 50)),
+                assumptions: this.insights.assumptions.map(a => a.text.slice(0, 50)),
+                tensions: this.insights.tensions.map(t => t.text)
+            };
+
+            let fullContent = '';
+
+            await PhiLangAPI.counselResponse(
+                input,
+                this.tradition.id,
+                this.conversationHistory.slice(0, -1),
+                sessionContext,
+                {
+                    stream: true,
+                    onStream: (chunk, full) => {
+                        fullContent = full;
+                        if (onChunk) onChunk(chunk, full);
+                    }
+                }
+            );
+
+            // Process complete response
+            const aiInsights = PhiLangAPI.extractInsights(fullContent);
+            this.mergeAIInsights(aiInsights, input);
+
+            this.session.questionCount++;
+            this.session.phase = Math.min(this.session.phase + 1, this.tradition.phases.length - 1);
+
+            const message = {
+                type: 'counsel',
+                tradition: this.tradition.id,
+                content: fullContent,
+                phase: this.tradition.phases[this.session.phase],
+                fromAPI: true,
+                timestamp: Date.now()
+            };
+
+            this.session.messages.push(message);
+            this.conversationHistory.push({ role: 'assistant', content: fullContent });
+
+            this.isProcessing = false;
+            return message;
+
+        } catch (error) {
+            console.error('Streaming error:', error);
+            this.isProcessing = false;
+            return this.processUserInputFallback(input, analysis);
+        }
+    }
+
+    analyzeInput(input) {
+        const analysis = {
+            keyTerms: [],
+            claim: null,
+            sentiment: 'neutral',
+            concernDomain: null,
+            containsQuestion: input.includes('?'),
+            length: input.length
+        };
+
+        // Extract key philosophical terms
+        const philosophicalTerms = [
+            'meaning', 'purpose', 'truth', 'good', 'right', 'wrong', 'freedom', 'choice',
+            'self', 'identity', 'love', 'death', 'fear', 'anxiety', 'happiness', 'suffering',
+            'believe', 'think', 'feel', 'know', 'understand', 'should', 'must', 'always', 'never',
+            'real', 'true', 'possible', 'impossible', 'certain', 'doubt'
+        ];
+
+        const words = input.toLowerCase().split(/\s+/);
+        analysis.keyTerms = words.filter(w => philosophicalTerms.includes(w));
+
+        // Detect claims (statements with "I think", "I believe", "I feel", "It is")
+        const claimPatterns = [
+            /i (think|believe|feel) (that )?(.+)/i,
+            /it (is|seems) (.+)/i,
+            /(.+) is (always|never|really|truly) (.+)/i
+        ];
+
+        for (const pattern of claimPatterns) {
+            const match = input.match(pattern);
+            if (match) {
+                analysis.claim = match[0];
+                break;
+            }
+        }
+
+        // Detect concern domain
+        for (const [domain, config] of Object.entries(CONCERN_DOMAINS)) {
+            if (config.keywords.some(k => input.toLowerCase().includes(k))) {
+                analysis.concernDomain = domain;
+                break;
+            }
+        }
+
+        // Detect sentiment/emotional quality
+        const anxiousWords = ['afraid', 'scared', 'anxious', 'worried', 'nervous', 'panic'];
+        const sadWords = ['sad', 'depressed', 'lost', 'empty', 'hopeless', 'grief'];
+        const confusedWords = ['confused', 'don\'t know', 'uncertain', 'unclear', 'lost'];
+
+        if (anxiousWords.some(w => input.toLowerCase().includes(w))) analysis.sentiment = 'anxious';
+        else if (sadWords.some(w => input.toLowerCase().includes(w))) analysis.sentiment = 'sad';
+        else if (confusedWords.some(w => input.toLowerCase().includes(w))) analysis.sentiment = 'confused';
+
+        return analysis;
+    }
+
+    extractInsights(input, analysis) {
+        // Extract beliefs
+        if (analysis.claim) {
+            this.insights.beliefs.push({
+                text: analysis.claim,
+                examined: false
+            });
+        }
+
+        // Detect assumptions (words like "should", "must", "always", "never")
+        const assumptionPatterns = [
+            /i (should|must|have to) (.+)/i,
+            /(everyone|people|they) (always|never) (.+)/i,
+            /it's (wrong|bad|right|good) to (.+)/i
+        ];
+
+        for (const pattern of assumptionPatterns) {
+            const match = input.match(pattern);
+            if (match) {
+                this.insights.assumptions.push({
+                    text: match[0],
+                    challenged: false
+                });
+            }
+        }
+
+        // Detect tensions (contradictions, ambivalence)
+        if (input.includes(' but ') || input.includes(' however ') || input.includes(' yet ')) {
+            const parts = input.split(/\s+but\s+|\s+however\s+|\s+yet\s+/i);
+            if (parts.length > 1) {
+                this.insights.tensions.push({
+                    text: `Tension between "${parts[0].slice(-50)}..." and "${parts[1].slice(0, 50)}..."`,
+                    explored: false
+                });
+            }
+        }
+    }
+
+    determineResponseType(analysis) {
+        const tradition = this.tradition;
+        const phase = this.session.phase;
+        const questionCount = this.session.questionCount;
+
+        // Phase-based response selection
+        if (phase === 0) {
+            return 'opening_followup';
+        }
+
+        if (analysis.claim && !this.insights.beliefs.some(b => b.examined)) {
+            return 'examine_belief';
+        }
+
+        if (this.insights.assumptions.length > 0 && !this.insights.assumptions.some(a => a.challenged)) {
+            return 'challenge_assumption';
+        }
+
+        if (this.insights.tensions.length > 0 && !this.insights.tensions.some(t => t.explored)) {
+            return 'explore_tension';
+        }
+
+        if (questionCount > 3 && analysis.sentiment === 'confused') {
+            return 'aporia';
+        }
+
+        if (analysis.containsQuestion) {
+            return 'reflect_question';
+        }
+
+        // Default to deepening
+        return 'deepen';
+    }
+
+    generateResponse(responseType, analysis, userInput) {
+        const tradition = this.tradition;
+        this.session.questionCount++;
+
+        let content;
+        let phase = tradition.phases[Math.min(this.session.phase, tradition.phases.length - 1)];
+
+        switch (responseType) {
+            case 'opening_followup':
+                content = this.generateFollowUp(analysis, userInput);
+                this.session.phase = 1;
+                phase = tradition.phases[1];
+                break;
+
+            case 'examine_belief':
+                content = this.generateBeliefExamination(analysis, userInput);
+                if (this.insights.beliefs.length > 0) {
+                    this.insights.beliefs[this.insights.beliefs.length - 1].examined = true;
+                }
+                break;
+
+            case 'challenge_assumption':
+                content = this.generateAssumptionChallenge(analysis, userInput);
+                const unchallenged = this.insights.assumptions.find(a => !a.challenged);
+                if (unchallenged) unchallenged.challenged = true;
+                this.session.phase = Math.min(this.session.phase + 1, tradition.phases.length - 1);
+                phase = tradition.phases[this.session.phase];
+                break;
+
+            case 'explore_tension':
+                content = this.generateTensionExploration(analysis, userInput);
+                const unexplored = this.insights.tensions.find(t => !t.explored);
+                if (unexplored) unexplored.explored = true;
+                break;
+
+            case 'aporia':
+                content = this.generateAporiaResponse(analysis, userInput);
+                phase = 'Aporia';
+                break;
+
+            case 'reflect_question':
+                content = this.generateQuestionReflection(analysis, userInput);
+                break;
+
+            case 'deepen':
+            default:
+                content = this.generateDeepeningQuestion(analysis, userInput);
+                break;
+        }
+
+        const message = {
+            type: 'counsel',
+            tradition: tradition.id,
+            content,
+            phase,
+            responseType,
+            timestamp: Date.now()
+        };
+
+        this.session.messages.push(message);
+        return message;
+    }
+
+    generateFollowUp(analysis, userInput) {
+        const tradition = this.tradition;
+        const keyTerm = analysis.keyTerms[0] || 'this';
+        const questionTypes = tradition.questionTypes;
+
+        // Use tradition-specific deepening question
+        const deepeningQs = questionTypes.deepening || questionTypes.clarifying;
+        let question = deepeningQs[Math.floor(Math.random() * deepeningQs.length)];
+        question = question.replace('{term}', keyTerm).replace('{topic}', keyTerm);
+
+        return `I hear that ${this.summarize(userInput)}.\n\n${question}`;
+    }
+
+    generateBeliefExamination(analysis, userInput) {
+        const tradition = this.tradition;
+        const claim = analysis.claim || userInput.slice(0, 100);
+
+        // Tradition-specific examination
+        if (tradition.id === 'socratic') {
+            const testingQs = tradition.questionTypes.testing;
+            const question = testingQs[Math.floor(Math.random() * testingQs.length)]
+                .replace('{counterexample}', 'something that might contradict this')
+                .replace('{implication}', 'something you might not accept');
+
+            return `You say: "${claim}"\n\nLet us examine this carefully. ${question}`;
+
+        } else if (tradition.id === 'stoic') {
+            return tradition.responseTemplates.judgment
+                .replace('{user_claim}', claim)
+                .replace('{facts}', 'the bare events')
+                .replace('{judgment}', 'your interpretation of them');
+
+        } else if (tradition.id === 'buddhist') {
+            return `You hold the view that ${claim}.\n\n` +
+                   `Let us observe this belief itself. When you examine it closely, does it feel solid and permanent? ` +
+                   `Or is it perhaps more like a cloud—appearing substantial but shifting when attended to?`;
+
+        } else if (tradition.id === 'wittgensteinian') {
+            return tradition.responseTemplates.examination.replace('{user_claim}', claim);
+
+        } else {
+            return `You've expressed something important: "${claim}"\n\nLet's stay with this. What makes you so certain?`;
+        }
+    }
+
+    generateAssumptionChallenge(analysis, userInput) {
+        const tradition = this.tradition;
+        const assumption = this.insights.assumptions.find(a => !a.challenged);
+        const assumptionText = assumption ? assumption.text : 'what you assume';
+
+        if (tradition.id === 'socratic') {
+            return `I notice an assumption in what you've said: "${assumptionText}"\n\n` +
+                   `But is this assumption always true? Can you think of a case where it might not hold?`;
+
+        } else if (tradition.id === 'stoic') {
+            return `You seem to assume that "${assumptionText}"\n\n` +
+                   `But notice: you are adding this judgment to the situation. ` +
+                   `What if you removed this assumption? What would remain?`;
+
+        } else if (tradition.id === 'existential') {
+            return `There's an assumption operating here: "${assumptionText}"\n\n` +
+                   `But who decided this? Is this your authentic belief, or something you've inherited from others? ` +
+                   `What would change if you rejected this assumption?`;
+
+        } else if (tradition.id === 'buddhist') {
+            return `Notice the grasping in this assumption: "${assumptionText}"\n\n` +
+                   `This is a kind of craving—wanting reality to conform to this belief. ` +
+                   `What happens when you simply observe this assumption, without holding it so tightly?`;
+
+        } else {
+            return `I'd like to examine an assumption I heard: "${assumptionText}"\n\n` +
+                   `What would it mean if this weren't true?`;
+        }
+    }
+
+    generateTensionExploration(analysis, userInput) {
+        const tension = this.insights.tensions.find(t => !t.explored);
+
+        if (this.tradition.id === 'hegelian') {
+            return `Here we find a productive contradiction. ${tension ? tension.text : ''}\n\n` +
+                   `Rather than choosing one side, let us see how this opposition might drive us toward a higher understanding. ` +
+                   `What would it mean to hold both truths together?`;
+        }
+
+        return `I notice something interesting—a tension in what you've shared. ${tension ? tension.text : ''}\n\n` +
+               `Both sides seem to have some truth. Can you say more about living with this tension? ` +
+               `What would it mean to honor both aspects?`;
+    }
+
+    generateAporiaResponse(analysis, userInput) {
+        const tradition = this.tradition;
+
+        if (tradition.id === 'socratic') {
+            return tradition.responseTemplates.aporia + '\n\n' +
+                   `What do you notice now, standing in this uncertainty?`;
+        }
+
+        return `We've arrived at a difficult place—what you thought you knew has become questionable, ` +
+               `yet a clear alternative hasn't emerged.\n\n` +
+               `This discomfort is not a failure. It may be the beginning of genuine inquiry. ` +
+               `What happens when you allow yourself to not-know?`;
+    }
+
+    generateQuestionReflection(analysis, userInput) {
+        // Turn the question back
+        return `You ask an important question. Before I respond, I'm curious: ` +
+               `what draws you to ask this? What answer do you hope for—or fear?`;
+    }
+
+    generateDeepeningQuestion(analysis, userInput) {
+        const tradition = this.tradition;
+        const questionTypes = tradition.questionTypes;
+        const keyTerm = analysis.keyTerms[0] || 'this';
+
+        // Select appropriate question type based on tradition and phase
+        let questions;
+        if (tradition.id === 'stoic') {
+            questions = [...questionTypes.virtue_focus, ...questionTypes.acceptance];
+        } else if (tradition.id === 'existential') {
+            questions = [...questionTypes.freedom, ...questionTypes.authenticity];
+        } else if (tradition.id === 'phenomenological') {
+            questions = [...questionTypes.description, ...questionTypes.essence];
+        } else if (tradition.id === 'buddhist') {
+            questions = [...questionTypes.impermanence, ...questionTypes.non_self];
+        } else {
+            questions = questionTypes.deepening || questionTypes.probing_assumptions;
+        }
+
+        let question = questions[Math.floor(Math.random() * questions.length)];
+        question = question.replace('{term}', keyTerm).replace('{topic}', keyTerm)
+                          .replace('{concept}', keyTerm);
+
+        const acknowledgment = this.generateAcknowledgment(analysis);
+        return `${acknowledgment}\n\n${question}`;
+    }
+
+    generateAcknowledgment(analysis) {
+        const acknowledgments = {
+            anxious: [
+                "I sense the weight of anxiety in what you're sharing.",
+                "There's something pressing here, something urgent.",
+                "This clearly matters deeply to you."
+            ],
+            sad: [
+                "There's a heaviness in what you're describing.",
+                "I hear the pain in your words.",
+                "Something has been lost, or is being grieved."
+            ],
+            confused: [
+                "The confusion you're feeling is understandable.",
+                "Clarity hasn't come easily here.",
+                "You're grappling with something genuinely difficult."
+            ],
+            neutral: [
+                "I appreciate you sharing this.",
+                "There's something important here.",
+                "Let's continue to explore this together."
+            ]
+        };
+
+        const options = acknowledgments[analysis.sentiment] || acknowledgments.neutral;
+        return options[Math.floor(Math.random() * options.length)];
+    }
+
+    summarize(text, maxLength = 50) {
+        if (text.length <= maxLength) return text;
+        return text.slice(0, maxLength).trim() + '...';
+    }
+
+    getSessionProgress() {
+        if (!this.session) return 0;
+        const phases = this.tradition.phases.length;
+        return Math.min((this.session.phase + 1) / phases, 1);
+    }
+
+    getCurrentPhase() {
+        if (!this.session) return 'Not started';
+        return this.tradition.phases[Math.min(this.session.phase, this.tradition.phases.length - 1)];
+    }
+
+    getInsights() {
+        return this.insights;
+    }
+
+    generateSessionSummary() {
+        if (!this.session) return null;
+
+        const duration = Math.floor((Date.now() - this.session.startTime) / 60000);
+
+        let summary = `═══ SESSION SUMMARY ═══\n\n`;
+        summary += `Tradition: ${this.tradition.name}\n`;
+        summary += `Duration: ${duration} minutes\n`;
+        summary += `Questions explored: ${this.session.questionCount}\n\n`;
+
+        if (this.insights.beliefs.length > 0) {
+            summary += `BELIEFS EXAMINED:\n`;
+            this.insights.beliefs.forEach(b => {
+                summary += `• ${b.text} ${b.examined ? '(examined)' : ''}\n`;
+            });
+            summary += '\n';
+        }
+
+        if (this.insights.assumptions.length > 0) {
+            summary += `ASSUMPTIONS UNCOVERED:\n`;
+            this.insights.assumptions.forEach(a => {
+                summary += `• ${a.text} ${a.challenged ? '(challenged)' : ''}\n`;
+            });
+            summary += '\n';
+        }
+
+        if (this.insights.tensions.length > 0) {
+            summary += `TENSIONS IDENTIFIED:\n`;
+            this.insights.tensions.forEach(t => {
+                summary += `• ${t.text}\n`;
+            });
+            summary += '\n';
+        }
+
+        if (this.insights.clarity.length > 0) {
+            summary += `EMERGING CLARITY:\n`;
+            this.insights.clarity.forEach(c => {
+                summary += `• ${c}\n`;
+            });
+        }
+
+        return summary;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UI CONTROLLER - With Claude API Integration
+// ═══════════════════════════════════════════════════════════════════════════
+
+const engine = new SocraticCounselEngine();
+
+// Current session ID for persistence
+let currentSessionId = null;
+
+function initUI() {
+    // Initialize API indicator
+    initAPIIndicator();
+
+    // Initialize persistence and load session history
+    initPersistence();
+
+    // Initialize mobile menu
+    initMobileMenu();
+
+    // Tradition selector
+    document.getElementById('tradition-select').addEventListener('change', (e) => {
+        engine.setTradition(e.target.value);
+        updateTraditionUI();
+    });
+
+    // Concern starters
+    document.querySelectorAll('.concern-starter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            startSession(btn.dataset.concern);
+        });
+    });
+
+    // Send button
+    document.getElementById('btn-send').addEventListener('click', sendMessage);
+
+    // Input textarea
+    const input = document.getElementById('user-input');
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // New session button
+    document.getElementById('btn-new-session').addEventListener('click', () => {
+        saveCurrentSession(); // Save current session before resetting
+        resetSession();
+    });
+
+    // History button toggle
+    document.getElementById('btn-history').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleHistoryDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('history-dropdown');
+        const btn = document.getElementById('btn-history');
+        if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Export all sessions
+    document.getElementById('btn-export-all').addEventListener('click', exportAllSessions);
+
+    // Export current session as Markdown
+    document.getElementById('btn-export-current').addEventListener('click', exportCurrentSessionMarkdown);
+
+    // Generate summary
+    document.getElementById('btn-summary').addEventListener('click', showSummary);
+
+    // Listen for API configuration changes
+    window.addEventListener('philang-api-configured', (e) => {
+        updateAPIIndicator();
+        engine.checkAPIAvailability();
+    });
+
+    // Auto-save on page unload
+    window.addEventListener('beforeunload', () => {
+        saveCurrentSession();
+    });
+
+    updateTraditionUI();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function initPersistence() {
+    if (typeof PhiLangPersistence === 'undefined') {
+        console.warn('Persistence not available');
+        document.getElementById('btn-history').style.display = 'none';
+        return;
+    }
+
+    try {
+        await PhiLangPersistence.init();
+        await loadSessionHistory();
+    } catch (error) {
+        console.error('Failed to initialize persistence:', error);
+    }
+}
+
+async function loadSessionHistory() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const sessions = await PhiLangPersistence.Sessions.getAll(20);
+        renderSessionHistory(sessions);
+    } catch (error) {
+        console.error('Failed to load sessions:', error);
+    }
+}
+
+function renderSessionHistory(sessions) {
+    const list = document.getElementById('history-list');
+
+    if (!sessions || sessions.length === 0) {
+        list.innerHTML = `
+            <div class="text-center text-gray-500 text-sm py-4">
+                No previous sessions yet.<br>
+                <span class="text-xs">Your conversations will be saved here.</span>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = sessions.map(session => {
+        const date = new Date(session.createdAt);
+        const tradition = COUNSEL_TRADITIONS[session.tradition] || COUNSEL_TRADITIONS.socratic;
+        const messageCount = session.messages ? session.messages.length : 0;
+
+        return `
+            <div class="session-item p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-all group border border-transparent hover:border-gray-700/50"
+                 data-session-id="${session.id}">
+                <div class="flex items-start gap-2">
+                    <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs"
+                         style="background: ${tradition.color}33; color: ${tradition.color}">
+                        ${tradition.icon}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm text-gray-200 truncate">${escapeHtml(session.title || 'Untitled Session')}</div>
+                        <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                            <span>${tradition.name}</span>
+                            <span>•</span>
+                            <span>${messageCount} messages</span>
+                        </div>
+                        <div class="text-xs text-gray-600">${formatRelativeDate(date)}</div>
+                    </div>
+                    <button class="delete-session opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1"
+                            data-session-id="${session.id}"
+                            title="Delete session">
+                        ×
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers
+    list.querySelectorAll('.session-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-session')) {
+                loadSession(parseInt(item.dataset.sessionId));
+            }
+        });
+    });
+
+    list.querySelectorAll('.delete-session').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm('Delete this session?')) {
+                await deleteSession(parseInt(btn.dataset.sessionId));
+            }
+        });
+    });
+}
+
+async function saveCurrentSession() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+    if (!engine.session || engine.session.messages.length <= 1) return; // Don't save empty sessions
+
+    try {
+        const sessionData = {
+            title: generateSessionTitle(),
+            tradition: engine.tradition.id,
+            messages: engine.session.messages,
+            insights: engine.insights,
+            phase: engine.session.phase,
+            domain: engine.session.concernType,
+            conversationHistory: engine.conversationHistory
+        };
+
+        if (currentSessionId) {
+            // Update existing session
+            sessionData.id = currentSessionId;
+            await PhiLangPersistence.Sessions.update(sessionData);
+        } else {
+            // Create new session
+            currentSessionId = await PhiLangPersistence.Sessions.save(sessionData);
+        }
+
+        console.log('Session saved:', currentSessionId);
+        await loadSessionHistory(); // Refresh the list
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.saved('Session');
+    } catch (error) {
+        console.error('Failed to save session:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to save session');
+    }
+}
+
+async function loadSession(sessionId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        // Save current session first
+        await saveCurrentSession();
+
+        const session = await PhiLangPersistence.Sessions.get(sessionId);
+        if (!session) return;
+
+        // Set current session ID
+        currentSessionId = sessionId;
+
+        // Update engine state
+        engine.tradition = COUNSEL_TRADITIONS[session.tradition] || COUNSEL_TRADITIONS.socratic;
+        document.getElementById('tradition-select').value = session.tradition;
+
+        engine.session = {
+            tradition: engine.tradition,
+            concernType: session.domain,
+            phase: session.phase || 0,
+            messages: session.messages || [],
+            keyTerms: [],
+            claims: [],
+            questionCount: session.messages ? Math.floor(session.messages.length / 2) : 0,
+            startTime: new Date(session.createdAt).getTime()
+        };
+
+        engine.insights = session.insights || { beliefs: [], assumptions: [], tensions: [], clarity: [] };
+        engine.conversationHistory = session.conversationHistory || [];
+
+        // Render the session
+        renderLoadedSession(session);
+
+        // Close dropdown
+        document.getElementById('history-dropdown').classList.add('hidden');
+
+        // Update UI
+        updateTraditionUI();
+        updateProgress();
+        updateInsights();
+
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.loaded('Session');
+    } catch (error) {
+        console.error('Failed to load session:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to load session');
+    }
+}
+
+function renderLoadedSession(session) {
+    // Hide welcome, show messages
+    document.getElementById('welcome-state').classList.add('hidden');
+    document.getElementById('messages-stream').classList.remove('hidden');
+    document.getElementById('session-progress').classList.remove('hidden');
+    document.getElementById('insights-sidebar').classList.remove('hidden');
+    document.getElementById('btn-pause').classList.remove('hidden');
+
+    // Clear and render messages
+    const stream = document.getElementById('messages-stream');
+    stream.innerHTML = '';
+
+    if (session.messages) {
+        session.messages.forEach(msg => {
+            renderMessage(msg);
+        });
+    }
+
+    scrollToBottom();
+}
+
+async function deleteSession(sessionId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        await PhiLangPersistence.Sessions.delete(sessionId);
+
+        // If deleting current session, reset
+        if (currentSessionId === sessionId) {
+            currentSessionId = null;
+            resetSession();
+        }
+
+        await loadSessionHistory();
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.deleted('Session');
+    } catch (error) {
+        console.error('Failed to delete session:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to delete session');
+    }
+}
+
+async function exportAllSessions() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const data = await PhiLangPersistence.exportAll();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `philang-sessions-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.exported('Sessions');
+    } catch (error) {
+        console.error('Failed to export:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to export sessions');
+    }
+}
+
+function exportCurrentSessionMarkdown() {
+    if (!engine.session || !engine.session.messages || engine.session.messages.length === 0) {
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.warning('No session to export');
+        return;
+    }
+
+    // Use PhiLangExport if available
+    if (typeof PhiLangExport !== 'undefined') {
+        const sessionData = {
+            tradition: engine.tradition.name,
+            messages: engine.session.messages,
+            insights: engine.insights
+        };
+
+        const md = PhiLangExport.sessionToMarkdown(sessionData, {
+            title: `${engine.tradition.name} Counsel Session`,
+            includeMetadata: true
+        });
+
+        PhiLangExport.download(md, `socratic-session-${Date.now()}.md`, 'text/markdown');
+    } else {
+        // Fallback: simple markdown export
+        let md = `# ${engine.tradition.name} Counsel Session\n\n`;
+        md += `**Date:** ${new Date().toLocaleDateString()}\n\n---\n\n`;
+
+        engine.session.messages.forEach(msg => {
+            if (msg.type === 'user') {
+                md += `## You\n\n${msg.content}\n\n`;
+            } else {
+                md += `## Counselor\n\n${msg.content}\n\n`;
+            }
+        });
+
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `socratic-session-${Date.now()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.success('Session exported');
+    }
+}
+
+function toggleHistoryDropdown() {
+    const dropdown = document.getElementById('history-dropdown');
+    dropdown.classList.toggle('hidden');
+    if (!dropdown.classList.contains('hidden')) {
+        loadSessionHistory(); // Refresh when opening
+    }
+}
+
+function generateSessionTitle() {
+    if (engine.session && engine.session.messages && engine.session.messages.length > 0) {
+        const firstUserMsg = engine.session.messages.find(m => m.type === 'user');
+        if (firstUserMsg) {
+            const content = firstUserMsg.content;
+            return content.length > 50 ? content.substring(0, 47) + '...' : content;
+        }
+    }
+    return `${engine.tradition.name} Session - ${new Date().toLocaleDateString()}`;
+}
+
+function formatRelativeDate(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+}
+
+function initMobileMenu() {
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const closeBtn = document.getElementById('mobile-menu-close');
+
+    if (menuBtn && mobileNav) {
+        menuBtn.addEventListener('click', () => {
+            mobileNav.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        });
+
+        closeBtn?.addEventListener('click', () => {
+            mobileNav.classList.add('hidden');
+            document.body.style.overflow = '';
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !mobileNav.classList.contains('hidden')) {
+                mobileNav.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+}
+
+function initAPIIndicator() {
+    const container = document.getElementById('api-indicator');
+    if (typeof PhiLangAPI !== 'undefined') {
+        container.innerHTML = PhiLangAPI.createStatusIndicator();
+        PhiLangAPI.initStatusIndicator();
+        updateAPIIndicator();
+    } else {
+        container.innerHTML = `
+            <div class="philang-api-indicator" id="api-indicator-fallback">
+                <div class="dot inactive"></div>
+                <span>No API</span>
+            </div>
+        `;
+        document.getElementById('api-indicator-fallback').addEventListener('click', () => {
+            alert('PhiLang API not loaded');
+        });
+    }
+}
+
+function updateAPIIndicator() {
+    const dot = document.querySelector('.philang-api-indicator .dot');
+    const span = document.querySelector('.philang-api-indicator span');
+    if (dot && typeof PhiLangAPI !== 'undefined') {
+        const configured = PhiLangAPI.isConfigured();
+        dot.className = 'dot ' + (configured ? 'active' : 'inactive');
+        span.textContent = configured ? 'Claude API' : 'Configure API';
+    }
+}
+
+function updateTraditionUI() {
+    const tradition = engine.tradition;
+    document.documentElement.style.setProperty('--accent', tradition.color);
+
+    // Update orb color
+    const orbs = document.querySelectorAll('.counsel-orb');
+    orbs.forEach(orb => {
+        orb.style.background = `radial-gradient(circle at 30% 30%, ${tradition.color} 0%, ${tradition.color}88 50%, ${tradition.color}44 100%)`;
+        orb.style.boxShadow = `0 0 30px ${tradition.color}66, 0 0 60px ${tradition.color}33`;
+    });
+}
+
+function startSession(concernType = null) {
+    // Hide welcome, show messages
+    document.getElementById('welcome-state').classList.add('hidden');
+    document.getElementById('messages-stream').classList.remove('hidden');
+    document.getElementById('session-progress').classList.remove('hidden');
+    document.getElementById('insights-sidebar').classList.remove('hidden');
+    document.getElementById('btn-pause').classList.remove('hidden');
+
+    // Start session
+    const opening = engine.startSession(concernType);
+    renderMessage(opening);
+    updateProgress();
+}
+
+async function sendMessage() {
+    const input = document.getElementById('user-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Check if already processing
+    if (engine.isProcessing) return;
+
+    // Check if session exists
+    if (!engine.session) {
+        startSession();
+    }
+
+    // Render user message
+    renderMessage({ type: 'user', content: text });
+    input.value = '';
+
+    // Disable send button while processing
+    const sendBtn = document.getElementById('btn-send');
+    sendBtn.disabled = true;
+
+    // Check API availability
+    engine.checkAPIAvailability();
+
+    if (engine.useAPI) {
+        // Use streaming for real-time response
+        const streamContainer = createStreamingMessage();
+
+        try {
+            const response = await engine.processUserInputStreaming(text, (chunk, full) => {
+                // Update streaming message content
+                updateStreamingMessage(streamContainer, full);
+            });
+
+            // Finalize the message
+            finalizeStreamingMessage(streamContainer, response);
+            updateProgress();
+            updateInsights();
+
+        } catch (error) {
+            console.error('Error:', error);
+            streamContainer.remove();
+
+            // Fallback to rule-based
+            const thinkingEl = showThinking();
+            setTimeout(() => {
+                thinkingEl.remove();
+                const response = engine.processUserInput(text);
+                renderMessage(response);
+                updateProgress();
+                updateInsights();
+                scrollToBottom();
+            }, 500);
+        }
+    } else {
+        // Use rule-based (non-API) with simulated delay
+        const thinkingEl = showThinking();
+        setTimeout(() => {
+            thinkingEl.remove();
+            const response = engine.processUserInput(text);
+            renderMessage(response);
+            updateProgress();
+            updateInsights();
+            scrollToBottom();
+        }, 800 + Math.random() * 700);
+    }
+
+    sendBtn.disabled = false;
+}
+
+function createStreamingMessage() {
+    const stream = document.getElementById('messages-stream');
+    const el = document.createElement('div');
+    el.className = 'message-animate streaming-message';
+    el.dataset.streaming = 'true';
+
+    const tradition = engine.tradition;
+    el.innerHTML = `
+        <div class="flex gap-3">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                 style="background: ${tradition.color}33; color: ${tradition.color}">
+                ${tradition.icon}
+            </div>
+            <div class="flex-1">
+                <div class="counsel-message tradition-${tradition.id} rounded-2xl rounded-tl-md px-4 py-3 max-w-xl">
+                    <p class="streaming-content text-gray-200 whitespace-pre-wrap leading-relaxed">
+                        <span class="thinking-dots">Contemplating</span>
+                    </p>
+                </div>
+                <div class="text-xs text-gray-500 mt-1 ml-2 flex items-center gap-2">
+                    <span class="streaming-phase">${engine.getCurrentPhase()}</span>
+                    <span class="text-indigo-400 text-xs">● Claude</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    stream.appendChild(el);
+    scrollToBottom();
+    return el;
+}
+
+function updateStreamingMessage(container, content) {
+    const contentEl = container.querySelector('.streaming-content');
+    if (contentEl) {
+        contentEl.innerHTML = formatContent(content) + '<span class="animate-pulse">▊</span>';
+    }
+    scrollToBottom();
+}
+
+function finalizeStreamingMessage(container, message) {
+    const contentEl = container.querySelector('.streaming-content');
+    const phaseEl = container.querySelector('.streaming-phase');
+
+    if (contentEl) {
+        contentEl.innerHTML = formatContent(message.content);
+    }
+    if (phaseEl && message.phase) {
+        phaseEl.textContent = message.phase;
+    }
+
+    container.dataset.streaming = 'false';
+    scrollToBottom();
+}
+
+function renderMessage(message) {
+    const stream = document.getElementById('messages-stream');
+    const el = document.createElement('div');
+    el.className = 'message-animate';
+
+    if (message.type === 'user') {
+        el.innerHTML = `
+            <div class="flex justify-end">
+                <div class="max-w-lg bg-gray-800/70 rounded-2xl rounded-br-md px-4 py-3">
+                    <p class="text-gray-200 whitespace-pre-wrap">${escapeHtml(message.content)}</p>
+                </div>
+            </div>
+        `;
+    } else {
+        const tradition = COUNSEL_TRADITIONS[message.tradition];
+        el.innerHTML = `
+            <div class="flex gap-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                     style="background: ${tradition.color}33; color: ${tradition.color}">
+                    ${tradition.icon}
+                </div>
+                <div class="flex-1">
+                    <div class="counsel-message tradition-${tradition.id} rounded-2xl rounded-tl-md px-4 py-3 max-w-xl">
+                        <p class="text-gray-200 whitespace-pre-wrap leading-relaxed">${formatContent(message.content)}</p>
+                    </div>
+                    ${message.phase ? `<div class="text-xs text-gray-500 mt-1 ml-2">${message.phase}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    stream.appendChild(el);
+    scrollToBottom();
+}
+
+function showThinking() {
+    const stream = document.getElementById('messages-stream');
+    const el = document.createElement('div');
+    el.className = 'thinking-indicator flex gap-3';
+    el.innerHTML = `
+        <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm bg-indigo-500/20 text-indigo-400">
+            ${engine.tradition.icon}
+        </div>
+        <div class="flex items-center text-gray-400 text-sm">
+            <span class="thinking-dots">Reflecting</span>
+        </div>
+    `;
+    stream.appendChild(el);
+    scrollToBottom();
+    return el;
+}
+
+function updateProgress() {
+    const progress = engine.getSessionProgress();
+    const phase = engine.getCurrentPhase();
+
+    document.getElementById('progress-bar').style.width = `${progress * 100}%`;
+    document.getElementById('phase-indicator').textContent = phase;
+}
+
+function updateInsights() {
+    const insights = engine.getInsights();
+
+    // Beliefs
+    const beliefsList = document.getElementById('beliefs-list');
+    beliefsList.innerHTML = insights.beliefs.map(b => `
+        <div class="insight-card rounded-lg p-2 text-xs ${b.examined ? 'border-green-500/30' : ''}">
+            <span class="text-gray-300">${escapeHtml(b.text.slice(0, 80))}${b.text.length > 80 ? '...' : ''}</span>
+            ${b.examined ? '<span class="text-green-400 ml-1">✓</span>' : ''}
+        </div>
+    `).join('');
+
+    // Assumptions
+    const assumptionsList = document.getElementById('assumptions-list');
+    assumptionsList.innerHTML = insights.assumptions.map(a => `
+        <div class="insight-card rounded-lg p-2 text-xs ${a.challenged ? 'border-amber-500/30' : ''}">
+            <span class="text-gray-300">${escapeHtml(a.text.slice(0, 80))}${a.text.length > 80 ? '...' : ''}</span>
+            ${a.challenged ? '<span class="text-amber-400 ml-1">?</span>' : ''}
+        </div>
+    `).join('');
+
+    // Tensions
+    const tensionsList = document.getElementById('tensions-list');
+    tensionsList.innerHTML = insights.tensions.map(t => `
+        <div class="insight-card rounded-lg p-2 text-xs border-red-500/20">
+            <span class="text-gray-300">${escapeHtml(t.text)}</span>
+        </div>
+    `).join('');
+
+    // Clarity
+    const clarityList = document.getElementById('clarity-list');
+    clarityList.innerHTML = insights.clarity.map(c => `
+        <div class="insight-card rounded-lg p-2 text-xs border-emerald-500/30">
+            <span class="text-gray-300">${escapeHtml(c)}</span>
+        </div>
+    `).join('');
+}
+
+function showSummary() {
+    const summary = engine.generateSessionSummary();
+    if (!summary) return;
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="font-semibold">Session Summary</h3>
+                <button class="close-modal text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto max-h-[60vh]">
+                <pre class="text-sm text-gray-300 whitespace-pre-wrap font-serif">${escapeHtml(summary)}</pre>
+            </div>
+            <div class="p-4 border-t border-gray-800 flex justify-end gap-2">
+                <button class="copy-summary px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">Copy</button>
+                <button class="close-modal px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => modal.remove());
+    });
+
+    modal.querySelector('.copy-summary').addEventListener('click', () => {
+        navigator.clipboard.writeText(summary);
+        alert('Summary copied!');
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+function resetSession() {
+    document.getElementById('welcome-state').classList.remove('hidden');
+    document.getElementById('messages-stream').classList.add('hidden');
+    document.getElementById('messages-stream').innerHTML = '';
+    document.getElementById('session-progress').classList.add('hidden');
+    document.getElementById('insights-sidebar').classList.add('hidden');
+    document.getElementById('btn-pause').classList.add('hidden');
+    document.getElementById('progress-bar').style.width = '10%';
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messages-container');
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+function formatContent(content) {
+    return escapeHtml(content)
+        .replace(/\n/g, '<br>')
+        .replace(/"([^"]+)"/g, '<em class="text-indigo-300">"$1"</em>');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    initUI();
+
+    // Initialize keyboard shortcuts
+    if (typeof PhiLangShortcuts !== 'undefined') {
+        PhiLangShortcuts.init([
+            { key: 'n', description: 'New session', action: () => document.getElementById('btn-new-session')?.click() },
+            { key: 'h', description: 'Toggle history', action: toggleHistoryDropdown },
+            { key: 'Enter', description: 'Send message', action: () => {
+                const input = document.getElementById('user-input');
+                if (input && document.activeElement === input) {
+                    document.getElementById('btn-send')?.click();
+                }
+            }},
+            { key: 't', description: 'Cycle tradition', action: () => {
+                const select = document.getElementById('tradition-select');
+                if (select) {
+                    const options = select.options;
+                    select.selectedIndex = (select.selectedIndex + 1) % options.length;
+                    select.dispatchEvent(new Event('change'));
+                }
+            }},
+        ]);
+
+        // Show keyboard shortcuts hint for new users
+        if (PhiLangShortcuts.shouldShowHint()) {
+            setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+        }
+    }
+});
+    </script>
+</body>
+</html>

@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Explorer</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #1f2937; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        .symbol-copied {
+            animation: pulse-green 0.3s ease-out;
+        }
+        @keyframes pulse-green {
+            0% { background-color: rgba(16, 185, 129, 0.5); }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+// ═══════════════════════════════════════════════════════════════════════════
+// PHILANG DATA - Concepts, Relations, Traditions
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITIONS = {
+  PHENOMENOLOGY: { name: 'Phenomenology', color: '#6366f1', description: 'Husserl, Merleau-Ponty, Levinas' },
+  SPINOZISM: { name: 'Spinozism', color: '#f59e0b', description: 'Spinoza, Rationalist metaphysics' },
+  BUDDHISM: { name: 'Buddhism', color: '#10b981', description: 'Nagarjuna, Madhyamaka' },
+  PROCESS: { name: 'Process', color: '#3b82f6', description: 'Whitehead, Process philosophy' },
+  POSTSTRUCTURALISM: { name: 'Poststructuralism', color: '#ec4899', description: 'Deleuze, Derrida' },
+  HEGELIANISM: { name: 'Hegelianism', color: '#8b5cf6', description: 'Hegel, Dialectical logic' },
+  HEIDEGGERIANISM: { name: 'Heideggerianism', color: '#ef4444', description: 'Heidegger, Fundamental ontology' },
+  WITTGENSTEIN_EARLY: { name: 'Early Wittgenstein', color: '#06b6d4', description: 'Tractatus Logico-Philosophicus' },
+  WITTGENSTEIN_LATE: { name: 'Late Wittgenstein', color: '#14b8a6', description: 'Philosophical Investigations' },
+  KANTIANISM: { name: 'Kantianism', color: '#a855f7', description: 'Kant, Critical philosophy' },
+};
+
+const CONCEPTS = [
+  // Phenomenology
+  { symbol: 'Σ', name: 'Self', tradition: 'PHENOMENOLOGY', description: 'The experiencing subject', keywords: ['ego', 'subject', 'i', 'consciousness'] },
+  { symbol: 'Ω', name: 'Other', tradition: 'PHENOMENOLOGY', description: 'Alterity, the other subject', keywords: ['alterity', 'thou', 'intersubjectivity'] },
+  { symbol: 'τ', name: 'Living Present', tradition: 'PHENOMENOLOGY', description: 'Streaming now with retention/protention', keywords: ['time', 'now', 'moment', 'presence'] },
+  { symbol: 'χ', name: 'Flesh', tradition: 'PHENOMENOLOGY', description: 'Chiasmic sensible-sentient', keywords: ['body', 'embodiment', 'merleau-ponty'] },
+  { symbol: '◉', name: 'Face', tradition: 'PHENOMENOLOGY', description: 'Levinas\'s ethical epiphany', keywords: ['levinas', 'ethics', 'encounter'] },
+  { symbol: 'H[τ]', name: 'Horizon', tradition: 'PHENOMENOLOGY', description: 'Horizon of the living present', keywords: ['context', 'background', 'husserl'] },
+
+  // Spinozism
+  { symbol: '▣', name: 'Substance', tradition: 'SPINOZISM', description: 'One infinite substance (God/Nature)', keywords: ['god', 'nature', 'deus', 'monism'] },
+  { symbol: '◇', name: 'Mode', tradition: 'SPINOZISM', description: 'Modification of substance', keywords: ['attribute', 'modification', 'particular'] },
+  { symbol: 'κ+', name: 'Conatus', tradition: 'SPINOZISM', description: 'Striving to persist in being', keywords: ['striving', 'persist', 'power', 'effort'] },
+  { symbol: 'K₃', name: 'Intuitive Knowledge', tradition: 'SPINOZISM', description: 'Third kind, seeing from eternity', keywords: ['intuition', 'eternity', 'scientia'] },
+
+  // Buddhism
+  { symbol: 'śū', name: 'Emptiness', tradition: 'BUDDHISM', description: 'Śūnyatā—empty of inherent existence', keywords: ['sunyata', 'void', 'empty', 'nothing'] },
+  { symbol: 'प्र', name: 'Dependent Origination', tradition: 'BUDDHISM', description: 'Pratītyasamutpāda', keywords: ['causation', 'interdependence', 'arising'] },
+  { symbol: '◈', name: 'Tetralemma', tradition: 'BUDDHISM', description: 'Four-cornered negation', keywords: ['catuskoti', 'four', 'negation', 'logic'] },
+
+  // Process
+  { symbol: '⦿', name: 'Actual Entity', tradition: 'PROCESS', description: 'Drops of experience', keywords: ['occasion', 'event', 'whitehead'] },
+  { symbol: '⥤', name: 'Prehension', tradition: 'PROCESS', description: 'Feeling/grasping of data', keywords: ['feeling', 'grasp', 'perception'] },
+  { symbol: '⤳', name: 'Concrescence', tradition: 'PROCESS', description: 'Process of becoming concrete', keywords: ['becoming', 'process', 'growth'] },
+  { symbol: 'ℂ', name: 'Creativity', tradition: 'PROCESS', description: 'Many become one, increased by one', keywords: ['novelty', 'creation', 'ultimate'] },
+
+  // Poststructuralism
+  { symbol: '⌒', name: 'Fold', tradition: 'POSTSTRUCTURALISM', description: 'Inside as folded outside', keywords: ['deleuze', 'inside', 'outside', 'pli'] },
+  { symbol: 'ν', name: 'Virtual', tradition: 'POSTSTRUCTURALISM', description: 'Field of differential relations', keywords: ['potential', 'possible', 'real'] },
+  { symbol: '†', name: 'Trace', tradition: 'POSTSTRUCTURALISM', description: 'Presence of absence', keywords: ['derrida', 'mark', 'absence'] },
+  { symbol: 'Π∞', name: 'Plane of Immanence', tradition: 'POSTSTRUCTURALISM', description: 'Infinite field of concepts', keywords: ['immanence', 'field', 'plane'] },
+
+  // Hegelianism
+  { symbol: '⍟', name: 'Aufhebung', tradition: 'HEGELIANISM', description: 'Cancel, preserve, elevate', keywords: ['sublation', 'sublate', 'preserve', 'negate'] },
+  { symbol: '¬ᵈ', name: 'Determinate Negation', tradition: 'HEGELIANISM', description: 'Specific, productive negation', keywords: ['negation', 'determinate', 'specific'] },
+  { symbol: '𝔊', name: 'Spirit', tradition: 'HEGELIANISM', description: 'Geist—self-knowing absolute', keywords: ['geist', 'mind', 'absolute'] },
+  { symbol: '⊠', name: 'Contradiction', tradition: 'HEGELIANISM', description: 'Internal opposition', keywords: ['opposition', 'dialectic', 'conflict'] },
+  { symbol: '⥁', name: 'Becoming', tradition: 'HEGELIANISM', description: 'Unity of being and nothing', keywords: ['change', 'movement', 'process'] },
+
+  // Heideggerianism
+  { symbol: '𝔖', name: 'Being', tradition: 'HEIDEGGERIANISM', description: 'Sein—Being as such', keywords: ['sein', 'existence', 'ontology'] },
+  { symbol: '𝔇', name: 'Dasein', tradition: 'HEIDEGGERIANISM', description: 'Being for whom Being is a question', keywords: ['existence', 'human', 'there-being'] },
+  { symbol: '⦿c', name: 'Care', tradition: 'HEIDEGGERIANISM', description: 'Sorge—the Being of Dasein', keywords: ['sorge', 'concern', 'worry'] },
+  { symbol: '⤋', name: 'Thrownness', tradition: 'HEIDEGGERIANISM', description: 'Already thrown into world', keywords: ['geworfenheit', 'facticity', 'given'] },
+  { symbol: '⌾', name: 'Clearing', tradition: 'HEIDEGGERIANISM', description: 'Where Being shows itself', keywords: ['lichtung', 'opening', 'light'] },
+  { symbol: 'ἀ', name: 'Aletheia', tradition: 'HEIDEGGERIANISM', description: 'Truth as unconcealment', keywords: ['truth', 'unconcealment', 'disclosure'] },
+  { symbol: '𝔈', name: 'Ereignis', tradition: 'HEIDEGGERIANISM', description: 'Event of appropriation', keywords: ['event', 'appropriation', 'enowning'] },
+  { symbol: 'ℨ', name: 'Temporality', tradition: 'HEIDEGGERIANISM', description: 'Ecstatic unity of time', keywords: ['time', 'zeitlichkeit', 'ecstatic'] },
+
+  // Early Wittgenstein (Tractatus)
+  { symbol: '𝕎', name: 'World', tradition: 'WITTGENSTEIN_EARLY', description: 'Die Welt—totality of facts', keywords: ['totality', 'facts', 'all'] },
+  { symbol: '𝔉', name: 'Fact', tradition: 'WITTGENSTEIN_EARLY', description: 'Tatsache—what is the case', keywords: ['state', 'case', 'tatsache'] },
+  { symbol: '𝔖𝔞', name: 'State of Affairs', tradition: 'WITTGENSTEIN_EARLY', description: 'Sachverhalt—atomic fact', keywords: ['atomic', 'sachverhalt', 'configuration'] },
+  { symbol: '𝔬', name: 'Object', tradition: 'WITTGENSTEIN_EARLY', description: 'Gegenstand—simple object', keywords: ['simple', 'thing', 'gegenstand'] },
+  { symbol: '𝔓', name: 'Proposition', tradition: 'WITTGENSTEIN_EARLY', description: 'Satz—logical picture', keywords: ['satz', 'sentence', 'statement'] },
+  { symbol: '↭', name: 'Pictures', tradition: 'WITTGENSTEIN_EARLY', description: 'Abbildet—depicts reality', keywords: ['picture', 'depict', 'represent'] },
+  { symbol: '⧓', name: 'Shows', tradition: 'WITTGENSTEIN_EARLY', description: 'Zeigt—what cannot be said', keywords: ['show', 'display', 'manifest'] },
+  { symbol: '⌗', name: 'Nonsense', tradition: 'WITTGENSTEIN_EARLY', description: 'Unsinn—beyond meaning', keywords: ['unsinn', 'meaningless', 'absurd'] },
+  { symbol: '⊘', name: 'Silence', tradition: 'WITTGENSTEIN_EARLY', description: 'Whereof one cannot speak', keywords: ['quiet', 'schweigen', 'unsayable'] },
+  { symbol: '⤒', name: 'Mystical', tradition: 'WITTGENSTEIN_EARLY', description: 'That the world exists', keywords: ['wonder', 'mysterious', 'ineffable'] },
+  { symbol: '⟁', name: 'Ladder', tradition: 'WITTGENSTEIN_EARLY', description: 'To be thrown away after climbing', keywords: ['leiter', 'climb', 'discard'] },
+
+  // Late Wittgenstein (Investigations)
+  { symbol: '𝔖𝔭', name: 'Language-game', tradition: 'WITTGENSTEIN_LATE', description: 'Sprachspiel—meaning in use', keywords: ['sprachspiel', 'game', 'practice'] },
+  { symbol: '℧', name: 'Use', tradition: 'WITTGENSTEIN_LATE', description: 'Gebrauch—meaning is use', keywords: ['gebrauch', 'usage', 'meaning'] },
+  { symbol: '⟴', name: 'Rule', tradition: 'WITTGENSTEIN_LATE', description: 'Regel—normative practice', keywords: ['regel', 'norm', 'follow'] },
+  { symbol: '𝔏', name: 'Form of Life', tradition: 'WITTGENSTEIN_LATE', description: 'Lebensform—shared practices', keywords: ['lebensform', 'life', 'social'] },
+  { symbol: '≋ᶠ', name: 'Family Resemblance', tradition: 'WITTGENSTEIN_LATE', description: 'Overlapping similarities', keywords: ['family', 'resemblance', 'similarity'] },
+  { symbol: '⊛ₐ', name: 'Aspect', tradition: 'WITTGENSTEIN_LATE', description: 'Seeing-as, aspect perception', keywords: ['seeing-as', 'aspect', 'gestalt'] },
+  { symbol: '⬚', name: 'Beetle', tradition: 'WITTGENSTEIN_LATE', description: 'Private object—beetle in a box', keywords: ['private', 'box', 'inner'] },
+  { symbol: '⤥', name: 'Therapy', tradition: 'WITTGENSTEIN_LATE', description: 'Philosophy as therapy', keywords: ['therapeutic', 'cure', 'dissolve'] },
+  { symbol: '⌀', name: 'Dissolution', tradition: 'WITTGENSTEIN_LATE', description: 'Problems dissolve, not solve', keywords: ['dissolve', 'disappear', 'vanish'] },
+  { symbol: '⊢ₕ', name: 'Hinge', tradition: 'WITTGENSTEIN_LATE', description: 'Hinge proposition—unquestioned', keywords: ['hinge', 'bedrock', 'certainty'] },
+
+  // Kantianism - Theoretical
+  { symbol: '𝕿', name: 'Transcendental', tradition: 'KANTIANISM', description: 'Conditions of possibility', keywords: ['conditions', 'possibility', 'a priori'] },
+  { symbol: '𝔞', name: 'A Priori', tradition: 'KANTIANISM', description: 'Prior to experience', keywords: ['prior', 'before', 'independent'] },
+  { symbol: '⊕ₛ𝔞', name: 'Synthetic A Priori', tradition: 'KANTIANISM', description: 'Ampliative yet necessary', keywords: ['synthetic', 'ampliative', 'necessary'] },
+  { symbol: 'φₖ', name: 'Phenomenon', tradition: 'KANTIANISM', description: 'Appearance to sensibility', keywords: ['appearance', 'sensible', 'experience'] },
+  { symbol: 'νₖ', name: 'Noumenon', tradition: 'KANTIANISM', description: 'Thing-in-itself', keywords: ['thing-in-itself', 'ding', 'unknowable'] },
+  { symbol: '𝔦', name: 'Intuition', tradition: 'KANTIANISM', description: 'Anschauung—immediate givenness', keywords: ['anschauung', 'immediate', 'sensibility'] },
+  { symbol: 'Ꮯ', name: 'Category', tradition: 'KANTIANISM', description: 'Pure concept of understanding', keywords: ['concept', 'pure', 'understanding'] },
+  { symbol: 'σₖ', name: 'Schema', tradition: 'KANTIANISM', description: 'Mediates concept and intuition', keywords: ['mediate', 'bridge', 'schematism'] },
+  { symbol: '𝔄ₜ', name: 'Apperception', tradition: 'KANTIANISM', description: 'Transcendental unity of self', keywords: ['unity', 'i think', 'consciousness'] },
+
+  // Kantianism - Practical
+  { symbol: '⊨ᶜ', name: 'Categorical Imperative', tradition: 'KANTIANISM', description: 'Act only on universalizable maxims', keywords: ['imperative', 'duty', 'universal'] },
+  { symbol: 'ℳ', name: 'Moral Law', tradition: 'KANTIANISM', description: 'Unconditional command of reason', keywords: ['moral', 'law', 'reason'] },
+  { symbol: '𝔞ᵤ', name: 'Autonomy', tradition: 'KANTIANISM', description: 'Self-legislation of the will', keywords: ['self-legislation', 'freedom', 'will'] },
+  { symbol: '𝔇ᵢ', name: 'Dignity', tradition: 'KANTIANISM', description: 'Würde—beyond all price', keywords: ['würde', 'worth', 'respect'] },
+  { symbol: 'ℜₑ', name: 'Kingdom of Ends', tradition: 'KANTIANISM', description: 'Systematic union of rational beings', keywords: ['kingdom', 'ends', 'rational'] },
+
+  // Kantianism - Aesthetic
+  { symbol: '𝔅ₛ', name: 'Beautiful', tradition: 'KANTIANISM', description: 'Purposiveness without purpose', keywords: ['beauty', 'aesthetic', 'judgment'] },
+  { symbol: '𝔖ᵤ', name: 'Sublime', tradition: 'KANTIANISM', description: 'That which exceeds imagination', keywords: ['sublime', 'overwhelming', 'magnitude'] },
+  { symbol: '𝔍ᵣ', name: 'Reflective Judgment', tradition: 'KANTIANISM', description: 'Seeks universal for particular', keywords: ['reflective', 'judgment', 'particular'] },
+];
+
+const RELATIONS = [
+  { symbol: '⋈', name: 'chiasm', description: 'Intertwining, reversibility', keywords: ['intertwine', 'cross', 'reversible'] },
+  { symbol: '≈', name: 'resonance', description: 'Structural similarity', keywords: ['similar', 'like', 'analogous'] },
+  { symbol: '⊥', name: 'opposition', description: 'Tension, conflict', keywords: ['oppose', 'tension', 'against'] },
+  { symbol: '→', name: 'implication', description: 'Leads to, requires', keywords: ['implies', 'leads', 'requires'] },
+  { symbol: '⇋', name: 'reversibility', description: 'Mutual transformation', keywords: ['mutual', 'transform', 'exchange'] },
+  { symbol: '≡', name: 'identity', description: 'Is the same as', keywords: ['same', 'identical', 'equals'] },
+  { symbol: '⥤', name: 'prehension', description: 'Feeling, grasping', keywords: ['feel', 'grasp', 'prehend'] },
+  { symbol: 'within', name: 'situation', description: 'Contextualized by', keywords: ['in', 'context', 'situated'] },
+];
+
+// Combine all symbols for search
+const ALL_SYMBOLS = [
+  ...CONCEPTS.map(c => ({ ...c, type: 'concept' })),
+  ...RELATIONS.map(r => ({ ...r, type: 'relation', tradition: null })),
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GENERATION LOGIC
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITION_TENSIONS = {
+  'BUDDHISM-SPINOZISM': 'Buddhism denies inherent existence; Spinoza affirms one infinite substance.',
+  'BUDDHISM-HEGELIANISM': 'Buddhism transcends all positions; Hegel sublates into higher unity.',
+  'HEIDEGGERIANISM-HEGELIANISM': 'Heidegger: Being withdraws. Hegel: Spirit fully knows itself.',
+  'PHENOMENOLOGY-POSTSTRUCTURALISM': 'Phenomenology: presence to consciousness. Poststructuralism: différance, trace.',
+  'SPINOZISM-HEIDEGGERIANISM': 'Spinoza: eternal substance. Heidegger: temporal Being.',
+  'PROCESS-BUDDHISM': 'Whitehead: actual entities are final realities. Buddhism: no final realities.',
+  'WITTGENSTEIN_EARLY-WITTGENSTEIN_LATE': 'Early: one logical structure of world. Late: multiple language-games.',
+  'KANTIANISM-HEGELIANISM': 'Kant: limits of knowledge (noumena). Hegel: absolute knowledge possible.',
+  'KANTIANISM-PHENOMENOLOGY': 'Kant: transcendental conditions. Husserl: return to things themselves.',
+  'WITTGENSTEIN_EARLY-HEIDEGGERIANISM': 'Wittgenstein: limits of language. Heidegger: language speaks Being.',
+  'WITTGENSTEIN_LATE-BUDDHISM': 'Both dissolve problems through practice; language-games vs. skillful means.',
+  'KANTIANISM-BUDDHISM': 'Kant: noumenon unknowable but real. Buddhism: no thing-in-itself exists.',
+  'WITTGENSTEIN_LATE-PROCESS': 'Language-games are social practices; actual entities are experiences.',
+  'KANTIANISM-SPINOZISM': 'Kant: phenomena/noumena divide. Spinoza: one substance fully knowable.',
+};
+
+const generateQuestion = (c1, c2, relation) => {
+  const templates = {
+    '⋈': `How do ${c1.name} and ${c2.name} intertwine? Is there a chiasmic reversibility between ${TRADITIONS[c1.tradition].name} and ${TRADITIONS[c2.tradition].name}?`,
+    '≈': `Is ${c1.name} structurally similar to ${c2.name}? What would it mean if ${c2.name} resonates with ${c1.name}?`,
+    '⊥': `What is the tension between ${c1.name} and ${c2.name}? Can these traditions be reconciled?`,
+    '→': `Does ${c1.name} lead to or require ${c2.name}? Would accepting one commit us to the other?`,
+    '⇋': `Can ${c1.name} and ${c2.name} transform into each other? Is there reversibility here?`,
+    '≡': `Are ${c1.name} and ${c2.name} the same? Are these traditions saying the same thing differently?`,
+    '⥤': `Can ${c1.name} prehend ${c2.name}? What would it mean for ${c1.name} to feel ${c2.name}?`,
+    'within': `What happens when ${c1.name} is situated within ${c2.name}? How does context change meaning?`,
+  };
+  return templates[relation.symbol] || `What is the relation between ${c1.name} and ${c2.name}?`;
+};
+
+const generateThesis = (c1, c2, relation) => {
+  const templates = {
+    '⋈': `${c1.name} and ${c2.name} are chiasmic: each is the reverse of the other. ${TRADITIONS[c1.tradition].name} and ${TRADITIONS[c2.tradition].name} describe the same structure from different sides.`,
+    '≈': `${c1.name} and ${c2.name} share deep structural similarities—they ARE the same insight under different descriptions.`,
+    '⊥': `${c1.name} and ${c2.name} are in productive tension. Their opposition generates a third position beyond both traditions.`,
+    '→': `${c1.name} necessarily implies ${c2.name}. Accepting one tradition commits us to insights of the other.`,
+    '⇋': `${c1.name} and ${c2.name} are mutually transformable. Movement between these traditions is possible.`,
+    '≡': `${c1.name} IS ${c2.name}. These traditions are saying the same thing with different vocabularies.`,
+    '⥤': `${c1.name} prehends ${c2.name}—it feels or grasps it as datum. ${c2.name} is ingredient in ${c1.name}.`,
+    'within': `${c1.name} must be understood within the context of ${c2.name}. ${c2.name} is the horizon that makes ${c1.name} possible.`,
+  };
+  return templates[relation.symbol] || `${c1.name} relates to ${c2.name} in a novel way.`;
+};
+
+const getTension = (t1, t2) => {
+  const key1 = `${t1}-${t2}`;
+  const key2 = `${t2}-${t1}`;
+  return TRADITION_TENSIONS[key1] || TRADITION_TENSIONS[key2] || null;
+};
+
+const calculateNovelty = (c1, c2, relation) => {
+  let score = 0.5;
+  if (c1.tradition !== c2.tradition) score += 0.2;
+  const distant = [
+    ['BUDDHISM', 'SPINOZISM'],
+    ['BUDDHISM', 'HEGELIANISM'],
+    ['HEIDEGGERIANISM', 'PROCESS'],
+    ['WITTGENSTEIN_EARLY', 'WITTGENSTEIN_LATE'],
+    ['KANTIANISM', 'BUDDHISM'],
+    ['WITTGENSTEIN_EARLY', 'HEIDEGGERIANISM'],
+    ['KANTIANISM', 'POSTSTRUCTURALISM'],
+    ['WITTGENSTEIN_LATE', 'SPINOZISM'],
+  ];
+  if (distant.some(([a, b]) =>
+    (c1.tradition === a && c2.tradition === b) ||
+    (c1.tradition === b && c2.tradition === a)
+  )) score += 0.2;
+  if (['⊥', '⥤', '≡'].includes(relation.symbol)) score += 0.1;
+  return Math.min(1, score);
+};
+
+const calculateCoherence = (c1, c2) => {
+  let score = 0.5;
+  const coherent = [
+    ['τ', 'ℨ'], ['◉', 'Ω'], ['Σ', '𝔇'],
+    ['⤳', '⥁'], ['⦿', '𝔇'],
+    ['śū', '¬ᵈ'], ['◈', '⊠'],
+    ['▣', '𝔖'], ['Π∞', '⌾'],
+    ['𝕎', '𝔉'], ['𝔖𝔭', '𝔏'], ['⟴', '⧖'], ['↭', '𝔓'],
+    ['⊘', '⤒'], ['⬚', '⊘ₚ'], ['℧', '𝔖𝔭'],
+    ['𝕿', '𝔞'], ['φₖ', 'νₖ'], ['Ꮯ', '𝔦'], ['⊨ᶜ', 'ℳ'],
+    ['𝔞ᵤ', '𝔇ᵢ'], ['𝔅ₛ', '𝔖ᵤ'], ['σₖ', '𝔦'],
+    ['𝕿', 'H['], ['νₖ', '▣'], ['⧓', 'ἀ'], ['𝔖𝔭', 'Π∞'],
+    ['⟴', '⇊'], ['⌀', 'śū'], ['⊢ₕ', '⇊'],
+  ];
+  if (coherent.some(([a, b]) =>
+    (c1.symbol === a && c2.symbol === b) ||
+    (c1.symbol === b && c2.symbol === a)
+  )) score += 0.3;
+  return Math.min(1, score);
+};
+
+const generatePosition = (c1, c2, relation) => {
+  const expression = relation.symbol === 'within'
+    ? `${c1.symbol} within ${c2.symbol}`
+    : `${c1.symbol} ${relation.symbol} ${c2.symbol}`;
+
+  return {
+    expression,
+    concept1: c1,
+    concept2: c2,
+    relation,
+    novelty: calculateNovelty(c1, c2, relation),
+    coherence: calculateCoherence(c1, c2),
+    question: generateQuestion(c1, c2, relation),
+    thesis: generateThesis(c1, c2, relation),
+    tension: getTension(c1.tradition, c2.tradition),
+  };
+};
+
+const generateRandom = (count = 5, traditions = null) => {
+  const positions = [];
+  const pool = traditions
+    ? CONCEPTS.filter(c => traditions.includes(c.tradition))
+    : CONCEPTS;
+
+  let attempts = 0;
+  while (positions.length < count && attempts < 100) {
+    attempts++;
+    const c1 = pool[Math.floor(Math.random() * pool.length)];
+    const others = pool.filter(c => c.tradition !== c1.tradition);
+    if (others.length === 0) continue;
+    const c2 = others[Math.floor(Math.random() * others.length)];
+    const relation = RELATIONS[Math.floor(Math.random() * RELATIONS.length)];
+    const pos = generatePosition(c1, c2, relation);
+    if (pos.novelty >= 0.5) positions.push(pos);
+  }
+
+  return positions.sort((a, b) => (b.novelty + b.coherence) - (a.novelty + a.coherence));
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEARCH FUNCTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+const searchSymbols = (query) => {
+  if (!query || query.length < 1) return [];
+  const q = query.toLowerCase();
+
+  return ALL_SYMBOLS.filter(item => {
+    // Match by name
+    if (item.name.toLowerCase().includes(q)) return true;
+    // Match by symbol
+    if (item.symbol.toLowerCase().includes(q)) return true;
+    // Match by keywords
+    if (item.keywords && item.keywords.some(k => k.includes(q))) return true;
+    // Match by tradition name
+    if (item.tradition && TRADITIONS[item.tradition]?.name.toLowerCase().includes(q)) return true;
+    return false;
+  }).slice(0, 10); // Limit results
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ConceptBadge = ({ concept, onClick, selected }) => (
+  <button
+    onClick={() => onClick?.(concept)}
+    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+      selected
+        ? 'ring-2 ring-offset-2 ring-offset-gray-900 scale-105'
+        : 'hover:scale-105'
+    }`}
+    style={{
+      backgroundColor: TRADITIONS[concept.tradition].color + '20',
+      color: TRADITIONS[concept.tradition].color,
+      borderColor: TRADITIONS[concept.tradition].color,
+      border: '1px solid',
+    }}
+  >
+    <span className="text-lg">{concept.symbol}</span>
+    <span>{concept.name}</span>
+  </button>
+);
+
+const ScoreBar = ({ label, value, color }) => (
+  <div className="flex items-center gap-3">
+    <span className="text-gray-400 text-sm w-20">{label}</span>
+    <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{ width: `${value * 100}%`, backgroundColor: color }}
+      />
+    </div>
+    <span className="text-gray-300 text-sm w-12">{(value * 100).toFixed(0)}%</span>
+  </div>
+);
+
+const PositionCard = ({ position, expanded, onToggle }) => {
+  const { concept1: c1, concept2: c2, relation } = position;
+
+  return (
+    <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-gray-600 transition-all">
+      <div className="p-4 cursor-pointer" onClick={onToggle}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: TRADITIONS[c1.tradition].color }} />
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: TRADITIONS[c2.tradition].color }} />
+          </div>
+          <span className="text-gray-500 text-sm">{expanded ? '▼' : '▶'}</span>
+        </div>
+        <div className="text-2xl font-mono text-white mb-3 tracking-wide">{position.expression}</div>
+        <div className="flex gap-4 mb-3">
+          <ScoreBar label="Novelty" value={position.novelty} color="#10b981" />
+          <ScoreBar label="Coherence" value={position.coherence} color="#6366f1" />
+        </div>
+      </div>
+      {expanded && (
+        <div className="px-4 pb-4 space-y-4 border-t border-gray-700 pt-4">
+          <div>
+            <h4 className="text-gray-400 text-sm uppercase tracking-wide mb-2">Question</h4>
+            <p className="text-gray-200">{position.question}</p>
+          </div>
+          <div>
+            <h4 className="text-gray-400 text-sm uppercase tracking-wide mb-2">Potential Thesis</h4>
+            <p className="text-gray-200">{position.thesis}</p>
+          </div>
+          {position.tension && (
+            <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3">
+              <h4 className="text-yellow-500 text-sm uppercase tracking-wide mb-1">Tension</h4>
+              <p className="text-yellow-200/80 text-sm">{position.tension}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-2">
+            <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: TRADITIONS[c1.tradition].color + '20', color: TRADITIONS[c1.tradition].color }}>
+              {TRADITIONS[c1.tradition].name}
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: TRADITIONS[c2.tradition].color + '20', color: TRADITIONS[c2.tradition].color }}>
+              {TRADITIONS[c2.tradition].name}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SYMBOL PALETTE COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SymbolPalette = ({ isOpen, onClose, onSelectSymbol }) => {
+  const [search, setSearch] = React.useState('');
+  const [selectedTradition, setSelectedTradition] = React.useState(null);
+  const [copiedSymbol, setCopiedSymbol] = React.useState(null);
+  const [detailItem, setDetailItem] = React.useState(null);
+
+  const filteredConcepts = React.useMemo(() => {
+    let results = CONCEPTS.map(c => ({ ...c, type: 'concept' }));
+    if (selectedTradition) {
+      results = results.filter(c => c.tradition === selectedTradition);
+    }
+    if (search) {
+      results = searchSymbols(search).filter(s => s.type === 'concept');
+    }
+    return results;
+  }, [search, selectedTradition]);
+
+  const copyToClipboard = (symbol) => {
+    navigator.clipboard.writeText(symbol);
+    setCopiedSymbol(symbol);
+    setTimeout(() => setCopiedSymbol(null), 1000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed right-0 top-0 h-full w-80 bg-gray-900 border-l border-gray-700 shadow-2xl z-50 flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">Symbol Dictionary</h2>
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      {/* Search */}
+      <div className="p-4 border-b border-gray-700">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, keyword..."
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+
+      {/* Tradition Filter */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => setSelectedTradition(null)}
+            className={`px-2 py-1 rounded text-xs ${!selectedTradition ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            All
+          </button>
+          {Object.entries(TRADITIONS).map(([key, t]) => (
+            <button
+              key={key}
+              onClick={() => setSelectedTradition(key)}
+              className={`px-2 py-1 rounded text-xs transition-all ${selectedTradition === key ? 'ring-1 ring-white' : 'opacity-70 hover:opacity-100'}`}
+              style={{ backgroundColor: t.color + '40', color: t.color }}
+            >
+              {t.name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Symbol Grid */}
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+        {detailItem ? (
+          // Detail View
+          <div>
+            <button onClick={() => setDetailItem(null)} className="text-indigo-400 text-sm mb-4 hover:underline">
+              ← Back to list
+            </button>
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div className="text-5xl mb-4 text-center" style={{ color: detailItem.tradition ? TRADITIONS[detailItem.tradition].color : '#818cf8' }}>
+                {detailItem.symbol}
+              </div>
+              <h3 className="text-xl font-semibold text-white text-center mb-2">{detailItem.name}</h3>
+              {detailItem.tradition && (
+                <div className="text-center mb-4">
+                  <span className="px-3 py-1 rounded-full text-xs" style={{ backgroundColor: TRADITIONS[detailItem.tradition].color + '30', color: TRADITIONS[detailItem.tradition].color }}>
+                    {TRADITIONS[detailItem.tradition].name}
+                  </span>
+                </div>
+              )}
+              <p className="text-gray-300 text-sm mb-4">{detailItem.description}</p>
+              {detailItem.keywords && (
+                <div className="mb-4">
+                  <p className="text-gray-500 text-xs uppercase mb-2">Keywords</p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailItem.keywords.map(k => (
+                      <span key={k} className="px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-300">{k}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => copyToClipboard(detailItem.symbol)}
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-sm transition-all"
+                >
+                  {copiedSymbol === detailItem.symbol ? 'Copied!' : 'Copy Symbol'}
+                </button>
+                {onSelectSymbol && (
+                  <button
+                    onClick={() => { onSelectSymbol(detailItem); onClose(); }}
+                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition-all"
+                  >
+                    Use in Compose
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Grid View
+          <div className="grid grid-cols-4 gap-2">
+            {filteredConcepts.map(c => (
+              <button
+                key={c.symbol}
+                onClick={() => setDetailItem(c)}
+                onDoubleClick={() => copyToClipboard(c.symbol)}
+                className={`p-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-all group relative ${copiedSymbol === c.symbol ? 'symbol-copied' : ''}`}
+                title={`${c.name} (double-click to copy)`}
+              >
+                <div className="text-2xl mb-1" style={{ color: TRADITIONS[c.tradition].color }}>{c.symbol}</div>
+                <div className="text-xs text-gray-400 truncate">{c.name}</div>
+                {/* Hover tooltip */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-700 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  {c.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Relations Section */}
+        {!detailItem && !search && !selectedTradition && (
+          <div className="mt-6 pt-6 border-t border-gray-700">
+            <h3 className="text-sm text-gray-400 uppercase tracking-wide mb-3">Relations</h3>
+            <div className="grid grid-cols-4 gap-2">
+              {RELATIONS.map(r => (
+                <button
+                  key={r.symbol}
+                  onClick={() => setDetailItem(r)}
+                  onDoubleClick={() => copyToClipboard(r.symbol)}
+                  className={`p-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-all ${copiedSymbol === r.symbol ? 'symbol-copied' : ''}`}
+                  title={`${r.name} (double-click to copy)`}
+                >
+                  <div className="text-2xl mb-1 text-indigo-400">{r.symbol}</div>
+                  <div className="text-xs text-gray-400 truncate">{r.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer hint */}
+      <div className="p-3 border-t border-gray-700 text-center text-xs text-gray-500">
+        Double-click to copy • Click for details
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTOCOMPLETE INPUT COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AutocompleteInput = ({ onSelect, placeholder }) => {
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [showResults, setShowResults] = React.useState(false);
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const inputRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (query.length >= 1) {
+      setResults(searchSymbols(query));
+      setShowResults(true);
+      setSelectedIndex(0);
+    } else {
+      setResults([]);
+      setShowResults(false);
+    }
+  }, [query]);
+
+  const handleKeyDown = (e) => {
+    if (!showResults || results.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(i => Math.min(i + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSelect(results[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowResults(false);
+    }
+  };
+
+  const handleSelect = (item) => {
+    onSelect(item);
+    setQuery('');
+    setShowResults(false);
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => query.length >= 1 && setShowResults(true)}
+        onBlur={() => setTimeout(() => setShowResults(false), 200)}
+        placeholder={placeholder || "Type to search symbols..."}
+        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 text-lg"
+      />
+
+      {showResults && results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-600 rounded-xl overflow-hidden shadow-xl z-50">
+          {results.map((item, i) => (
+            <button
+              key={item.symbol + item.name}
+              onClick={() => handleSelect(item)}
+              className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-all ${
+                i === selectedIndex ? 'bg-indigo-600' : 'hover:bg-gray-700'
+              }`}
+            >
+              <span className="text-2xl" style={{ color: item.tradition ? TRADITIONS[item.tradition].color : '#818cf8' }}>
+                {item.symbol}
+              </span>
+              <div className="flex-1">
+                <div className="text-white font-medium">{item.name}</div>
+                <div className="text-gray-400 text-sm">{item.description}</div>
+              </div>
+              {item.tradition && (
+                <span className="px-2 py-1 rounded text-xs" style={{ backgroundColor: TRADITIONS[item.tradition].color + '30', color: TRADITIONS[item.tradition].color }}>
+                  {TRADITIONS[item.tradition].name.split(' ')[0]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════════════════════════════════════
+
+function PhiLangExplorer() {
+  const [mode, setMode] = React.useState('generate');
+  const [positions, setPositions] = React.useState([]);
+  const [expandedIndex, setExpandedIndex] = React.useState(null);
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+
+  const [selectedConcept1, setSelectedConcept1] = React.useState(null);
+  const [selectedConcept2, setSelectedConcept2] = React.useState(null);
+  const [selectedRelation, setSelectedRelation] = React.useState(null);
+  const [composedPosition, setComposedPosition] = React.useState(null);
+
+  const [selectedTraditions, setSelectedTraditions] = React.useState([]);
+
+  const handleGenerate = React.useCallback(() => {
+    const traditions = selectedTraditions.length > 0 ? selectedTraditions : null;
+    const newPositions = generateRandom(6, traditions);
+    setPositions(newPositions);
+    setExpandedIndex(null);
+  }, [selectedTraditions]);
+
+  const handleCompose = React.useCallback(() => {
+    if (selectedConcept1 && selectedConcept2 && selectedRelation) {
+      const pos = generatePosition(selectedConcept1, selectedConcept2, selectedRelation);
+      setComposedPosition(pos);
+    }
+  }, [selectedConcept1, selectedConcept2, selectedRelation]);
+
+  const toggleTradition = (tradition) => {
+    setSelectedTraditions(prev =>
+      prev.includes(tradition)
+        ? prev.filter(t => t !== tradition)
+        : [...prev, tradition]
+    );
+  };
+
+  const conceptsByTradition = Object.keys(TRADITIONS).reduce((acc, t) => {
+    acc[t] = CONCEPTS.filter(c => c.tradition === t);
+    return acc;
+  }, {});
+
+  // Keyboard shortcut for palette
+  React.useEffect(() => {
+    const handleKeyPress = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(p => !p);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-gray-900/80 backdrop-blur sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                <span className="text-indigo-400">φ</span>PhiLang
+              </h1>
+              <p className="text-gray-500 text-sm">Philosophical Language Explorer</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex gap-2">
+                {['generate', 'compose', 'browse'].map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`px-4 py-2 rounded-lg capitalize transition-all ${
+                      mode === m
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+
+              {/* Dictionary Button */}
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 hover:text-white transition-all flex items-center gap-2"
+                title="Open Symbol Dictionary (Cmd+K)"
+              >
+                <span className="text-lg">📖</span>
+                <span className="hidden sm:inline">Dictionary</span>
+                <span className="text-xs text-gray-500 hidden md:inline">⌘K</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* GENERATE MODE */}
+        {mode === 'generate' && (
+          <div className="space-y-6">
+            <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+              <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-3">Filter by Tradition</h3>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(TRADITIONS).map(([key, t]) => (
+                  <button
+                    key={key}
+                    onClick={() => toggleTradition(key)}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                      selectedTraditions.includes(key)
+                        ? 'ring-2 ring-offset-2 ring-offset-gray-900'
+                        : 'opacity-60 hover:opacity-100'
+                    }`}
+                    style={{
+                      backgroundColor: t.color + '30',
+                      color: t.color,
+                      ringColor: t.color,
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+                {selectedTraditions.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTraditions([])}
+                    className="px-3 py-1.5 rounded-full text-sm text-gray-400 hover:text-white"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleGenerate}
+              className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-lg font-medium hover:from-indigo-500 hover:to-purple-500 transition-all"
+            >
+              Generate Novel Positions
+            </button>
+
+            {positions.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {positions.map((pos, i) => (
+                  <PositionCard
+                    key={i}
+                    position={pos}
+                    expanded={expandedIndex === i}
+                    onToggle={() => setExpandedIndex(expandedIndex === i ? null : i)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {positions.length === 0 && (
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-4xl mb-4">φ</p>
+                <p>Click generate to discover novel philosophical positions</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* COMPOSE MODE */}
+        {mode === 'compose' && (
+          <div className="space-y-6">
+            {/* Smart Search Bar */}
+            <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-4">Quick Search</h3>
+              <AutocompleteInput
+                placeholder="Type 'being', 'empty', 'substance'... to find symbols"
+                onSelect={(item) => {
+                  if (item.type === 'concept') {
+                    if (!selectedConcept1) setSelectedConcept1(item);
+                    else if (!selectedConcept2) setSelectedConcept2(item);
+                  } else if (item.type === 'relation') {
+                    setSelectedRelation(item);
+                  }
+                }}
+              />
+              <p className="text-gray-500 text-sm mt-2">Search by name, keyword, or tradition. Use arrow keys to navigate, Enter to select.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* Concept 1 */}
+              <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-3">First Concept</h3>
+                {selectedConcept1 ? (
+                  <div className="space-y-2">
+                    <ConceptBadge concept={selectedConcept1} selected />
+                    <p className="text-gray-500 text-sm">{selectedConcept1.description}</p>
+                    <button
+                      onClick={() => setSelectedConcept1(null)}
+                      className="text-gray-500 text-sm hover:text-white"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
+                    {Object.entries(conceptsByTradition).map(([tradition, concepts]) => (
+                      <div key={tradition}>
+                        <p className="text-xs text-gray-500 mb-1">{TRADITIONS[tradition].name}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {concepts.map(c => (
+                            <button
+                              key={c.symbol}
+                              onClick={() => setSelectedConcept1(c)}
+                              className="px-2 py-1 rounded text-sm hover:bg-gray-700 transition-all"
+                              style={{ color: TRADITIONS[tradition].color }}
+                              title={c.description}
+                            >
+                              {c.symbol}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Relation */}
+              <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-3">Relation</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {RELATIONS.map(r => (
+                    <button
+                      key={r.symbol}
+                      onClick={() => setSelectedRelation(r)}
+                      className={`p-2 rounded-lg border text-center transition-all ${
+                        selectedRelation?.symbol === r.symbol
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-gray-700 border-gray-600 hover:border-gray-500'
+                      }`}
+                      title={r.description}
+                    >
+                      <div className="text-xl">{r.symbol}</div>
+                      <div className="text-xs text-gray-400">{r.name}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Concept 2 */}
+              <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-3">Second Concept</h3>
+                {selectedConcept2 ? (
+                  <div className="space-y-2">
+                    <ConceptBadge concept={selectedConcept2} selected />
+                    <p className="text-gray-500 text-sm">{selectedConcept2.description}</p>
+                    <button
+                      onClick={() => setSelectedConcept2(null)}
+                      className="text-gray-500 text-sm hover:text-white"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
+                    {Object.entries(conceptsByTradition).map(([tradition, concepts]) => (
+                      <div key={tradition}>
+                        <p className="text-xs text-gray-500 mb-1">{TRADITIONS[tradition].name}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {concepts.map(c => (
+                            <button
+                              key={c.symbol}
+                              onClick={() => setSelectedConcept2(c)}
+                              className="px-2 py-1 rounded text-sm hover:bg-gray-700 transition-all"
+                              style={{ color: TRADITIONS[tradition].color }}
+                              title={c.description}
+                            >
+                              {c.symbol}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Preview */}
+            {selectedConcept1 && selectedRelation && selectedConcept2 && (
+              <div className="text-center">
+                <div className="text-4xl font-mono text-white mb-4 tracking-widest">
+                  {selectedRelation.symbol === 'within'
+                    ? `${selectedConcept1.symbol} within ${selectedConcept2.symbol}`
+                    : `${selectedConcept1.symbol} ${selectedRelation.symbol} ${selectedConcept2.symbol}`
+                  }
+                </div>
+                <button
+                  onClick={handleCompose}
+                  className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-medium hover:from-indigo-500 hover:to-purple-500 transition-all"
+                >
+                  Analyze This Position
+                </button>
+              </div>
+            )}
+
+            {composedPosition && (
+              <div className="max-w-2xl mx-auto">
+                <PositionCard position={composedPosition} expanded onToggle={() => {}} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* BROWSE MODE */}
+        {mode === 'browse' && (
+          <div className="space-y-8">
+            {Object.entries(TRADITIONS).map(([key, tradition]) => (
+              <div key={key}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: tradition.color }} />
+                  <h2 className="text-xl font-semibold">{tradition.name}</h2>
+                  <span className="text-gray-500 text-sm">{tradition.description}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {conceptsByTradition[key].map(concept => (
+                    <div key={concept.symbol} className="group relative">
+                      <ConceptBadge concept={concept} />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-700 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                        {concept.description}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div className="border-t border-gray-800 pt-8">
+              <h2 className="text-xl font-semibold mb-4">Relations</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {RELATIONS.map(r => (
+                  <div key={r.symbol} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div className="text-3xl mb-2">{r.symbol}</div>
+                    <div className="font-medium">{r.name}</div>
+                    <div className="text-gray-500 text-sm">{r.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 mt-16 py-8 text-center text-gray-500 text-sm">
+        <p>PhiLang — ~290 primitives across 24 domains</p>
+        <p className="mt-1">Spinoza | Nagarjuna | Whitehead | Hegel | Heidegger | Wittgenstein | Kant</p>
+      </footer>
+
+      {/* Symbol Palette */}
+      <SymbolPalette
+        isOpen={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelectSymbol={(item) => {
+          if (item.type === 'concept') {
+            // Switch to compose mode and add the concept
+            setMode('compose');
+            if (!selectedConcept1) setSelectedConcept1(item);
+            else if (!selectedConcept2) setSelectedConcept2(item);
+            else {
+              // Both slots filled, replace first
+              setSelectedConcept1(item);
+              setSelectedConcept2(null);
+            }
+          }
+        }}
+      />
+
+      {/* Backdrop when palette is open */}
+      {paletteOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setPaletteOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PhiLangExplorer />);
+    </script>
+</body>
+</html>

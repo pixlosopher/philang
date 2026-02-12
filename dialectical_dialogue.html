@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Dialectical Dialogue Engine</title>
+
+    <!-- Security: Unified CSP for PhiLang -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF Export Library (loaded defer for performance) -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- PhiLang Core Modules -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_api.js"></script>
+    <script src="philang_persistence.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_export.js"></script>
+    <script src="philang_ui.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="philang-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--void);
+            color: var(--pearl);
+            min-height: 100vh;
+        }
+
+        /* Cosmic background */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--silver); }
+
+        /* Tradition colors */
+        .tradition-phenomenology { --tradition-color: #6366f1; }
+        .tradition-spinozism { --tradition-color: #f59e0b; }
+        .tradition-buddhism { --tradition-color: #10b981; }
+        .tradition-process { --tradition-color: #3b82f6; }
+        .tradition-poststructuralism { --tradition-color: #ec4899; }
+        .tradition-hegelianism { --tradition-color: #8b5cf6; }
+        .tradition-heideggerianism { --tradition-color: #ef4444; }
+        .tradition-wittgenstein-early { --tradition-color: #06b6d4; }
+        .tradition-wittgenstein-late { --tradition-color: #14b8a6; }
+        .tradition-kantianism { --tradition-color: #a855f7; }
+
+        /* Dialogue styling */
+        .dialogue-entry {
+            border-left: 3px solid var(--tradition-color);
+            background: linear-gradient(90deg, color-mix(in srgb, var(--tradition-color) 8%, transparent) 0%, transparent 100%);
+            border-radius: 0 12px 12px 0;
+            transition: all 0.3s ease;
+        }
+
+        .dialogue-entry:hover {
+            background: linear-gradient(90deg, color-mix(in srgb, var(--tradition-color) 12%, transparent) 0%, transparent 100%);
+        }
+
+        .dialogue-entry .speaker-badge {
+            background: var(--tradition-color);
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            letter-spacing: 0.03em;
+        }
+
+        .dialogue-entry .concept-tag {
+            border-color: var(--tradition-color);
+            color: var(--tradition-color);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+        }
+
+        /* Typing animation */
+        @keyframes typing {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+        .typing { animation: typing 0.5s ease-in-out infinite alternate; }
+
+        /* Synthesis glow */
+        @keyframes synthesis-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(201, 162, 39, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(201, 162, 39, 0.4); }
+        }
+        .synthesis-entry {
+            animation: synthesis-glow 3s ease-in-out infinite;
+            border: 1px solid var(--gold);
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border-radius: 16px;
+        }
+
+        /* Debate stage visualization */
+        .debate-stage {
+            background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.05) 0%, transparent 70%);
+        }
+
+        /* Argument strength indicator */
+        .argument-strength {
+            background: linear-gradient(90deg,
+                #ef4444 0%,
+                #f59e0b 25%,
+                var(--gold) 50%,
+                #84cc16 75%,
+                #10b981 100%
+            );
+            border-radius: 100px;
+        }
+
+        /* Dialectical movement arrows */
+        .dialectic-arrow {
+            color: var(--gold);
+            text-shadow: 0 0 15px rgba(201, 162, 39, 0.5);
+        }
+
+        /* Quote styling */
+        .philosophical-quote {
+            font-style: italic;
+            border-left: 2px solid var(--stone);
+            padding-left: 1rem;
+            color: var(--silver);
+        }
+
+        /* API Status indicator */
+        .philang-api-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            background: rgba(22, 20, 28, 0.8);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .philang-api-indicator:hover {
+            border-color: rgba(201, 162, 39, 0.4);
+            background: rgba(201, 162, 39, 0.08);
+        }
+
+        .philang-api-indicator .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .philang-api-indicator .dot.active {
+            background: var(--gold);
+            box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+        }
+
+        .philang-api-indicator .dot.inactive {
+            background: #ef4444;
+        }
+
+        .philang-api-indicator span {
+            color: var(--silver);
+        }
+
+        /* Streaming cursor animation */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .streaming-cursor {
+            animation: blink 0.8s infinite;
+            color: var(--gold);
+        }
+
+        /* AI response indicator */
+        .ai-generated {
+            position: relative;
+        }
+
+        .ai-generated::after {
+            content: '● Claude';
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 10px;
+            color: var(--indigo-glow);
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="cosmic-bg">
+    <!-- Luminous accent bar -->
+    <div class="luminous-bar"></div>
+
+    <div id="app" class="min-h-screen flex flex-col pt-[2px]">
+        <!-- Navigation -->
+        <nav class="philang-nav">
+            <div class="philang-nav-inner max-w-6xl">
+                <div class="flex items-center gap-8">
+                    <a href="index.html" class="philang-logo">
+                        <span class="philang-logo-phi">φ</span>
+                        <span class="philang-logo-text">PHILANG</span>
+                    </a>
+                    <div class="nav-links hidden sm:flex">
+                        <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                        <a href="dialectical_dialogue.html" class="nav-link active">Dialogue</a>
+                        <a href="socratic_counsel.html" class="nav-link">Counsel</a>
+                        <a href="philang_embeddings.html" class="nav-link">Embeddings</a>
+                        <a href="philang_embeddings_advanced.html" class="nav-link">Advanced</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="api-indicator"></div>
+                    <button id="btn-new-debate" class="btn btn-primary">
+                        New Debate
+                    </button>
+                    <div class="relative">
+                        <button id="btn-history" class="btn btn-ghost" title="Debate History">
+                            <span style="font-size: 1.1em;">📜</span>
+                        </button>
+                        <div id="history-dropdown" class="hidden absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-gray-900/95 border border-gray-700 rounded-xl shadow-2xl z-50 backdrop-blur-sm">
+                            <div class="p-3 border-b border-gray-700/50">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-300">Previous Debates</span>
+                                    <div class="flex gap-2">
+                                        <button id="btn-export-current-md" class="text-xs text-emerald-400 hover:text-emerald-300" title="Export current as Markdown">Export MD</button>
+                                        <button id="btn-export-all" class="text-xs text-indigo-400 hover:text-indigo-300">Export All</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="history-list" class="p-2">
+                                <div class="text-center text-gray-500 text-sm py-4">Loading debates...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button id="btn-export" class="btn btn-ghost">
+                            Export ▾
+                        </button>
+                        <div id="export-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-gray-900/95 border border-gray-700 rounded-xl shadow-2xl z-50 backdrop-blur-sm overflow-hidden">
+                            <div class="p-2 border-b border-gray-700/50">
+                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Export Current Dialogue</span>
+                            </div>
+                            <div class="p-1">
+                                <button id="export-clipboard" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">📋</span> Copy to Clipboard
+                                </button>
+                                <button id="export-markdown" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">📝</span> Markdown (.md)
+                                </button>
+                                <button id="export-json" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">📦</span> JSON (.json)
+                                </button>
+                                <button id="export-latex" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">📄</span> LaTeX (.tex)
+                                </button>
+                                <button id="export-pdf" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">📕</span> PDF (.pdf)
+                                </button>
+                            </div>
+                            <div class="p-2 border-t border-gray-700/50">
+                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Bulk Export</span>
+                            </div>
+                            <div class="p-1">
+                                <button id="export-all-json" class="export-option w-full text-left px-3 py-2 text-sm hover:bg-gray-700/50 rounded-lg flex items-center gap-2 text-gray-200">
+                                    <span class="text-lg">💾</span> Export All Dialogues
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Header -->
+        <header class="page-header">
+            <div class="page-header-inner max-w-6xl">
+                <div>
+                    <h1 class="page-title">
+                        <span class="page-icon">⚔</span>
+                        <span>Dialectical Dialogue Engine</span>
+                    </h1>
+                    <p class="page-subtitle">Simulate debates between philosophical traditions</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex max-w-6xl mx-auto w-full">
+            <!-- Debate Configuration Panel -->
+            <aside id="config-panel" class="w-80 border-r border-gray-700/50 p-4 overflow-y-auto">
+                <div class="space-y-6">
+                    <!-- Topic Selection -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Debate Topic</h3>
+                        <select id="topic-select" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
+                            <option value="">Select a philosophical question...</option>
+                            <optgroup label="Metaphysics">
+                                <option value="nature-of-being">What is the nature of Being?</option>
+                                <option value="substance-vs-process">Is reality substance or process?</option>
+                                <option value="one-vs-many">The One and the Many</option>
+                                <option value="time-eternity">Time and Eternity</option>
+                            </optgroup>
+                            <optgroup label="Epistemology">
+                                <option value="nature-of-truth">What is truth?</option>
+                                <option value="limits-of-knowledge">Limits of knowledge</option>
+                                <option value="role-of-language">Role of language in thought</option>
+                            </optgroup>
+                            <optgroup label="Ethics & Existence">
+                                <option value="self-and-other">Self and Other</option>
+                                <option value="freedom-determination">Freedom vs Determination</option>
+                                <option value="meaning-of-negation">The meaning of negation</option>
+                            </optgroup>
+                            <optgroup label="Method">
+                                <option value="philosophy-method">What is philosophy's method?</option>
+                                <option value="saying-showing">Saying vs Showing</option>
+                            </optgroup>
+                        </select>
+                        <div id="custom-topic-container" class="mt-2 hidden">
+                            <input type="text" id="custom-topic" placeholder="Enter custom topic..."
+                                   class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <button id="btn-custom-topic" class="mt-2 text-xs text-indigo-400 hover:text-indigo-300">
+                            + Custom topic
+                        </button>
+                    </div>
+
+                    <!-- Tradition Selection -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">
+                            Debating Traditions
+                            <span class="text-gray-500 font-normal">(select 2-4)</span>
+                        </h3>
+                        <div id="tradition-list" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Debate Mode -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Debate Mode</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer">
+                                <input type="radio" name="debate-mode" value="dialectical" checked class="text-indigo-500">
+                                <div>
+                                    <div class="text-sm font-medium">Dialectical</div>
+                                    <div class="text-xs text-gray-500">Thesis → Antithesis → Synthesis</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer">
+                                <input type="radio" name="debate-mode" value="agonistic" class="text-indigo-500">
+                                <div>
+                                    <div class="text-sm font-medium">Agonistic</div>
+                                    <div class="text-xs text-gray-500">Competing perspectives, productive tension</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer">
+                                <input type="radio" name="debate-mode" value="hermeneutic" class="text-indigo-500">
+                                <div>
+                                    <div class="text-sm font-medium">Hermeneutic</div>
+                                    <div class="text-xs text-gray-500">Mutual interpretation, fusion of horizons</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Debate Settings -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-3">Settings</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs text-gray-400">Rounds</label>
+                                <input type="range" id="rounds-slider" min="2" max="8" value="4"
+                                       class="w-full accent-indigo-500">
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>2</span>
+                                    <span id="rounds-value">4 rounds</span>
+                                    <span>8</span>
+                                </div>
+                            </div>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="auto-synthesis" checked class="text-indigo-500">
+                                <span>Generate synthesis after each round</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="show-concepts" checked class="text-indigo-500">
+                                <span>Show concept symbols</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Start Button -->
+                    <button id="btn-start-debate"
+                            class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        Begin Dialogue
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Dialogue Area -->
+            <section class="flex-1 flex flex-col">
+                <!-- Debate Stage Header -->
+                <div id="debate-header" class="p-4 border-b border-gray-700/50 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 id="debate-topic-title" class="text-lg font-semibold"></h2>
+                            <p id="debate-participants" class="text-sm text-gray-400"></p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm">
+                                <span class="text-gray-400">Round:</span>
+                                <span id="current-round" class="font-semibold">1</span>
+                                <span class="text-gray-500">/ <span id="total-rounds">4</span></span>
+                            </div>
+                            <button id="btn-next-turn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-all">
+                                Next Turn
+                            </button>
+                            <button id="btn-auto-play" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-all">
+                                ▶ Auto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue Stream -->
+                <div id="dialogue-container" class="flex-1 overflow-y-auto p-6">
+                    <!-- Empty state -->
+                    <div id="empty-state" class="h-full flex flex-col items-center justify-center text-center">
+                        <div class="text-6xl mb-4 opacity-30">⚔</div>
+                        <h3 class="text-xl font-semibold text-gray-400 mb-2">No debate in progress</h3>
+                        <p class="text-gray-500 max-w-md">
+                            Select a topic and traditions to begin a philosophical dialogue.
+                            Watch as different perspectives engage, challenge, and synthesize.
+                        </p>
+                    </div>
+
+                    <!-- Dialogue entries will be inserted here -->
+                    <div id="dialogue-stream" class="space-y-4 hidden"></div>
+                </div>
+
+                <!-- Synthesis Panel (shown at bottom during debate) -->
+                <div id="synthesis-panel" class="border-t border-gray-700/50 p-4 hidden">
+                    <h3 class="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-2">
+                        ⟐ Emerging Synthesis
+                    </h3>
+                    <div id="synthesis-content" class="text-sm text-gray-300"></div>
+                </div>
+            </section>
+
+            <!-- Insights Panel -->
+            <aside id="insights-panel" class="w-72 border-l border-gray-700/50 p-4 overflow-y-auto hidden">
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-4">Dialectical Insights</h3>
+
+                <!-- Concept Map -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-2">Concepts Invoked</h4>
+                    <div id="concepts-invoked" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Tensions Identified -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-2">Productive Tensions</h4>
+                    <div id="tensions-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Bridges Found -->
+                <div class="mb-6">
+                    <h4 class="text-xs text-gray-500 uppercase mb-2">Bridges Discovered</h4>
+                    <div id="bridges-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Key Moves -->
+                <div>
+                    <h4 class="text-xs text-gray-500 uppercase mb-2">Key Dialectical Moves</h4>
+                    <div id="moves-list" class="space-y-2"></div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// PHILOSOPHICAL TRADITIONS — Voice, Concepts, and Argumentative Styles
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITIONS = {
+    PHENOMENOLOGY: {
+        id: 'phenomenology',
+        name: 'Phenomenology',
+        color: '#6366f1',
+        icon: 'Σ',
+        thinkers: ['Husserl', 'Merleau-Ponty', 'Levinas'],
+        coreConcepts: ['self', 'other', 'flesh', 'horizon', 'living-present', 'face'],
+        keywords: ['experience', 'consciousness', 'intentionality', 'embodiment', 'intersubjectivity'],
+        style: 'descriptive',
+        openingMoves: [
+            "Let us return to the things themselves and describe what appears...",
+            "From the perspective of lived experience, we must recognize...",
+            "The phenomenological reduction reveals...",
+            "If we bracket our presuppositions and attend to the phenomenon..."
+        ],
+        argumentPatterns: [
+            "The {concept} shows itself in experience as {description}",
+            "Attending to the phenomenon, we find that {claim}",
+            "The structure of {concept} reveals a fundamental {insight}",
+            "What appears in consciousness is not mere {contrast}, but {thesis}"
+        ],
+        responsePatterns: {
+            agree: "This resonates with the phenomenological finding that {elaboration}",
+            challenge: "But does this account sufficiently attend to the lived dimension of {concept}?",
+            synthesize: "Perhaps we can describe how {their_concept} and {our_concept} co-constitute {synthesis}"
+        },
+        conceptMappings: {
+            'being': 'the horizon of appearing',
+            'substance': 'the invariant structure within variation',
+            'emptiness': 'the horizon that enables appearing',
+            'becoming': 'the living flow of experience',
+            'truth': 'evidence given in intuition'
+        }
+    },
+
+    SPINOZISM: {
+        id: 'spinozism',
+        name: 'Spinozism',
+        color: '#f59e0b',
+        icon: '▣',
+        thinkers: ['Spinoza', 'Deleuze (early)'],
+        coreConcepts: ['substance', 'mode', 'conatus', 'k3', 'adequate-idea'],
+        keywords: ['immanence', 'necessity', 'power', 'eternity', 'affect'],
+        style: 'geometric',
+        openingMoves: [
+            "By substance I understand that which is in itself and conceived through itself...",
+            "From the standpoint of eternity, we can see that...",
+            "The geometric order of nature demonstrates...",
+            "If we consider things under the aspect of necessity..."
+        ],
+        argumentPatterns: [
+            "It follows necessarily from the nature of {concept} that {conclusion}",
+            "The {concept}, being a mode of substance, expresses {attribute}",
+            "Sub specie aeternitatis, {claim} must be affirmed",
+            "The adequate idea of {concept} shows that {insight}"
+        ],
+        responsePatterns: {
+            agree: "Indeed, this follows from the necessary order of Nature, for {elaboration}",
+            challenge: "But this presupposes a transcendence that violates immanence—for {counter}",
+            synthesize: "We might understand {their_concept} as a modal expression of {our_concept}"
+        },
+        conceptMappings: {
+            'being': 'Substance as self-caused',
+            'self': 'a finite mode of Thought',
+            'emptiness': 'indetermination prior to modal expression',
+            'becoming': 'the eternal productivity of Substance',
+            'truth': 'the adequate idea that agrees with its object'
+        }
+    },
+
+    BUDDHISM: {
+        id: 'buddhism',
+        name: 'Buddhism',
+        color: '#10b981',
+        icon: 'śū',
+        thinkers: ['Nāgārjuna', 'Candrakīrti', 'Dōgen'],
+        coreConcepts: ['emptiness', 'dep-orig', 'tetralemma', 'two-truths', 'non-arising'],
+        keywords: ['interdependence', 'no-self', 'liberation', 'skillful means', 'middle way'],
+        style: 'deconstructive',
+        openingMoves: [
+            "All phenomena arise dependently—therefore they are empty of inherent existence...",
+            "Neither existing nor non-existing, we must traverse the middle way...",
+            "The conventional truth serves liberation, but ultimately...",
+            "If we examine carefully, we find no essence in {topic}..."
+        ],
+        argumentPatterns: [
+            "Since {concept} arises dependently, it lacks inherent existence",
+            "The tetralemma shows that {concept} is neither {a} nor {b} nor both nor neither",
+            "Conventionally we may speak of {concept}, but ultimately it is śūnya",
+            "Clinging to {concept} as inherently real produces suffering; seeing its emptiness liberates"
+        ],
+        responsePatterns: {
+            agree: "Indeed, this points toward the emptiness that we also recognize in {elaboration}",
+            challenge: "But does this view not itself become an essence, a subtle grasping at {counter}?",
+            synthesize: "Perhaps {their_concept} and {our_concept} are two fingers pointing at the same moon"
+        },
+        conceptMappings: {
+            'being': 'a conventional designation, empty of inherent existence',
+            'substance': 'precisely what dependent origination negates',
+            'self': 'a useful convention, ultimately empty',
+            'becoming': 'the ceaseless arising of empty phenomena',
+            'truth': 'skillful means appropriate to the listener'
+        }
+    },
+
+    PROCESS: {
+        id: 'process',
+        name: 'Process Philosophy',
+        color: '#3b82f6',
+        icon: '⦿',
+        thinkers: ['Whitehead', 'Hartshorne'],
+        coreConcepts: ['actual-entity', 'prehension', 'concrescence', 'creativity', 'eternal-object'],
+        keywords: ['becoming', 'experience', 'novelty', 'relation', 'organism'],
+        style: 'speculative',
+        openingMoves: [
+            "The actual world is a process of becoming—'how an actual entity becomes constitutes what that actual entity is'...",
+            "If we take experience as fundamental, we find...",
+            "The creative advance into novelty shows...",
+            "Every actual occasion prehends its world and..."
+        ],
+        argumentPatterns: [
+            "The {concept} must be understood as a process of {description}",
+            "Each actual entity prehends {concept} according to its subjective aim",
+            "Creativity, the category of the ultimate, manifests in {claim}",
+            "The concrescence of {concept} integrates {elements} into novel unity"
+        ],
+        responsePatterns: {
+            agree: "Yes, and this processual character deepens when we consider {elaboration}",
+            challenge: "But does this give sufficient weight to the {contrast} that also characterizes experience?",
+            synthesize: "Perhaps {their_concept} can be understood as the {our_concept} viewed from {perspective}"
+        },
+        conceptMappings: {
+            'being': 'the becoming of actual entities',
+            'substance': 'the stubborn fact of actual occasions',
+            'emptiness': 'the initial phase of concrescence before determination',
+            'self': 'the subjective unity of an actual occasion',
+            'truth': 'correspondence in the mode of symbolic reference'
+        }
+    },
+
+    POSTSTRUCTURALISM: {
+        id: 'poststructuralism',
+        name: 'Poststructuralism',
+        color: '#ec4899',
+        icon: '⌒',
+        thinkers: ['Deleuze', 'Derrida', 'Foucault'],
+        coreConcepts: ['fold', 'virtual', 'trace', 'plane', 'differance', 'rhizome'],
+        keywords: ['difference', 'multiplicity', 'power', 'text', 'deconstruction'],
+        style: 'differential',
+        openingMoves: [
+            "The play of différance already disrupts any simple presence...",
+            "We must think difference in itself, not subordinated to identity...",
+            "The fold of inside and outside complicates the question...",
+            "Every text bears traces that exceed its apparent meaning..."
+        ],
+        argumentPatterns: [
+            "The {concept} is always already traversed by {difference}",
+            "What appears as {concept} is the effect of differential relations",
+            "The trace of {absent} haunts the presence of {present}",
+            "The rhizomatic connection between {a} and {b} produces {effect}"
+        ],
+        responsePatterns: {
+            agree: "Yes, and this différance is precisely what opens the space for {elaboration}",
+            challenge: "But does this not still presuppose a {metaphysical} that deconstruction would question?",
+            synthesize: "The fold might connect {their_concept} and {our_concept} as outside and inside of the same movement"
+        },
+        conceptMappings: {
+            'being': 'the effect of ontological difference',
+            'substance': 'a metaphysical presupposition to be deconstructed',
+            'self': 'a fold of forces, a pleat in the outside',
+            'becoming': 'the virtual actualizing through differentiation',
+            'truth': 'an effect of power/knowledge regimes'
+        }
+    },
+
+    HEGELIANISM: {
+        id: 'hegelianism',
+        name: 'Hegelianism',
+        color: '#8b5cf6',
+        icon: '⍟',
+        thinkers: ['Hegel', 'Žižek'],
+        coreConcepts: ['aufhebung', 'det-neg', 'spirit', 'becoming', 'contradiction', 'absolute'],
+        keywords: ['dialectic', 'negation', 'totality', 'mediation', 'self-consciousness'],
+        style: 'dialectical',
+        openingMoves: [
+            "The truth is the whole—but the whole is only the essence completing itself through its development...",
+            "We must think the identity of identity and non-identity...",
+            "The dialectical movement reveals that {topic}...",
+            "What appears as fixed opposition between {a} and {b} is already the movement of..."
+        ],
+        argumentPatterns: [
+            "The {concept} contains its own negation, which drives it beyond itself",
+            "Through determinate negation, {thesis} passes into {antithesis} and is aufgehoben into {synthesis}",
+            "The contradiction within {concept} is not a defect but the motor of its development",
+            "Spirit recognizes itself in the other of {concept}, achieving {result}"
+        ],
+        responsePatterns: {
+            agree: "Indeed, and this dialectical movement continues when we see that {elaboration}",
+            challenge: "But is this synthesis not premature? The negativity of {concept} has not been fully worked through",
+            synthesize: "The aufhebung of {their_concept} and {our_concept} would yield {higher_unity}"
+        },
+        conceptMappings: {
+            'being': 'the immediate that proves to be mediated',
+            'substance': 'what must become Subject',
+            'emptiness': 'abstract negativity not yet determinately negated',
+            'self': 'self-consciousness in its movement of recognition',
+            'truth': 'the whole, the result together with its becoming'
+        }
+    },
+
+    HEIDEGGERIANISM: {
+        id: 'heideggerianism',
+        name: 'Heideggerianism',
+        color: '#ef4444',
+        icon: '𝔇',
+        thinkers: ['Heidegger'],
+        coreConcepts: ['being', 'dasein', 'care', 'clearing', 'aletheia', 'ereignis', 'temporality'],
+        keywords: ['ontology', 'existence', 'disclosure', 'thrownness', 'authenticity'],
+        style: 'hermeneutic',
+        openingMoves: [
+            "The question of Being has been forgotten—we must retrieve it...",
+            "Dasein is that being for whom Being is a question...",
+            "In the clearing of Being, truth as aletheia occurs...",
+            "The ontological difference between Being and beings must be thought..."
+        ],
+        argumentPatterns: [
+            "The {concept} must be thought from the horizon of temporality",
+            "Dasein's understanding of {concept} is grounded in its being-in-the-world",
+            "The {concept} shows itself in the clearing as {unconcealment}",
+            "The Ereignis appropriates {concept} and Dasein into their belonging-together"
+        ],
+        responsePatterns: {
+            agree: "This speaks to the same destining of Being that we encounter in {elaboration}",
+            challenge: "But has the ontological difference been sufficiently thought here? The {concept} remains ontic",
+            synthesize: "Perhaps {their_concept} and {our_concept} both point toward the Ereignis that gives them"
+        },
+        conceptMappings: {
+            'substance': 'beings understood in their presence-at-hand',
+            'self': 'Dasein in its ownmost being-toward-death',
+            'emptiness': 'the Nothing that belongs to Being',
+            'becoming': 'the temporal ecstases of Dasein',
+            'truth': 'aletheia, unconcealment'
+        }
+    },
+
+    WITTGENSTEIN_EARLY: {
+        id: 'wittgenstein-early',
+        name: 'Early Wittgenstein',
+        color: '#06b6d4',
+        icon: '𝕎',
+        thinkers: ['Wittgenstein (Tractatus)'],
+        coreConcepts: ['world', 'fact', 'proposition', 'pictures', 'shows', 'silence', 'mystical'],
+        keywords: ['logic', 'limit', 'saying', 'nonsense', 'form'],
+        style: 'aphoristic',
+        openingMoves: [
+            "The world is all that is the case...",
+            "Whereof one cannot speak, thereof one must be silent...",
+            "The limits of my language mean the limits of my world...",
+            "A proposition is a picture of reality..."
+        ],
+        argumentPatterns: [
+            "What can be said of {concept} must be said clearly; what cannot, shows itself",
+            "The logical form of {concept} cannot be said, only shown",
+            "The {concept} lies at the limit of language, in the realm of the mystical",
+            "The proposition pictures {fact}, but the pictorial form itself can only be shown"
+        ],
+        responsePatterns: {
+            agree: "Indeed, and what shows itself here is precisely {elaboration}",
+            challenge: "But in saying this, have we not transgressed the limit? This is disguised nonsense",
+            synthesize: "Perhaps {their_concept} and {our_concept} both point to what can only be shown"
+        },
+        conceptMappings: {
+            'being': 'what shows itself but cannot be said',
+            'substance': 'the form of objects',
+            'truth': 'agreement between proposition and fact',
+            'self': 'the limit of the world, not a part of it',
+            'emptiness': 'the mystical—that the world exists'
+        }
+    },
+
+    WITTGENSTEIN_LATE: {
+        id: 'wittgenstein-late',
+        name: 'Late Wittgenstein',
+        color: '#14b8a6',
+        icon: '𝔖𝔭',
+        thinkers: ['Wittgenstein (Investigations)'],
+        coreConcepts: ['lang-game', 'use', 'rule', 'form-life', 'fam-resem', 'therapy', 'hinge'],
+        keywords: ['practice', 'grammar', 'criteria', 'ordinary', 'agreement'],
+        style: 'therapeutic',
+        openingMoves: [
+            "Don't ask for the meaning, ask for the use...",
+            "What is your aim in philosophy? To show the fly the way out of the fly-bottle...",
+            "The meaning of a word is its use in the language-game...",
+            "Look at how the word is actually used..."
+        ],
+        argumentPatterns: [
+            "The grammar of '{concept}' shows that {insight}",
+            "In the language-game of {domain}, '{concept}' functions as {role}",
+            "The philosophical problem dissolves when we see that {clarification}",
+            "There is no essence of {concept}—only a family resemblance"
+        ],
+        responsePatterns: {
+            agree: "Yes, and if we look at actual practice, we find {elaboration}",
+            challenge: "But are you not here creating a philosophical theory, the very thing we sought to avoid?",
+            synthesize: "Perhaps {their_concept} and {our_concept} belong to overlapping language-games"
+        },
+        conceptMappings: {
+            'being': 'a word whose grammar we must investigate',
+            'substance': 'a picture that held us captive',
+            'truth': 'what we call "true" within our practice',
+            'self': 'various uses of "I" in different language-games',
+            'emptiness': 'perhaps: showing that there is no "it" here'
+        }
+    },
+
+    KANTIANISM: {
+        id: 'kantianism',
+        name: 'Kantianism',
+        color: '#a855f7',
+        icon: '𝕿',
+        thinkers: ['Kant'],
+        coreConcepts: ['transcendental', 'a-priori', 'phenomenon', 'noumenon', 'category', 'schema', 'apperception'],
+        keywords: ['critique', 'conditions', 'limits', 'synthetic', 'autonomy'],
+        style: 'critical',
+        openingMoves: [
+            "We must ask: what are the conditions of possibility for...?",
+            "The critique of reason requires that we distinguish...",
+            "Experience is possible only through the synthetic unity of apperception...",
+            "We cannot know things in themselves, only as they appear to us..."
+        ],
+        argumentPatterns: [
+            "The {concept} is a condition of the possibility of {experience}",
+            "The category of {category} structures our experience of {concept}",
+            "We can know {concept} only as phenomenon, not as noumenon",
+            "The schema of {concept} mediates between intuition and understanding"
+        ],
+        responsePatterns: {
+            agree: "Indeed, this falls within the legitimate bounds of reason, for {elaboration}",
+            challenge: "But does this not transgress the limits of possible experience? We cannot know {counter}",
+            synthesize: "Perhaps {their_concept} can be understood as the {our_concept} of reason in its {use}"
+        },
+        conceptMappings: {
+            'being': 'the object in general, determined by categories',
+            'substance': 'a category of relation, the substratum of accidents',
+            'self': 'the transcendental unity of apperception',
+            'becoming': 'succession determined by the category of causality',
+            'truth': 'agreement of knowledge with its object'
+        }
+    },
+
+    PLATONISM: {
+        id: 'platonism',
+        name: 'Platonism',
+        color: '#4f46e5',
+        icon: '△',
+        thinkers: ['Plato', 'Plotinus', 'Proclus'],
+        coreConcepts: ['form', 'idea', 'participation', 'the-good', 'anamnesis', 'demiurge'],
+        keywords: ['eternal', 'intelligible', 'beautiful', 'just', 'archetype', 'ascent'],
+        style: 'dialectical-ascent',
+        openingMoves: [
+            "Let us ascend from the shadows of becoming to the light of Being...",
+            "The Form itself, in its pure essence, reveals that...",
+            "As the soul recollects its vision of the eternal Forms...",
+            "If we distinguish appearance from reality, the sensible from the intelligible..."
+        ],
+        argumentPatterns: [
+            "The {concept} participates in the Form of {essence}, which alone truly is",
+            "Beyond the many {instances}, there must be the One {form} that makes them what they are",
+            "The soul, turning from {shadows}, ascends toward {light}",
+            "What is truly {quality} is so by virtue of the Form of {quality} itself"
+        ],
+        responsePatterns: {
+            agree: "Indeed, this points toward the eternal truth that {elaboration}",
+            challenge: "But does this not remain in the cave of {domain}? The Form itself shows {counter}",
+            synthesize: "Perhaps {their_concept} is the image of which {our_concept} is the paradigm"
+        },
+        conceptMappings: {
+            'being': 'the Forms, eternally self-same and truly real',
+            'substance': 'the intelligible paradigm that sensible things imitate',
+            'self': 'the immortal soul that recollects the Forms',
+            'becoming': 'the realm of generation, image of eternal Being',
+            'truth': 'the Good that illuminates all intelligible beings',
+            'emptiness': 'mere privation, the absence of Form'
+        }
+    },
+
+    ARISTOTELIANISM: {
+        id: 'aristotelianism',
+        name: 'Aristotelianism',
+        color: '#059669',
+        icon: '⦰',
+        thinkers: ['Aristotle', 'Aquinas', 'Averroes'],
+        coreConcepts: ['substance', 'essence', 'actuality', 'potentiality', 'telos', 'hylomorphism'],
+        keywords: ['form', 'matter', 'cause', 'nature', 'virtue', 'eudaimonia', 'category'],
+        style: 'systematic-analysis',
+        openingMoves: [
+            "We must begin with what is known to us and proceed to what is known by nature...",
+            "Being is said in many ways, but primarily of substance...",
+            "The nature of a thing is its actuality, its fulfillment of function...",
+            "If we analyze {topic} into its four causes..."
+        ],
+        argumentPatterns: [
+            "The {concept}, qua {aspect}, has its being in {ground}",
+            "The actuality of {concept} is prior to its potentiality",
+            "The final cause of {thing} is {telos}, toward which its nature tends",
+            "By distinguishing form and matter in {concept}, we understand that {insight}"
+        ],
+        responsePatterns: {
+            agree: "Rightly so, for {elaboration} follows from the nature of the thing",
+            challenge: "But this does not attend to the proper genus—for {concept} is said in many ways, and {counter}",
+            synthesize: "We may understand {their_concept} as the {cause}-cause of {our_concept}"
+        },
+        conceptMappings: {
+            'being': 'substance, the primary category of what is',
+            'substance': 'the composite of form and matter, or pure form',
+            'self': 'the rational soul, form of the living body',
+            'becoming': 'the actualization of potentiality',
+            'truth': 'saying of what is that it is, and of what is not that it is not',
+            'emptiness': 'prime matter, pure potentiality without form'
+        }
+    },
+
+    HERACLITEANISM: {
+        id: 'heracliteanism',
+        name: 'Heracliteanism',
+        color: '#dc2626',
+        icon: '🔥',
+        thinkers: ['Heraclitus', 'Nietzsche', 'Deleuze'],
+        coreConcepts: ['flux', 'logos', 'fire', 'strife', 'unity-of-opposites', 'eternal-return'],
+        keywords: ['change', 'becoming', 'conflict', 'transformation', 'river', 'lightning'],
+        style: 'aphoristic-paradox',
+        openingMoves: [
+            "Everything flows—you cannot step into the same river twice...",
+            "War is the father of all things, strife their king...",
+            "The hidden harmony is superior to the apparent...",
+            "Fire lives the death of earth, and air lives the death of fire..."
+        ],
+        argumentPatterns: [
+            "The {concept} contains within itself its opposite, for {paradox}",
+            "What appears as {state} is but a moment in the eternal flux of {process}",
+            "The logos reveals that {opposition} and {counter} are one",
+            "Only in {conflict} does {concept} achieve its truth"
+        ],
+        responsePatterns: {
+            agree: "Indeed, the river teaches that {elaboration}—all is becoming",
+            challenge: "But you fix in concepts what is eternally flowing—where is the {concept} in the flux?",
+            synthesize: "Perhaps {their_concept} and {our_concept} are the same, seen from different banks of the river"
+        },
+        conceptMappings: {
+            'being': 'a fiction—there is only becoming',
+            'substance': 'arrested flux, a convenient illusion',
+            'self': 'a eddy in the stream, constantly reconstituting',
+            'becoming': 'the only reality, the eternal play of fire',
+            'truth': 'the logos that speaks through the flux',
+            'emptiness': 'the absence that enables transformation'
+        }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEBATE TOPICS — Questions and their philosophical stakes
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TOPICS = {
+    'nature-of-being': {
+        title: 'What is the nature of Being?',
+        description: 'The fundamental question of ontology',
+        stakes: ['existence', 'reality', 'appearance', 'presence'],
+        promptingQuestions: [
+            'Is Being the most universal concept, or is it indefinable?',
+            'What is the relation between Being and beings?',
+            'Can Being be thought without beings?'
+        ]
+    },
+    'substance-vs-process': {
+        title: 'Is reality substance or process?',
+        description: 'Static being vs dynamic becoming',
+        stakes: ['permanence', 'change', 'identity', 'time'],
+        promptingQuestions: [
+            'Is there an underlying substrate that persists through change?',
+            'Is becoming more fundamental than being?',
+            'How do we account for identity through change?'
+        ]
+    },
+    'one-vs-many': {
+        title: 'The One and the Many',
+        description: 'Unity, multiplicity, and their relation',
+        stakes: ['unity', 'plurality', 'relation', 'whole'],
+        promptingQuestions: [
+            'Is reality ultimately one or many?',
+            'How does multiplicity arise from unity?',
+            'Can the many be thought without the one?'
+        ]
+    },
+    'nature-of-truth': {
+        title: 'What is truth?',
+        description: 'Correspondence, coherence, disclosure, or practice?',
+        stakes: ['knowledge', 'reality', 'language', 'verification'],
+        promptingQuestions: [
+            'Is truth a relation between mind and world?',
+            'Can truth be understood apart from our practices?',
+            'What is the relation between truth and appearance?'
+        ]
+    },
+    'self-and-other': {
+        title: 'Self and Other',
+        description: 'Identity, alterity, and intersubjectivity',
+        stakes: ['identity', 'alterity', 'recognition', 'ethics'],
+        promptingQuestions: [
+            'How does the self constitute itself?',
+            'What is our primordial relation to the other?',
+            'Is the self prior to or constituted by the other?'
+        ]
+    },
+    'limits-of-knowledge': {
+        title: 'Limits of knowledge',
+        description: 'What can be known and what lies beyond',
+        stakes: ['epistemology', 'skepticism', 'transcendence', 'finitude'],
+        promptingQuestions: [
+            'Are there things that cannot in principle be known?',
+            'What determines the limits of possible knowledge?',
+            'Is there a beyond to knowledge, and can we say anything about it?'
+        ]
+    },
+    'role-of-language': {
+        title: 'Role of language in thought',
+        description: 'Does language constitute or express thought?',
+        stakes: ['meaning', 'reference', 'thought', 'expression'],
+        promptingQuestions: [
+            'Can there be thought without language?',
+            'Does language reveal or conceal reality?',
+            'What is the relation between saying and showing?'
+        ]
+    },
+    'freedom-determination': {
+        title: 'Freedom vs Determination',
+        description: 'Agency, causality, and autonomy',
+        stakes: ['freedom', 'necessity', 'responsibility', 'nature'],
+        promptingQuestions: [
+            'Is freedom compatible with natural causality?',
+            'What does it mean to be truly free?',
+            'How is moral responsibility possible?'
+        ]
+    },
+    'meaning-of-negation': {
+        title: 'The meaning of negation',
+        description: 'Negativity, absence, and their ontological status',
+        stakes: ['negation', 'nothing', 'absence', 'difference'],
+        promptingQuestions: [
+            'What is the ontological status of negation?',
+            'Is absence real or merely privation?',
+            'How does negation relate to determination?'
+        ]
+    },
+    'time-eternity': {
+        title: 'Time and Eternity',
+        description: 'The temporal and the timeless',
+        stakes: ['temporality', 'presence', 'past', 'future'],
+        promptingQuestions: [
+            'Is time real or merely apparent?',
+            'What is the relation between time and consciousness?',
+            'Can eternity be thought from within time?'
+        ]
+    },
+    'philosophy-method': {
+        title: "What is philosophy's method?",
+        description: 'How should philosophy proceed?',
+        stakes: ['method', 'rigor', 'system', 'therapy'],
+        promptingQuestions: [
+            'Should philosophy be systematic or therapeutic?',
+            'What is the role of argument in philosophy?',
+            'Can philosophy achieve certainty?'
+        ]
+    },
+    'saying-showing': {
+        title: 'Saying vs Showing',
+        description: 'The limits of linguistic expression',
+        stakes: ['language', 'ineffable', 'limit', 'mystical'],
+        promptingQuestions: [
+            'Are there things that can be shown but not said?',
+            'What is the status of philosophical propositions?',
+            'How should we respond to what cannot be said?'
+        ]
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DIALOGUE ENGINE — With Claude API Integration
+// ═══════════════════════════════════════════════════════════════════════════
+
+class DialecticalEngine {
+    constructor() {
+        this.currentDebate = null;
+        this.turnIndex = 0;
+        this.insights = {
+            conceptsInvoked: new Map(),
+            tensions: [],
+            bridges: [],
+            moves: []
+        };
+        this.useAPI = false;
+        this.conversationHistory = [];
+        this.isProcessing = false;
+    }
+
+    checkAPIAvailability() {
+        this.useAPI = typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured();
+        return this.useAPI;
+    }
+
+    startDebate(config) {
+        this.currentDebate = {
+            topic: TOPICS[config.topicId] || { title: config.customTopic, stakes: [] },
+            topicId: config.topicId,
+            traditions: config.traditions.map(id => TRADITIONS[id.toUpperCase()]),
+            mode: config.mode,
+            rounds: config.rounds,
+            currentRound: 1,
+            entries: [],
+            synthesisEnabled: config.autoSynthesis
+        };
+        this.turnIndex = 0;
+        this.insights = {
+            conceptsInvoked: new Map(),
+            tensions: [],
+            bridges: [],
+            moves: []
+        };
+        this.conversationHistory = [];
+        this.checkAPIAvailability();
+
+        // Generate opening
+        return this.generateOpening();
+    }
+
+    // Async version using Claude API
+    async generateNextTurnAsync() {
+        if (!this.currentDebate || this.isProcessing) return null;
+        this.isProcessing = true;
+
+        const { traditions, entries, mode, currentRound, rounds } = this.currentDebate;
+
+        // Determine whose turn it is
+        this.turnIndex++;
+        const traditionIndex = this.turnIndex % traditions.length;
+        const currentTradition = traditions[traditionIndex];
+        const previousEntry = entries[entries.length - 1];
+        const previousTradition = previousEntry.tradition;
+
+        // Check if we need synthesis
+        if (this.turnIndex > 0 && this.turnIndex % traditions.length === 0 && this.currentDebate.synthesisEnabled) {
+            const synthesis = await this.generateSynthesisAsync();
+            this.currentDebate.entries.push(synthesis);
+            this.currentDebate.currentRound++;
+
+            this.isProcessing = false;
+            if (this.currentDebate.currentRound > rounds) {
+                return { ...synthesis, debateComplete: true };
+            }
+            return synthesis;
+        }
+
+        try {
+            if (this.useAPI) {
+                // Build conversation context
+                const recentEntries = entries.slice(-4).map(e => ({
+                    tradition: e.tradition?.name || 'Synthesis',
+                    content: e.content
+                }));
+
+                const topic = {
+                    name: this.currentDebate.topic.title,
+                    description: this.currentDebate.topic.description || '',
+                    stakes: (this.currentDebate.topic.stakes || []).join(', '),
+                    question: this.currentDebate.topic.promptingQuestions ?
+                        this.currentDebate.topic.promptingQuestions[0] : ''
+                };
+
+                // Update conversation history
+                if (previousEntry.type !== 'synthesis') {
+                    this.conversationHistory.push({
+                        role: 'user', // Previous tradition's argument
+                        content: `[${previousTradition.name}]: ${previousEntry.content}`
+                    });
+                }
+
+                const response = await PhiLangAPI.dialecticalArgument(
+                    currentTradition.id,
+                    mode,
+                    topic,
+                    this.conversationHistory,
+                    { stream: false }
+                );
+
+                // Extract insights from AI response
+                const aiInsights = PhiLangAPI.extractInsights(response.content);
+                const concepts = aiInsights.concepts.length > 0 ?
+                    aiInsights.concepts.slice(0, 3) :
+                    this.extractConcepts(currentTradition);
+
+                // Record the response
+                this.conversationHistory.push({
+                    role: 'assistant',
+                    content: response.content
+                });
+
+                const entry = {
+                    type: 'response',
+                    responseType: this.detectResponseType(response.content),
+                    tradition: currentTradition,
+                    speaker: currentTradition.thinkers[Math.floor(Math.random() * currentTradition.thinkers.length)],
+                    content: response.content,
+                    concepts,
+                    round: currentRound,
+                    inResponseTo: previousTradition.name,
+                    fromAPI: true
+                };
+
+                this.currentDebate.entries.push(entry);
+                this.recordConcepts(concepts, currentTradition);
+                this.detectTensions(currentTradition, previousTradition, entry);
+                this.detectBridges(currentTradition, previousTradition, entry);
+
+                this.insights.moves.push({
+                    type: entry.responseType,
+                    tradition: currentTradition.name,
+                    description: `${currentTradition.name} ${entry.responseType}s ${previousTradition.name}'s position`
+                });
+
+                this.isProcessing = false;
+                return entry;
+            }
+        } catch (error) {
+            console.error('API error, falling back to rule-based:', error);
+        }
+
+        // Fallback to rule-based
+        this.isProcessing = false;
+        return this.generateNextTurnFallback(currentTradition, previousTradition, previousEntry);
+    }
+
+    generateNextTurnFallback(currentTradition, previousTradition, previousEntry) {
+        const { mode, currentRound } = this.currentDebate;
+
+        let entry;
+        switch (mode) {
+            case 'dialectical':
+                entry = this.generateDialecticalResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            case 'agonistic':
+                entry = this.generateAgonisticResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            case 'hermeneutic':
+                entry = this.generateHermeneuticResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            default:
+                entry = this.generateDialecticalResponse(currentTradition, previousTradition, previousEntry);
+        }
+
+        this.currentDebate.entries.push(entry);
+        this.recordConcepts(entry.concepts, currentTradition);
+        this.detectTensions(currentTradition, previousTradition, entry);
+        this.detectBridges(currentTradition, previousTradition, entry);
+
+        return entry;
+    }
+
+    async generateSynthesisAsync() {
+        const { traditions, topic, entries } = this.currentDebate;
+        const recentEntries = entries.slice(-traditions.length);
+
+        if (this.useAPI) {
+            try {
+                const tradNames = traditions.map(t => t.name);
+                const recentArguments = recentEntries.map(e =>
+                    `${e.tradition?.name || 'Unknown'}: ${e.content.slice(0, 200)}...`
+                ).join('\n\n');
+
+                const synthesisPrompt = `After this round of dialogue between ${tradNames.join(', ')} on "${topic.title}", synthesize the key insights:
+
+Recent positions:
+${recentArguments}
+
+Identify:
+1. Points of convergence between traditions
+2. Productive tensions that emerged
+3. An emerging question for the next round
+
+Express any philosophical relationships in PhiLang notation where appropriate.`;
+
+                const response = await PhiLangAPI.sendMessage(
+                    [{ role: 'user', content: synthesisPrompt }],
+                    PhiLangAPI.SYSTEM_PROMPTS.derivation(),
+                    { maxTokens: 800, temperature: 0.7 }
+                );
+
+                const aiInsights = PhiLangAPI.extractInsights(response.content);
+
+                return {
+                    type: 'synthesis',
+                    content: response.content,
+                    concepts: aiInsights.concepts,
+                    round: this.currentDebate.currentRound,
+                    fromAPI: true
+                };
+            } catch (error) {
+                console.error('Synthesis API error:', error);
+            }
+        }
+
+        // Fallback
+        return this.generateSynthesis();
+    }
+
+    detectResponseType(content) {
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes('however') || lowerContent.includes('but this') ||
+            lowerContent.includes('challenge') || lowerContent.includes('question')) {
+            return 'challenge';
+        }
+        if (lowerContent.includes('synthesis') || lowerContent.includes('perhaps both') ||
+            lowerContent.includes('integrate') || lowerContent.includes('aufhebung')) {
+            return 'synthesize';
+        }
+        if (lowerContent.includes('agree') || lowerContent.includes('indeed') ||
+            lowerContent.includes('resonates') || lowerContent.includes('confirms')) {
+            return 'agree';
+        }
+        return 'develop';
+    }
+
+    generateOpening() {
+        const { topic, traditions } = this.currentDebate;
+        const firstTradition = traditions[0];
+
+        const opening = {
+            type: 'opening',
+            tradition: firstTradition,
+            speaker: firstTradition.thinkers[Math.floor(Math.random() * firstTradition.thinkers.length)],
+            content: this.generateOpeningStatement(firstTradition, topic),
+            concepts: this.extractConcepts(firstTradition),
+            round: 1
+        };
+
+        this.currentDebate.entries.push(opening);
+        this.recordConcepts(opening.concepts, firstTradition);
+        this.insights.moves.push({
+            type: 'opening',
+            tradition: firstTradition.name,
+            description: `${firstTradition.name} opens with their characteristic approach`
+        });
+
+        return opening;
+    }
+
+    generateOpeningStatement(tradition, topic) {
+        const opener = tradition.openingMoves[Math.floor(Math.random() * tradition.openingMoves.length)];
+        const pattern = tradition.argumentPatterns[Math.floor(Math.random() * tradition.argumentPatterns.length)];
+
+        // Fill in pattern with topic-relevant content
+        const concept = tradition.coreConcepts[Math.floor(Math.random() * tradition.coreConcepts.length)];
+        const stake = topic.stakes ? topic.stakes[Math.floor(Math.random() * topic.stakes.length)] : 'being';
+
+        let argument = pattern
+            .replace('{concept}', this.conceptToDisplay(concept))
+            .replace('{description}', `the ${stake} that shows itself in our analysis`)
+            .replace('{claim}', `${stake} must be understood through ${concept}`)
+            .replace('{insight}', `connection to ${stake}`)
+            .replace('{thesis}', `the primacy of ${concept}`)
+            .replace('{contrast}', 'abstract theory')
+            .replace('{a}', 'presence')
+            .replace('{b}', 'absence');
+
+        return `${opener}\n\n${argument}`;
+    }
+
+    generateNextTurn() {
+        if (!this.currentDebate) return null;
+
+        const { traditions, entries, mode, currentRound, rounds } = this.currentDebate;
+
+        // Determine whose turn it is
+        this.turnIndex++;
+        const traditionIndex = this.turnIndex % traditions.length;
+        const currentTradition = traditions[traditionIndex];
+        const previousEntry = entries[entries.length - 1];
+        const previousTradition = previousEntry.tradition;
+
+        // Check if we need synthesis
+        if (this.turnIndex > 0 && this.turnIndex % traditions.length === 0 && this.currentDebate.synthesisEnabled) {
+            const synthesis = this.generateSynthesis();
+            this.currentDebate.entries.push(synthesis);
+            this.currentDebate.currentRound++;
+
+            if (this.currentDebate.currentRound > rounds) {
+                return { ...synthesis, debateComplete: true };
+            }
+            return synthesis;
+        }
+
+        // Generate response based on mode
+        let entry;
+        switch (mode) {
+            case 'dialectical':
+                entry = this.generateDialecticalResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            case 'agonistic':
+                entry = this.generateAgonisticResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            case 'hermeneutic':
+                entry = this.generateHermeneuticResponse(currentTradition, previousTradition, previousEntry);
+                break;
+            default:
+                entry = this.generateDialecticalResponse(currentTradition, previousTradition, previousEntry);
+        }
+
+        this.currentDebate.entries.push(entry);
+        this.recordConcepts(entry.concepts, currentTradition);
+        this.detectTensions(currentTradition, previousTradition, entry);
+        this.detectBridges(currentTradition, previousTradition, entry);
+
+        return entry;
+    }
+
+    generateDialecticalResponse(tradition, previousTradition, previousEntry) {
+        const responseType = this.determineResponseType(tradition, previousTradition);
+        const patterns = tradition.responsePatterns;
+        const concept = tradition.coreConcepts[Math.floor(Math.random() * tradition.coreConcepts.length)];
+        const prevConcept = previousEntry.concepts[0] || 'being';
+
+        let content;
+        let moveDescription;
+
+        switch (responseType) {
+            case 'challenge':
+                content = this.generateChallenge(tradition, previousTradition, prevConcept);
+                moveDescription = `${tradition.name} challenges ${previousTradition.name}'s position`;
+                break;
+            case 'synthesize':
+                content = this.generateSynthesisAttempt(tradition, previousTradition, concept, prevConcept);
+                moveDescription = `${tradition.name} attempts synthesis with ${previousTradition.name}`;
+                break;
+            default:
+                content = this.generateAgreementWithDevelopment(tradition, previousTradition, concept, prevConcept);
+                moveDescription = `${tradition.name} develops ${previousTradition.name}'s insight`;
+        }
+
+        this.insights.moves.push({
+            type: responseType,
+            tradition: tradition.name,
+            description: moveDescription
+        });
+
+        return {
+            type: 'response',
+            responseType,
+            tradition,
+            speaker: tradition.thinkers[Math.floor(Math.random() * tradition.thinkers.length)],
+            content,
+            concepts: [concept, prevConcept],
+            round: this.currentDebate.currentRound,
+            inResponseTo: previousTradition.name
+        };
+    }
+
+    generateAgonisticResponse(tradition, previousTradition, previousEntry) {
+        // Agonistic mode emphasizes productive conflict
+        const concept = tradition.coreConcepts[Math.floor(Math.random() * tradition.coreConcepts.length)];
+        const prevConcept = previousEntry.concepts[0] || 'being';
+
+        const content = this.generateChallenge(tradition, previousTradition, prevConcept, true);
+
+        this.insights.moves.push({
+            type: 'agonistic',
+            tradition: tradition.name,
+            description: `${tradition.name} contests ${previousTradition.name}'s framework`
+        });
+
+        return {
+            type: 'response',
+            responseType: 'agonistic',
+            tradition,
+            speaker: tradition.thinkers[Math.floor(Math.random() * tradition.thinkers.length)],
+            content,
+            concepts: [concept, prevConcept],
+            round: this.currentDebate.currentRound,
+            inResponseTo: previousTradition.name
+        };
+    }
+
+    generateHermeneuticResponse(tradition, previousTradition, previousEntry) {
+        // Hermeneutic mode emphasizes mutual understanding
+        const concept = tradition.coreConcepts[Math.floor(Math.random() * tradition.coreConcepts.length)];
+        const prevConcept = previousEntry.concepts[0] || 'being';
+
+        const interpretation = tradition.conceptMappings[prevConcept] ||
+            `what we would call ${this.conceptToDisplay(concept)}`;
+
+        const content = `I hear in your account of ${this.conceptToDisplay(prevConcept)} something that resonates with our understanding. ` +
+            `For us, this would be ${interpretation}.\n\n` +
+            `Perhaps we are describing the same phenomenon from different horizons. ` +
+            `Your ${this.conceptToDisplay(prevConcept)} and our ${this.conceptToDisplay(concept)} ` +
+            `may both point toward ${this.currentDebate.topic.stakes[0] || 'the matter itself'}.`;
+
+        this.insights.moves.push({
+            type: 'hermeneutic',
+            tradition: tradition.name,
+            description: `${tradition.name} interprets ${previousTradition.name} through their own horizon`
+        });
+
+        return {
+            type: 'response',
+            responseType: 'hermeneutic',
+            tradition,
+            speaker: tradition.thinkers[Math.floor(Math.random() * tradition.thinkers.length)],
+            content,
+            concepts: [concept, prevConcept],
+            round: this.currentDebate.currentRound,
+            inResponseTo: previousTradition.name
+        };
+    }
+
+    generateChallenge(tradition, previousTradition, prevConcept, strong = false) {
+        const mapping = tradition.conceptMappings[prevConcept];
+        const ourConcept = tradition.coreConcepts[Math.floor(Math.random() * tradition.coreConcepts.length)];
+
+        let challenge;
+        if (mapping) {
+            challenge = `What you call "${this.conceptToDisplay(prevConcept)}" is, from our perspective, ${mapping}. `;
+        } else {
+            challenge = `Your notion of ${this.conceptToDisplay(prevConcept)} requires examination. `;
+        }
+
+        if (strong) {
+            challenge += `\n\nBut this formulation remains captive to assumptions we must question. ` +
+                `Does it not presuppose precisely what needs to be demonstrated? ` +
+                `From the standpoint of ${this.conceptToDisplay(ourConcept)}, we see that ` +
+                `${previousTradition.name}'s framework cannot account for ${tradition.keywords[0]}.`;
+        } else {
+            const pattern = tradition.responsePatterns.challenge
+                .replace('{concept}', this.conceptToDisplay(prevConcept))
+                .replace('{counter}', `the ${tradition.keywords[0]} dimension`);
+            challenge += pattern;
+        }
+
+        return challenge;
+    }
+
+    generateSynthesisAttempt(tradition, previousTradition, concept, prevConcept) {
+        const pattern = tradition.responsePatterns.synthesize
+            .replace('{their_concept}', this.conceptToDisplay(prevConcept))
+            .replace('{our_concept}', this.conceptToDisplay(concept))
+            .replace('{synthesis}', `a deeper understanding of ${this.currentDebate.topic.stakes[0] || 'the matter'}`)
+            .replace('{higher_unity}', `a more comprehensive view`)
+            .replace('{perspective}', `the ${tradition.keywords[0]} perspective`);
+
+        return `There may be more agreement here than first appears.\n\n${pattern}`;
+    }
+
+    generateAgreementWithDevelopment(tradition, previousTradition, concept, prevConcept) {
+        const pattern = tradition.responsePatterns.agree
+            .replace('{elaboration}', `the ${this.conceptToDisplay(concept)} reveals itself in this very movement`);
+
+        const development = tradition.argumentPatterns[Math.floor(Math.random() * tradition.argumentPatterns.length)]
+            .replace('{concept}', this.conceptToDisplay(concept))
+            .replace('{description}', `what ${previousTradition.name} has shown`)
+            .replace('{claim}', `this connects to ${tradition.keywords[0]}`)
+            .replace('{insight}', `the ${tradition.keywords[1] || tradition.keywords[0]} dimension`);
+
+        return `${pattern}\n\nMoreover, ${development}`;
+    }
+
+    generateSynthesis() {
+        const { traditions, topic, entries } = this.currentDebate;
+        const recentEntries = entries.slice(-traditions.length);
+
+        // Identify key tensions and convergences
+        const concepts = [...new Set(recentEntries.flatMap(e => e.concepts))];
+        const tradNames = traditions.map(t => t.name).join(' and ');
+
+        let synthesisContent = `After this round of dialogue between ${tradNames}, several insights emerge:\n\n`;
+
+        // Find convergence points
+        const convergences = this.findConvergences(traditions, concepts);
+        if (convergences.length > 0) {
+            synthesisContent += `**Points of Convergence:**\n`;
+            convergences.forEach(c => {
+                synthesisContent += `• ${c}\n`;
+            });
+            synthesisContent += '\n';
+        }
+
+        // Note productive tensions
+        const tensions = this.insights.tensions.slice(-3);
+        if (tensions.length > 0) {
+            synthesisContent += `**Productive Tensions:**\n`;
+            tensions.forEach(t => {
+                synthesisContent += `• ${t.description}\n`;
+            });
+            synthesisContent += '\n';
+        }
+
+        // Emerging question
+        const emergingQuestion = topic.promptingQuestions ?
+            topic.promptingQuestions[Math.floor(Math.random() * topic.promptingQuestions.length)] :
+            `What further unfolds from this encounter?`;
+
+        synthesisContent += `**The dialogue now turns to:** ${emergingQuestion}`;
+
+        return {
+            type: 'synthesis',
+            content: synthesisContent,
+            concepts,
+            round: this.currentDebate.currentRound
+        };
+    }
+
+    findConvergences(traditions, concepts) {
+        const convergences = [];
+
+        // Check for shared concept mappings
+        concepts.forEach(concept => {
+            const mappings = traditions
+                .filter(t => t.conceptMappings[concept])
+                .map(t => ({ tradition: t.name, mapping: t.conceptMappings[concept] }));
+
+            if (mappings.length >= 2) {
+                convergences.push(
+                    `Both ${mappings[0].tradition} and ${mappings[1].tradition} address "${concept}", ` +
+                    `though differently: ${mappings[0].mapping} vs ${mappings[1].mapping}`
+                );
+            }
+        });
+
+        // Check for shared keywords
+        const sharedKeywords = traditions[0].keywords.filter(k =>
+            traditions.slice(1).some(t => t.keywords.includes(k))
+        );
+        if (sharedKeywords.length > 0) {
+            convergences.push(
+                `Shared concern with ${sharedKeywords.slice(0, 2).join(' and ')}`
+            );
+        }
+
+        return convergences.slice(0, 3);
+    }
+
+    determineResponseType(tradition, previousTradition) {
+        // Certain tradition pairs tend toward certain response types
+        const tensionPairs = [
+            ['KANTIANISM', 'SPINOZISM'],
+            ['BUDDHISM', 'HEGELIANISM'],
+            ['WITTGENSTEIN_EARLY', 'HEIDEGGERIANISM']
+        ];
+
+        const isTense = tensionPairs.some(pair =>
+            (pair.includes(tradition.id.toUpperCase()) && pair.includes(previousTradition.id.toUpperCase()))
+        );
+
+        if (isTense) {
+            return Math.random() > 0.3 ? 'challenge' : 'synthesize';
+        }
+
+        const r = Math.random();
+        if (r < 0.3) return 'agree';
+        if (r < 0.7) return 'challenge';
+        return 'synthesize';
+    }
+
+    extractConcepts(tradition) {
+        return tradition.coreConcepts.slice(0, 2);
+    }
+
+    recordConcepts(concepts, tradition) {
+        concepts.forEach(c => {
+            if (!this.insights.conceptsInvoked.has(c)) {
+                this.insights.conceptsInvoked.set(c, []);
+            }
+            this.insights.conceptsInvoked.get(c).push(tradition.name);
+        });
+    }
+
+    detectTensions(tradition, previousTradition, entry) {
+        // Check if traditions have opposing mappings for a concept
+        entry.concepts.forEach(concept => {
+            const ourMapping = tradition.conceptMappings[concept];
+            const theirMapping = previousTradition.conceptMappings[concept];
+
+            if (ourMapping && theirMapping && ourMapping !== theirMapping) {
+                this.insights.tensions.push({
+                    concept,
+                    traditions: [tradition.name, previousTradition.name],
+                    description: `"${concept}": ${tradition.name} sees ${ourMapping}, while ${previousTradition.name} sees ${theirMapping}`
+                });
+            }
+        });
+    }
+
+    detectBridges(tradition, previousTradition, entry) {
+        // Check if response type was synthesis or agreement
+        if (entry.responseType === 'synthesize' || entry.responseType === 'agree' || entry.responseType === 'hermeneutic') {
+            this.insights.bridges.push({
+                traditions: [tradition.name, previousTradition.name],
+                description: `${tradition.name} finds resonance with ${previousTradition.name}'s ${this.conceptToDisplay(entry.concepts[1])}`
+            });
+        }
+    }
+
+    conceptToDisplay(conceptId) {
+        const displayNames = {
+            'self': 'Self (Σ)',
+            'other': 'Other (Ω)',
+            'flesh': 'Flesh (χ)',
+            'horizon': 'Horizon (H)',
+            'substance': 'Substance (▣)',
+            'mode': 'Mode (◇)',
+            'conatus': 'Conatus (κ)',
+            'emptiness': 'Emptiness (śū)',
+            'dep-orig': 'Dependent Origination (प्र)',
+            'tetralemma': 'Tetralemma (◈)',
+            'actual-entity': 'Actual Entity (⦿)',
+            'prehension': 'Prehension (⥤)',
+            'concrescence': 'Concrescence (⤳)',
+            'creativity': 'Creativity (ℂ)',
+            'fold': 'Fold (⌒)',
+            'virtual': 'Virtual (ν)',
+            'trace': 'Trace (†)',
+            'aufhebung': 'Aufhebung (⍟)',
+            'det-neg': 'Determinate Negation (¬ᵈ)',
+            'spirit': 'Spirit (𝔊)',
+            'becoming': 'Becoming (⥁)',
+            'being': 'Being (𝔖)',
+            'dasein': 'Dasein (𝔇)',
+            'care': 'Care',
+            'clearing': 'Clearing (⌾)',
+            'aletheia': 'Aletheia (ἀ)',
+            'world': 'World (𝕎)',
+            'fact': 'Fact (𝔉)',
+            'proposition': 'Proposition (𝔓)',
+            'shows': 'Shows (⧓)',
+            'silence': 'Silence (⊘)',
+            'lang-game': 'Language-game (𝔖𝔭)',
+            'use': 'Use (℧)',
+            'form-life': 'Form of Life (𝔏)',
+            'transcendental': 'Transcendental (𝕿)',
+            'phenomenon': 'Phenomenon (φₖ)',
+            'noumenon': 'Noumenon (νₖ)',
+            'category': 'Category (Ꮯ)'
+        };
+        return displayNames[conceptId] || conceptId;
+    }
+
+    getInsights() {
+        return this.insights;
+    }
+
+    isComplete() {
+        return this.currentDebate && this.currentDebate.currentRound > this.currentDebate.rounds;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UI CONTROLLER — With Claude API Integration
+// ═══════════════════════════════════════════════════════════════════════════
+
+const engine = new DialecticalEngine();
+let autoPlayInterval = null;
+
+function initUI() {
+    // Initialize API indicator
+    initAPIIndicator();
+
+    // Populate tradition list
+    const traditionList = document.getElementById('tradition-list');
+    Object.entries(TRADITIONS).forEach(([key, t]) => {
+        const item = document.createElement('label');
+        item.className = `flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer tradition-${t.id}`;
+        item.innerHTML = `
+            <input type="checkbox" value="${key}" class="tradition-checkbox accent-[${t.color}]">
+            <span class="text-xl" style="color: ${t.color}">${t.icon}</span>
+            <div class="flex-1">
+                <div class="text-sm font-medium">${t.name}</div>
+                <div class="text-xs text-gray-500">${t.thinkers.slice(0, 2).join(', ')}</div>
+            </div>
+        `;
+        traditionList.appendChild(item);
+    });
+
+    // Event listeners
+    document.getElementById('topic-select').addEventListener('change', validateConfig);
+    document.querySelectorAll('.tradition-checkbox').forEach(cb => {
+        cb.addEventListener('change', validateConfig);
+    });
+    document.getElementById('rounds-slider').addEventListener('input', (e) => {
+        document.getElementById('rounds-value').textContent = `${e.target.value} rounds`;
+    });
+    document.getElementById('btn-custom-topic').addEventListener('click', () => {
+        document.getElementById('custom-topic-container').classList.toggle('hidden');
+    });
+    document.getElementById('btn-start-debate').addEventListener('click', startDebate);
+    document.getElementById('btn-next-turn').addEventListener('click', nextTurn);
+    document.getElementById('btn-auto-play').addEventListener('click', toggleAutoPlay);
+    document.getElementById('btn-new-debate').addEventListener('click', resetDebate);
+    // Export dropdown toggle
+    document.getElementById('btn-export').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportDropdown();
+    });
+
+    // Export option handlers
+    document.getElementById('export-clipboard').addEventListener('click', () => exportDialogueAs('clipboard'));
+    document.getElementById('export-markdown').addEventListener('click', () => exportDialogueAs('markdown'));
+    document.getElementById('export-json').addEventListener('click', () => exportDialogueAs('json'));
+    document.getElementById('export-latex').addEventListener('click', () => exportDialogueAs('latex'));
+    document.getElementById('export-pdf').addEventListener('click', () => exportDialogueAs('pdf'));
+    document.getElementById('export-all-json').addEventListener('click', exportAllDialogues);
+
+    // Close export dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('export-dropdown');
+        const btn = document.getElementById('btn-export');
+        if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Listen for API configuration changes
+    window.addEventListener('philang-api-configured', (e) => {
+        updateAPIIndicator();
+        engine.checkAPIAvailability();
+    });
+
+    validateConfig();
+}
+
+function initAPIIndicator() {
+    const container = document.getElementById('api-indicator');
+    if (typeof PhiLangAPI !== 'undefined') {
+        container.innerHTML = PhiLangAPI.createStatusIndicator();
+        PhiLangAPI.initStatusIndicator();
+        updateAPIIndicator();
+    } else {
+        container.innerHTML = `
+            <div class="philang-api-indicator" id="api-indicator-fallback">
+                <div class="dot inactive"></div>
+                <span>No API</span>
+            </div>
+        `;
+        document.getElementById('api-indicator-fallback').addEventListener('click', () => {
+            alert('PhiLang API not loaded');
+        });
+    }
+}
+
+function updateAPIIndicator() {
+    const dot = document.querySelector('.philang-api-indicator .dot');
+    const span = document.querySelector('.philang-api-indicator span');
+    if (dot && typeof PhiLangAPI !== 'undefined') {
+        const configured = PhiLangAPI.isConfigured();
+        dot.className = 'dot ' + (configured ? 'active' : 'inactive');
+        span.textContent = configured ? 'Claude API' : 'Configure API';
+    }
+}
+
+function validateConfig() {
+    const topic = document.getElementById('topic-select').value;
+    const customTopic = document.getElementById('custom-topic').value;
+    const traditions = [...document.querySelectorAll('.tradition-checkbox:checked')];
+
+    const isValid = (topic || customTopic) && traditions.length >= 2 && traditions.length <= 4;
+    document.getElementById('btn-start-debate').disabled = !isValid;
+}
+
+function startDebate() {
+    // Reset session ID for new debate
+    currentDialogueId = null;
+
+    const topicId = document.getElementById('topic-select').value;
+    const customTopic = document.getElementById('custom-topic').value;
+    const traditions = [...document.querySelectorAll('.tradition-checkbox:checked')].map(cb => cb.value);
+    const mode = document.querySelector('input[name="debate-mode"]:checked').value;
+    const rounds = parseInt(document.getElementById('rounds-slider').value);
+    const autoSynthesis = document.getElementById('auto-synthesis').checked;
+
+    const config = {
+        topicId,
+        customTopic,
+        traditions,
+        mode,
+        rounds,
+        autoSynthesis
+    };
+
+    const opening = engine.startDebate(config);
+
+    // Update UI
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('dialogue-stream').classList.remove('hidden');
+    document.getElementById('debate-header').classList.remove('hidden');
+    document.getElementById('insights-panel').classList.remove('hidden');
+    document.getElementById('config-panel').classList.add('opacity-50', 'pointer-events-none');
+
+    document.getElementById('debate-topic-title').textContent = engine.currentDebate.topic.title;
+    document.getElementById('debate-participants').textContent = traditions.map(t => TRADITIONS[t.toUpperCase()].name).join(' • ');
+    document.getElementById('total-rounds').textContent = rounds;
+
+    // Render opening
+    renderEntry(opening);
+    updateInsightsPanel();
+}
+
+async function nextTurn() {
+    if (engine.isProcessing) return;
+
+    const nextBtn = document.getElementById('btn-next-turn');
+    nextBtn.disabled = true;
+    nextBtn.textContent = 'Thinking...';
+
+    // Check API availability
+    engine.checkAPIAvailability();
+
+    let entry;
+    if (engine.useAPI) {
+        // Show thinking indicator
+        const thinkingEl = showThinking();
+
+        try {
+            entry = await engine.generateNextTurnAsync();
+            thinkingEl.remove();
+        } catch (error) {
+            console.error('Error:', error);
+            thinkingEl.remove();
+            entry = engine.generateNextTurn();
+        }
+    } else {
+        // Use rule-based with simulated delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        entry = engine.generateNextTurn();
+    }
+
+    if (!entry) {
+        nextBtn.disabled = false;
+        nextBtn.textContent = 'Next Turn';
+        return;
+    }
+
+    renderEntry(entry);
+    updateInsightsPanel();
+
+    document.getElementById('current-round').textContent = engine.currentDebate.currentRound;
+
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Next Turn';
+
+    if (entry.debateComplete) {
+        endDebate();
+    }
+
+    // Auto-save after each turn
+    saveCurrentDialogue();
+
+    // Scroll to bottom
+    const container = document.getElementById('dialogue-container');
+    container.scrollTop = container.scrollHeight;
+}
+
+function showThinking() {
+    const stream = document.getElementById('dialogue-stream');
+    const el = document.createElement('div');
+    el.className = 'thinking-indicator';
+
+    // Use skeleton loader if available
+    if (typeof PhiLangSkeleton !== 'undefined') {
+        el.appendChild(PhiLangSkeleton.create('dialogue-entry'));
+        el.querySelector('.philang-skeleton').innerHTML += `
+            <div class="flex items-center gap-2 mt-3">
+                <div class="w-4 h-4 rounded-full bg-purple-500/40 animate-pulse"></div>
+                <span class="text-gray-500 text-xs">Claude is contemplating...</span>
+            </div>
+        `;
+    } else {
+        el.className += ' p-4 bg-gray-800/30 rounded-lg border border-gray-700/50';
+        el.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-6 h-6 rounded-full bg-purple-500/30 animate-pulse"></div>
+                <span class="text-gray-400 text-sm">Claude is contemplating the response...</span>
+            </div>
+        `;
+    }
+
+    stream.appendChild(el);
+    const container = document.getElementById('dialogue-container');
+    container.scrollTop = container.scrollHeight;
+    return el;
+}
+
+function renderEntry(entry) {
+    const stream = document.getElementById('dialogue-stream');
+    const showConcepts = document.getElementById('show-concepts').checked;
+
+    const entryEl = document.createElement('div');
+
+    if (entry.type === 'synthesis') {
+        entryEl.className = `synthesis-entry rounded-xl p-5 ${entry.fromAPI ? 'ai-generated' : ''}`;
+        entryEl.innerHTML = `
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-purple-400 text-xl">⟐</span>
+                <span class="text-sm font-semibold text-purple-300 uppercase tracking-wide">Synthesis — Round ${entry.round}</span>
+                ${entry.fromAPI ? '<span class="text-xs text-indigo-400 ml-auto">● Claude</span>' : ''}
+            </div>
+            <div class="text-gray-200 whitespace-pre-line">${formatContent(entry.content)}</div>
+        `;
+    } else {
+        const t = entry.tradition;
+        entryEl.className = `dialogue-entry tradition-${t.id} rounded-lg p-4 ${entry.fromAPI ? 'ai-generated' : ''}`;
+        entryEl.innerHTML = `
+            <div class="flex items-center gap-3 mb-3">
+                <span class="speaker-badge px-2 py-1 rounded text-xs font-semibold text-white">${t.icon} ${entry.speaker}</span>
+                <span class="text-sm text-gray-400">${t.name}</span>
+                ${entry.inResponseTo ? `<span class="text-xs text-gray-500">responding to ${entry.inResponseTo}</span>` : ''}
+                ${entry.fromAPI ? '<span class="text-xs text-indigo-400 ml-auto">● Claude</span>' : ''}
+            </div>
+            <div class="text-gray-200 leading-relaxed whitespace-pre-line">${formatContent(entry.content)}</div>
+            ${showConcepts && entry.concepts ? `
+                <div class="flex gap-2 mt-3">
+                    ${entry.concepts.map(c => `<span class="concept-tag text-xs border px-2 py-0.5 rounded">${engine.conceptToDisplay(c)}</span>`).join('')}
+                </div>
+            ` : ''}
+        `;
+    }
+
+    stream.appendChild(entryEl);
+}
+
+function formatContent(content) {
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-100">$1</strong>')
+        .replace(/\n/g, '<br>');
+}
+
+function updateInsightsPanel() {
+    const insights = engine.getInsights();
+
+    // Concepts invoked
+    const conceptsEl = document.getElementById('concepts-invoked');
+    conceptsEl.innerHTML = '';
+    insights.conceptsInvoked.forEach((traditions, concept) => {
+        const tag = document.createElement('span');
+        tag.className = 'text-xs bg-gray-700 px-2 py-1 rounded';
+        tag.textContent = engine.conceptToDisplay(concept);
+        tag.title = `Invoked by: ${traditions.join(', ')}`;
+        conceptsEl.appendChild(tag);
+    });
+
+    // Tensions
+    const tensionsEl = document.getElementById('tensions-list');
+    tensionsEl.innerHTML = insights.tensions.slice(-5).map(t => `
+        <div class="text-xs p-2 bg-red-900/20 border border-red-800/30 rounded">
+            ${t.description}
+        </div>
+    `).join('');
+
+    // Bridges
+    const bridgesEl = document.getElementById('bridges-list');
+    bridgesEl.innerHTML = insights.bridges.slice(-5).map(b => `
+        <div class="text-xs p-2 bg-green-900/20 border border-green-800/30 rounded">
+            ${b.description}
+        </div>
+    `).join('');
+
+    // Moves
+    const movesEl = document.getElementById('moves-list');
+    movesEl.innerHTML = insights.moves.slice(-5).map(m => `
+        <div class="text-xs p-2 bg-gray-800 rounded">
+            <span class="font-semibold">${m.type}:</span> ${m.description}
+        </div>
+    `).join('');
+}
+
+function toggleAutoPlay() {
+    const btn = document.getElementById('btn-auto-play');
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        btn.textContent = '▶ Auto';
+        btn.classList.remove('bg-red-600');
+        btn.classList.add('bg-gray-700');
+    } else {
+        // Use longer interval for API calls
+        const interval = engine.useAPI ? 8000 : 3000;
+        autoPlayInterval = setInterval(async () => {
+            if (engine.isComplete() || engine.isProcessing) {
+                if (engine.isComplete()) toggleAutoPlay();
+                return;
+            }
+            await nextTurn();
+        }, interval);
+        btn.textContent = '⏸ Stop';
+        btn.classList.remove('bg-gray-700');
+        btn.classList.add('bg-red-600');
+    }
+}
+
+function endDebate() {
+    if (autoPlayInterval) {
+        toggleAutoPlay();
+    }
+    document.getElementById('btn-next-turn').disabled = true;
+    document.getElementById('btn-auto-play').disabled = true;
+
+    // Show final synthesis panel
+    const synthesisPanel = document.getElementById('synthesis-panel');
+    synthesisPanel.classList.remove('hidden');
+    document.getElementById('synthesis-content').innerHTML = `
+        <p class="text-purple-200">The dialogue has concluded after ${engine.currentDebate.rounds} rounds.</p>
+        <p class="mt-2">Key insights and tensions have been recorded in the Insights panel.</p>
+    `;
+}
+
+function resetDebate() {
+    if (autoPlayInterval) toggleAutoPlay();
+
+    document.getElementById('empty-state').classList.remove('hidden');
+    document.getElementById('dialogue-stream').classList.add('hidden');
+    document.getElementById('dialogue-stream').innerHTML = '';
+    document.getElementById('debate-header').classList.add('hidden');
+    document.getElementById('insights-panel').classList.add('hidden');
+    document.getElementById('synthesis-panel').classList.add('hidden');
+    document.getElementById('config-panel').classList.remove('opacity-50', 'pointer-events-none');
+    document.getElementById('btn-next-turn').disabled = false;
+    document.getElementById('btn-auto-play').disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORT FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function toggleExportDropdown() {
+    const dropdown = document.getElementById('export-dropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+function exportDialogueAs(format) {
+    // Close dropdown
+    document.getElementById('export-dropdown').classList.add('hidden');
+
+    if (!engine.currentDebate) {
+        if (typeof PhiLangToast !== 'undefined') {
+            PhiLangToast.warning('No dialogue to export');
+        }
+        return;
+    }
+
+    const dialogue = engine.currentDebate;
+    const topicTitle = (dialogue.topic?.title || 'dialogue').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const timestamp = Date.now();
+
+    try {
+        switch (format) {
+            case 'clipboard':
+                const text = typeof PhiLangExport !== 'undefined'
+                    ? PhiLangExport.dialogueToText(dialogue)
+                    : exportToPlainText(dialogue);
+                navigator.clipboard.writeText(text).then(() => {
+                    if (typeof PhiLangToast !== 'undefined') {
+                        PhiLangToast.success('Dialogue copied to clipboard!');
+                    }
+                });
+                break;
+
+            case 'markdown':
+                const md = typeof PhiLangExport !== 'undefined'
+                    ? PhiLangExport.dialogueToMarkdown(dialogue, {
+                        title: `Dialogue: ${dialogue.topic?.title || 'Philosophical Inquiry'}`
+                    })
+                    : exportToMarkdown(dialogue);
+                if (typeof PhiLangExport !== 'undefined') {
+                    PhiLangExport.download(md, `dialogue-${topicTitle}-${timestamp}.md`, 'text/markdown');
+                } else {
+                    downloadFile(md, `dialogue-${topicTitle}-${timestamp}.md`, 'text/markdown');
+                }
+                break;
+
+            case 'json':
+                const json = typeof PhiLangExport !== 'undefined'
+                    ? PhiLangExport.dialogueToJSON(dialogue)
+                    : JSON.stringify(dialogue, null, 2);
+                if (typeof PhiLangExport !== 'undefined') {
+                    PhiLangExport.download(json, `dialogue-${topicTitle}-${timestamp}.json`, 'application/json');
+                } else {
+                    downloadFile(json, `dialogue-${topicTitle}-${timestamp}.json`, 'application/json');
+                }
+                break;
+
+            case 'latex':
+                if (typeof PhiLangExport !== 'undefined') {
+                    const latex = PhiLangExport.dialogueToLatexEnhanced(dialogue, {
+                        title: `Dialectical Dialogue: ${dialogue.topic?.title || 'Philosophical Inquiry'}`
+                    });
+                    PhiLangExport.download(latex, `dialogue-${topicTitle}-${timestamp}.tex`, 'application/x-latex');
+                } else {
+                    if (typeof PhiLangToast !== 'undefined') {
+                        PhiLangToast.error('LaTeX export requires PhiLangExport module');
+                    }
+                }
+                break;
+
+            case 'pdf':
+                if (typeof PhiLangExport !== 'undefined') {
+                    PhiLangExport.dialogueToPDF(dialogue, {
+                        title: `Dialogue: ${dialogue.topic?.title || 'Philosophical Inquiry'}`,
+                        filename: `dialogue-${topicTitle}-${timestamp}.pdf`
+                    }).catch(err => {
+                        console.error('PDF export failed:', err);
+                        if (typeof PhiLangToast !== 'undefined') {
+                            PhiLangToast.error('PDF export failed. Try LaTeX instead.');
+                        }
+                    });
+                } else {
+                    if (typeof PhiLangToast !== 'undefined') {
+                        PhiLangToast.error('PDF export requires PhiLangExport module');
+                    }
+                }
+                break;
+
+            default:
+                console.warn('Unknown export format:', format);
+        }
+    } catch (error) {
+        console.error('Export failed:', error);
+        if (typeof PhiLangToast !== 'undefined') {
+            PhiLangToast.error(`Export failed: ${error.message}`);
+        }
+    }
+}
+
+// Fallback export functions if PhiLangExport is not available
+function exportToPlainText(dialogue) {
+    let text = `═══ PHILANG DIALECTICAL DIALOGUE ═══\n\n`;
+    text += `Topic: ${dialogue.topic?.title || 'Unknown'}\n`;
+    text += `Participants: ${dialogue.traditions.map(t => t.name).join(', ')}\n`;
+    text += `Mode: ${dialogue.mode}\n\n`;
+    text += `${'─'.repeat(50)}\n\n`;
+
+    dialogue.entries.forEach((entry) => {
+        if (entry.type === 'synthesis') {
+            text += `\n⟐ SYNTHESIS — Round ${entry.round}\n`;
+            text += `${entry.content}\n\n`;
+        } else {
+            text += `[${entry.tradition?.name || 'Unknown'}] ${entry.speaker}:\n`;
+            text += `${entry.content}\n\n`;
+        }
+    });
+
+    text += `${'─'.repeat(50)}\n`;
+    text += `\nGenerated by PhiLang Dialectical Dialogue Engine\n`;
+    return text;
+}
+
+function exportToMarkdown(dialogue) {
+    let md = `# Dialogue: ${dialogue.topic?.title || 'Philosophical Inquiry'}\n\n`;
+    md += `**Participants:** ${dialogue.traditions.map(t => `${t.emoji || ''} ${t.name}`).join(', ')}\n`;
+    md += `**Mode:** ${dialogue.mode}\n\n---\n\n`;
+
+    dialogue.entries.forEach((entry) => {
+        if (entry.type === 'synthesis') {
+            md += `### ⟐ Synthesis\n\n> ${entry.content}\n\n`;
+        } else {
+            md += `**[${entry.tradition?.name || 'Unknown'}] ${entry.speaker}:**\n\n${entry.content}\n\n`;
+        }
+    });
+
+    md += `---\n\n*Generated by PhiLang*\n`;
+    return md;
+}
+
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+let currentDialogueId = null;
+
+async function initPersistence() {
+    if (typeof PhiLangPersistence === 'undefined') {
+        console.warn('Persistence not available');
+        const historyBtn = document.getElementById('btn-history');
+        if (historyBtn) historyBtn.style.display = 'none';
+        return;
+    }
+
+    try {
+        await PhiLangPersistence.init();
+        await loadDialogueHistory();
+        setupPersistenceUI();
+    } catch (error) {
+        console.error('Failed to initialize persistence:', error);
+    }
+}
+
+function setupPersistenceUI() {
+    // History button toggle
+    document.getElementById('btn-history').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleHistoryDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('history-dropdown');
+        const btn = document.getElementById('btn-history');
+        if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Export all
+    document.getElementById('btn-export-all').addEventListener('click', exportAllDialogues);
+
+    // Export current as Markdown
+    document.getElementById('btn-export-current-md').addEventListener('click', exportCurrentDialogueMarkdown);
+
+    // Auto-save on page unload
+    window.addEventListener('beforeunload', () => {
+        saveCurrentDialogue();
+    });
+}
+
+async function loadDialogueHistory() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const dialogues = await PhiLangPersistence.Dialogues.getAll(20);
+        renderDialogueHistory(dialogues);
+    } catch (error) {
+        console.error('Failed to load dialogues:', error);
+    }
+}
+
+function renderDialogueHistory(dialogues) {
+    const list = document.getElementById('history-list');
+
+    if (!dialogues || dialogues.length === 0) {
+        list.innerHTML = `
+            <div class="text-center text-gray-500 text-sm py-4">
+                No previous debates yet.<br>
+                <span class="text-xs">Your debates will be saved here.</span>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = dialogues.map(dialogue => {
+        const date = new Date(dialogue.createdAt);
+        const traditionsDisplay = dialogue.traditions && dialogue.traditions.length > 0
+            ? dialogue.traditions.map(t => {
+                const tradition = TRADITIONS[t];
+                return tradition ? `<span style="color:${tradition.color}">${tradition.icon}</span>` : '';
+            }).join(' ')
+            : '';
+        const entryCount = dialogue.entries ? dialogue.entries.length : 0;
+
+        return `
+            <div class="dialogue-item p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-all group border border-transparent hover:border-gray-700/50"
+                 data-dialogue-id="${dialogue.id}">
+                <div class="flex items-start gap-2">
+                    <div class="flex-shrink-0 flex gap-0.5 text-sm pt-1">
+                        ${traditionsDisplay}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm text-gray-200 truncate">${escapeHtml(dialogue.topic || 'Untitled Debate')}</div>
+                        <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                            <span>${dialogue.mode || 'dialectical'}</span>
+                            <span>•</span>
+                            <span>${entryCount} entries</span>
+                            <span>•</span>
+                            <span>${dialogue.rounds || 0} rounds</span>
+                        </div>
+                        <div class="text-xs text-gray-600">${formatRelativeDate(date)}</div>
+                    </div>
+                    <button class="delete-dialogue opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1"
+                            data-dialogue-id="${dialogue.id}"
+                            title="Delete debate">
+                        ×
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers
+    list.querySelectorAll('.dialogue-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('delete-dialogue')) {
+                loadDialogue(parseInt(item.dataset.dialogueId));
+            }
+        });
+    });
+
+    list.querySelectorAll('.delete-dialogue').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm('Delete this debate?')) {
+                await deleteDialogue(parseInt(btn.dataset.dialogueId));
+            }
+        });
+    });
+}
+
+async function saveCurrentDialogue() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+    if (!engine.currentDebate || engine.currentDebate.entries.length === 0) return;
+
+    try {
+        const dialogueData = {
+            topic: engine.currentDebate.topic.title,
+            traditions: engine.currentDebate.traditions.map(t => t.id),
+            mode: engine.currentDebate.mode,
+            entries: engine.currentDebate.entries,
+            synthesis: engine.currentDebate.synthesis || [],
+            insights: engine.currentDebate.insights || {},
+            rounds: engine.currentDebate.round,
+            completed: engine.currentDebate.round >= engine.currentDebate.maxRounds
+        };
+
+        if (currentDialogueId) {
+            dialogueData.id = currentDialogueId;
+            await PhiLangPersistence.Dialogues.update(dialogueData);
+        } else {
+            currentDialogueId = await PhiLangPersistence.Dialogues.save(dialogueData);
+        }
+
+        console.log('Dialogue saved:', currentDialogueId);
+        await loadDialogueHistory();
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.saved('Dialogue');
+    } catch (error) {
+        console.error('Failed to save dialogue:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to save dialogue');
+    }
+}
+
+async function loadDialogue(dialogueId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        await saveCurrentDialogue();
+
+        const dialogue = await PhiLangPersistence.Dialogues.get(dialogueId);
+        if (!dialogue) return;
+
+        currentDialogueId = dialogueId;
+
+        // Reconstruct the debate state
+        const traditions = dialogue.traditions.map(id => TRADITIONS[id]).filter(Boolean);
+
+        engine.currentDebate = {
+            topic: { title: dialogue.topic, id: 'loaded' },
+            traditions: traditions,
+            mode: dialogue.mode,
+            entries: dialogue.entries || [],
+            synthesis: dialogue.synthesis || [],
+            insights: dialogue.insights || {},
+            round: dialogue.rounds || 0,
+            maxRounds: Math.max(dialogue.rounds || 0, 5),
+            currentTraditionIndex: 0,
+            debateComplete: dialogue.completed
+        };
+
+        // Render the loaded debate
+        renderLoadedDebate(dialogue);
+
+        // Close dropdown
+        document.getElementById('history-dropdown').classList.add('hidden');
+
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.loaded('Dialogue');
+    } catch (error) {
+        console.error('Failed to load dialogue:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to load dialogue');
+    }
+}
+
+function renderLoadedDebate(dialogue) {
+    // Show debate view
+    document.getElementById('config-panel').classList.add('hidden');
+    document.getElementById('debate-view').classList.remove('hidden');
+
+    // Update status
+    document.getElementById('debate-status').innerHTML = `
+        <span class="text-green-400">Loaded</span> • Round ${dialogue.rounds}
+    `;
+
+    // Update participants
+    const traditions = dialogue.traditions.map(id => TRADITIONS[id]).filter(Boolean);
+    const participantsHtml = traditions.map(t => `
+        <div class="text-center tradition-${t.id}">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl mx-auto mb-1"
+                 style="background: ${t.color}22; border: 2px solid ${t.color}">
+                ${t.icon}
+            </div>
+            <div class="text-xs font-medium">${t.name}</div>
+        </div>
+    `).join('');
+    document.getElementById('debate-participants').innerHTML = participantsHtml;
+
+    // Update topic
+    document.getElementById('debate-topic-display').textContent = dialogue.topic;
+
+    // Render entries
+    const stream = document.getElementById('dialogue-stream');
+    stream.innerHTML = '';
+
+    if (dialogue.entries) {
+        dialogue.entries.forEach(entry => {
+            if (entry.type === 'synthesis') {
+                renderSynthesis(entry);
+            } else {
+                renderEntry(entry);
+            }
+        });
+    }
+
+    // Update controls
+    if (dialogue.completed) {
+        document.getElementById('btn-next-turn').disabled = true;
+        document.getElementById('btn-auto-play').disabled = true;
+    }
+}
+
+async function deleteDialogue(dialogueId) {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        await PhiLangPersistence.Dialogues.delete(dialogueId);
+
+        if (currentDialogueId === dialogueId) {
+            currentDialogueId = null;
+            resetDebate();
+        }
+
+        await loadDialogueHistory();
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.deleted('Dialogue');
+    } catch (error) {
+        console.error('Failed to delete dialogue:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to delete dialogue');
+    }
+}
+
+async function exportAllDialogues() {
+    if (typeof PhiLangPersistence === 'undefined') return;
+
+    try {
+        const data = await PhiLangPersistence.exportAll();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `philang-dialogues-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.exported('Dialogues');
+    } catch (error) {
+        console.error('Failed to export:', error);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.error('Failed to export dialogues');
+    }
+}
+
+function exportCurrentDialogueMarkdown() {
+    if (!engine.currentDebate || !engine.currentDebate.entries || engine.currentDebate.entries.length === 0) {
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.warning('No dialogue to export');
+        return;
+    }
+
+    const debate = engine.currentDebate;
+    let md = `# Dialectical Dialogue: ${debate.topic?.title || 'Philosophical Inquiry'}\n\n`;
+    md += `**Date:** ${new Date().toLocaleDateString()}\n`;
+    md += `**Mode:** ${debate.mode || 'dialectic'}\n`;
+    md += `**Traditions:** ${debate.traditions?.map(t => t.name).join(', ') || 'Various'}\n`;
+    md += `**Rounds:** ${debate.round || 0}\n\n`;
+    md += `---\n\n`;
+
+    debate.entries.forEach((entry, i) => {
+        if (entry.type === 'synthesis') {
+            md += `## Synthesis\n\n`;
+            md += `${entry.content || ''}\n\n`;
+        } else {
+            const tradition = TRADITIONS[entry.tradition];
+            md += `### ${tradition?.name || entry.tradition} ${tradition?.icon || ''}\n\n`;
+            md += `${entry.content || ''}\n\n`;
+
+            if (entry.concepts && entry.concepts.length > 0) {
+                md += `*Key concepts: ${entry.concepts.join(', ')}*\n\n`;
+            }
+        }
+    });
+
+    // Use PhiLangExport for download if available
+    if (typeof PhiLangExport !== 'undefined') {
+        PhiLangExport.download(md, `dialogue-${Date.now()}.md`, 'text/markdown');
+    } else {
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dialogue-${Date.now()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (typeof PhiLangToast !== 'undefined') PhiLangToast.success('Dialogue exported');
+    }
+}
+
+function toggleHistoryDropdown() {
+    const dropdown = document.getElementById('history-dropdown');
+    dropdown.classList.toggle('hidden');
+    if (!dropdown.classList.contains('hidden')) {
+        loadDialogueHistory();
+    }
+}
+
+function formatRelativeDate(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    initUI();
+    initPersistence();
+
+    // Initialize keyboard shortcuts
+    if (typeof PhiLangShortcuts !== 'undefined') {
+        PhiLangShortcuts.init([
+            { key: 'n', description: 'Next turn', action: () => document.getElementById('btn-next-turn')?.click() },
+            { key: 'a', description: 'Auto-play toggle', action: () => document.getElementById('btn-auto-play')?.click() },
+            { key: 'r', description: 'Reset debate', action: () => document.getElementById('btn-reset')?.click() },
+            { key: 'h', description: 'Toggle history', action: toggleHistoryDropdown },
+            { key: 'Space', description: 'Pause/Resume auto-play', action: (e) => {
+                e.preventDefault();
+                document.getElementById('btn-auto-play')?.click();
+            }},
+        ]);
+
+        // Show keyboard shortcuts hint for new users
+        if (PhiLangShortcuts.shouldShowHint()) {
+            setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+        }
+    }
+});
+    </script>
+</body>
+</html>

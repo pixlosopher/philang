@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Embeddings — Latent Structure Explorer</title>
+
+    <!-- Security: Unified CSP for PhiLang (includes unsafe-eval for React/Babel) -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- PhiLang Core Modules -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_ui.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Crimson+Pro:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="philang-theme.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--void);
+            color: var(--pearl);
+            font-family: 'Crimson Pro', Georgia, serif;
+            min-height: 100vh;
+        }
+
+        /* Cosmic background */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 30% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 70% 80%, rgba(201, 162, 39, 0.04) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar { width: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: var(--void); }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--silver); }
+
+        /* Training animation */
+        @keyframes pulse-train {
+            0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(201, 162, 39, 0.2); }
+            50% { opacity: 1; box-shadow: 0 0 20px rgba(201, 162, 39, 0.4); }
+        }
+        .training { animation: pulse-train 1.5s infinite; }
+
+        /* Embedding point hover */
+        .embedding-point:hover { transform: scale(1.5); }
+
+        /* Cluster glow */
+        .cluster-glow {
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+    </style>
+</head>
+<body>
+    <!-- Luminous accent bar -->
+    <div class="luminous-bar"></div>
+
+    <!-- Navigation -->
+    <nav class="philang-nav" style="top: 2px;">
+        <div class="philang-nav-inner" style="max-width: 1200px;">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <a href="index.html" class="philang-logo">
+                    <span class="philang-logo-phi">φ</span>
+                    <span class="philang-logo-text">PHILANG</span>
+                </a>
+                <div class="nav-links" style="display: flex;">
+                    <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                    <a href="dialectical_dialogue.html" class="nav-link">Dialogue</a>
+                    <a href="socratic_counsel.html" class="nav-link">Counsel</a>
+                    <a href="philang_embeddings.html" class="nav-link active">Embeddings</a>
+                    <a href="philang_embeddings_advanced.html" class="nav-link">Advanced</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="root" style="padding-top: 50px;"></div>
+    <script type="text/babel">
+// ═══════════════════════════════════════════════════════════════════════════
+// PHILANG DATA — Concepts and Relationships for Embedding Training
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRADITIONS = {
+  PHENOMENOLOGY: { name: 'Phenomenology', color: '#6366f1', idx: 0 },
+  SPINOZISM: { name: 'Spinozism', color: '#f59e0b', idx: 1 },
+  BUDDHISM: { name: 'Buddhism', color: '#10b981', idx: 2 },
+  PROCESS: { name: 'Process', color: '#3b82f6', idx: 3 },
+  POSTSTRUCTURALISM: { name: 'Poststructuralism', color: '#ec4899', idx: 4 },
+  HEGELIANISM: { name: 'Hegelianism', color: '#8b5cf6', idx: 5 },
+  HEIDEGGERIANISM: { name: 'Heideggerianism', color: '#ef4444', idx: 6 },
+  WITTGENSTEIN_EARLY: { name: 'Early Wittgenstein', color: '#06b6d4', idx: 7 },
+  WITTGENSTEIN_LATE: { name: 'Late Wittgenstein', color: '#14b8a6', idx: 8 },
+  KANTIANISM: { name: 'Kantianism', color: '#a855f7', idx: 9 },
+  PLATONISM: { name: 'Platonism', color: '#4f46e5', idx: 10 },
+  ARISTOTELIANISM: { name: 'Aristotelianism', color: '#059669', idx: 11 },
+  HERACLITEANISM: { name: 'Heracliteanism', color: '#dc2626', idx: 12 },
+};
+
+const CONCEPTS = [
+  // Phenomenology
+  { id: 'self', symbol: 'Σ', name: 'Self', tradition: 'PHENOMENOLOGY', features: ['subject', 'experience', 'consciousness', 'ego'] },
+  { id: 'other', symbol: 'Ω', name: 'Other', tradition: 'PHENOMENOLOGY', features: ['alterity', 'intersubjectivity', 'ethics'] },
+  { id: 'living_present', symbol: 'τ', name: 'Living Present', tradition: 'PHENOMENOLOGY', features: ['time', 'presence', 'retention', 'protention'] },
+  { id: 'flesh', symbol: 'χ', name: 'Flesh', tradition: 'PHENOMENOLOGY', features: ['body', 'embodiment', 'chiasm', 'reversibility'] },
+  { id: 'face', symbol: '◉', name: 'Face', tradition: 'PHENOMENOLOGY', features: ['ethics', 'infinity', 'levinas', 'encounter'] },
+  { id: 'horizon', symbol: 'H[τ]', name: 'Horizon', tradition: 'PHENOMENOLOGY', features: ['context', 'background', 'possibility', 'world'] },
+
+  // Spinozism
+  { id: 'substance', symbol: '▣', name: 'Substance', tradition: 'SPINOZISM', features: ['monism', 'god', 'nature', 'infinite', 'unity'] },
+  { id: 'mode', symbol: '◇', name: 'Mode', tradition: 'SPINOZISM', features: ['particular', 'finite', 'modification', 'expression'] },
+  { id: 'conatus', symbol: 'κ+', name: 'Conatus', tradition: 'SPINOZISM', features: ['striving', 'power', 'persistence', 'desire'] },
+  { id: 'intuitive_knowledge', symbol: 'K₃', name: 'Intuitive Knowledge', tradition: 'SPINOZISM', features: ['knowledge', 'eternity', 'blessedness', 'third_kind'] },
+
+  // Buddhism
+  { id: 'emptiness', symbol: 'śū', name: 'Emptiness', tradition: 'BUDDHISM', features: ['void', 'no_self', 'dependent', 'liberation'] },
+  { id: 'dependent_origination', symbol: 'प्र', name: 'Dependent Origination', tradition: 'BUDDHISM', features: ['causation', 'interdependence', 'arising', 'conditions'] },
+  { id: 'tetralemma', symbol: '◈', name: 'Tetralemma', tradition: 'BUDDHISM', features: ['negation', 'logic', 'four_corners', 'transcendence'] },
+
+  // Process
+  { id: 'actual_entity', symbol: '⦿', name: 'Actual Entity', tradition: 'PROCESS', features: ['occasion', 'experience', 'becoming', 'drops'] },
+  { id: 'prehension', symbol: '⥤', name: 'Prehension', tradition: 'PROCESS', features: ['feeling', 'grasping', 'data', 'relation'] },
+  { id: 'concrescence', symbol: '⤳', name: 'Concrescence', tradition: 'PROCESS', features: ['becoming', 'process', 'satisfaction', 'unity'] },
+  { id: 'creativity', symbol: 'ℂ', name: 'Creativity', tradition: 'PROCESS', features: ['novelty', 'ultimate', 'many_one', 'advance'] },
+
+  // Poststructuralism
+  { id: 'fold', symbol: '⌒', name: 'Fold', tradition: 'POSTSTRUCTURALISM', features: ['inside', 'outside', 'topology', 'deleuze'] },
+  { id: 'virtual', symbol: 'ν', name: 'Virtual', tradition: 'POSTSTRUCTURALISM', features: ['potential', 'differential', 'intensity', 'real'] },
+  { id: 'trace', symbol: '†', name: 'Trace', tradition: 'POSTSTRUCTURALISM', features: ['absence', 'presence', 'derrida', 'differance'] },
+  { id: 'plane_immanence', symbol: 'Π∞', name: 'Plane of Immanence', tradition: 'POSTSTRUCTURALISM', features: ['immanence', 'concepts', 'field', 'infinite'] },
+
+  // Hegelianism
+  { id: 'aufhebung', symbol: '⍟', name: 'Aufhebung', tradition: 'HEGELIANISM', features: ['sublation', 'preserve', 'cancel', 'elevate', 'dialectic'] },
+  { id: 'determinate_negation', symbol: '¬ᵈ', name: 'Determinate Negation', tradition: 'HEGELIANISM', features: ['negation', 'specific', 'productive', 'development'] },
+  { id: 'spirit', symbol: '𝔊', name: 'Spirit', tradition: 'HEGELIANISM', features: ['geist', 'absolute', 'self_knowing', 'history'] },
+  { id: 'contradiction', symbol: '⊠', name: 'Contradiction', tradition: 'HEGELIANISM', features: ['opposition', 'dialectic', 'movement', 'tension'] },
+  { id: 'becoming', symbol: '⥁', name: 'Becoming', tradition: 'HEGELIANISM', features: ['being', 'nothing', 'process', 'movement'] },
+
+  // Heideggerianism
+  { id: 'being', symbol: '𝔖', name: 'Being', tradition: 'HEIDEGGERIANISM', features: ['sein', 'ontology', 'question', 'fundamental'] },
+  { id: 'dasein', symbol: '𝔇', name: 'Dasein', tradition: 'HEIDEGGERIANISM', features: ['existence', 'human', 'being_there', 'care'] },
+  { id: 'care', symbol: '⦿c', name: 'Care', tradition: 'HEIDEGGERIANISM', features: ['sorge', 'concern', 'existence', 'structure'] },
+  { id: 'thrownness', symbol: '⤋', name: 'Thrownness', tradition: 'HEIDEGGERIANISM', features: ['facticity', 'given', 'situation', 'past'] },
+  { id: 'clearing', symbol: '⌾', name: 'Clearing', tradition: 'HEIDEGGERIANISM', features: ['lichtung', 'opening', 'truth', 'disclosure'] },
+  { id: 'aletheia', symbol: 'ἀ', name: 'Aletheia', tradition: 'HEIDEGGERIANISM', features: ['truth', 'unconcealment', 'disclosure', 'hiddenness'] },
+  { id: 'ereignis', symbol: '𝔈', name: 'Ereignis', tradition: 'HEIDEGGERIANISM', features: ['event', 'appropriation', 'enowning', 'belonging'] },
+  { id: 'temporality', symbol: 'ℨ', name: 'Temporality', tradition: 'HEIDEGGERIANISM', features: ['time', 'ecstatic', 'future', 'past', 'present'] },
+
+  // Early Wittgenstein
+  { id: 'world', symbol: '𝕎', name: 'World', tradition: 'WITTGENSTEIN_EARLY', features: ['totality', 'facts', 'all', 'limit'] },
+  { id: 'fact', symbol: '𝔉', name: 'Fact', tradition: 'WITTGENSTEIN_EARLY', features: ['state', 'case', 'atomic', 'obtaining'] },
+  { id: 'state_affairs', symbol: '𝔖𝔞', name: 'State of Affairs', tradition: 'WITTGENSTEIN_EARLY', features: ['atomic', 'objects', 'configuration', 'possible'] },
+  { id: 'object', symbol: '𝔬', name: 'Object', tradition: 'WITTGENSTEIN_EARLY', features: ['simple', 'substance', 'form', 'content'] },
+  { id: 'proposition', symbol: '𝔓', name: 'Proposition', tradition: 'WITTGENSTEIN_EARLY', features: ['picture', 'sense', 'truth', 'logical'] },
+  { id: 'pictures', symbol: '↭', name: 'Pictures', tradition: 'WITTGENSTEIN_EARLY', features: ['depict', 'represent', 'model', 'form'] },
+  { id: 'shows', symbol: '⧓', name: 'Shows', tradition: 'WITTGENSTEIN_EARLY', features: ['display', 'manifest', 'unsayable', 'form'] },
+  { id: 'silence', symbol: '⊘', name: 'Silence', tradition: 'WITTGENSTEIN_EARLY', features: ['unsayable', 'limit', 'mystical', 'ethics'] },
+  { id: 'mystical', symbol: '⤒', name: 'Mystical', tradition: 'WITTGENSTEIN_EARLY', features: ['wonder', 'existence', 'ineffable', 'limit'] },
+  { id: 'ladder', symbol: '⟁', name: 'Ladder', tradition: 'WITTGENSTEIN_EARLY', features: ['discard', 'climb', 'transcend', 'nonsense'] },
+
+  // Late Wittgenstein
+  { id: 'language_game', symbol: '𝔖𝔭', name: 'Language-game', tradition: 'WITTGENSTEIN_LATE', features: ['practice', 'use', 'activity', 'social'] },
+  { id: 'use', symbol: '℧', name: 'Use', tradition: 'WITTGENSTEIN_LATE', features: ['meaning', 'practice', 'context', 'application'] },
+  { id: 'rule', symbol: '⟴', name: 'Rule', tradition: 'WITTGENSTEIN_LATE', features: ['norm', 'follow', 'practice', 'community'] },
+  { id: 'form_life', symbol: '𝔏', name: 'Form of Life', tradition: 'WITTGENSTEIN_LATE', features: ['social', 'shared', 'practice', 'agreement'] },
+  { id: 'family_resemblance', symbol: '≋ᶠ', name: 'Family Resemblance', tradition: 'WITTGENSTEIN_LATE', features: ['similarity', 'overlap', 'network', 'no_essence'] },
+  { id: 'aspect', symbol: '⊛ₐ', name: 'Aspect', tradition: 'WITTGENSTEIN_LATE', features: ['seeing_as', 'gestalt', 'perception', 'dawning'] },
+  { id: 'beetle', symbol: '⬚', name: 'Beetle', tradition: 'WITTGENSTEIN_LATE', features: ['private', 'inner', 'language', 'drops_out'] },
+  { id: 'therapy', symbol: '⤥', name: 'Therapy', tradition: 'WITTGENSTEIN_LATE', features: ['cure', 'philosophical', 'dissolve', 'peace'] },
+  { id: 'dissolution', symbol: '⌀', name: 'Dissolution', tradition: 'WITTGENSTEIN_LATE', features: ['dissolve', 'disappear', 'problem', 'clarity'] },
+  { id: 'hinge', symbol: '⊢ₕ', name: 'Hinge', tradition: 'WITTGENSTEIN_LATE', features: ['bedrock', 'certainty', 'doubt', 'framework'] },
+
+  // Kantianism
+  { id: 'transcendental', symbol: '𝕿', name: 'Transcendental', tradition: 'KANTIANISM', features: ['conditions', 'possibility', 'a_priori', 'knowledge'] },
+  { id: 'a_priori', symbol: '𝔞', name: 'A Priori', tradition: 'KANTIANISM', features: ['prior', 'necessary', 'universal', 'independent'] },
+  { id: 'synthetic_apriori', symbol: '⊕ₛ𝔞', name: 'Synthetic A Priori', tradition: 'KANTIANISM', features: ['ampliative', 'necessary', 'mathematics', 'physics'] },
+  { id: 'phenomenon', symbol: 'φₖ', name: 'Phenomenon', tradition: 'KANTIANISM', features: ['appearance', 'sensibility', 'experience', 'object'] },
+  { id: 'noumenon', symbol: 'νₖ', name: 'Noumenon', tradition: 'KANTIANISM', features: ['thing_itself', 'unknowable', 'limit', 'thought'] },
+  { id: 'intuition', symbol: '𝔦', name: 'Intuition', tradition: 'KANTIANISM', features: ['immediate', 'sensibility', 'space', 'time'] },
+  { id: 'category', symbol: 'Ꮯ', name: 'Category', tradition: 'KANTIANISM', features: ['concept', 'pure', 'understanding', 'judgment'] },
+  { id: 'schema', symbol: 'σₖ', name: 'Schema', tradition: 'KANTIANISM', features: ['mediate', 'imagination', 'time', 'concept'] },
+  { id: 'apperception', symbol: '𝔄ₜ', name: 'Apperception', tradition: 'KANTIANISM', features: ['unity', 'i_think', 'synthesis', 'consciousness'] },
+  { id: 'categorical_imperative', symbol: '⊨ᶜ', name: 'Categorical Imperative', tradition: 'KANTIANISM', features: ['duty', 'universal', 'moral', 'law'] },
+  { id: 'moral_law', symbol: 'ℳ', name: 'Moral Law', tradition: 'KANTIANISM', features: ['unconditional', 'reason', 'freedom', 'autonomy'] },
+  { id: 'autonomy', symbol: '𝔞ᵤ', name: 'Autonomy', tradition: 'KANTIANISM', features: ['self_legislation', 'freedom', 'will', 'rational'] },
+  { id: 'dignity', symbol: '𝔇ᵢ', name: 'Dignity', tradition: 'KANTIANISM', features: ['worth', 'respect', 'person', 'end'] },
+  { id: 'beautiful', symbol: '𝔅ₛ', name: 'Beautiful', tradition: 'KANTIANISM', features: ['purposiveness', 'disinterest', 'pleasure', 'universal'] },
+  { id: 'sublime', symbol: '𝔖ᵤ', name: 'Sublime', tradition: 'KANTIANISM', features: ['overwhelming', 'magnitude', 'power', 'reason'] },
+
+  // Platonism
+  { id: 'form', symbol: '△', name: 'Form', tradition: 'PLATONISM', features: ['eidos', 'eternal', 'paradigm', 'intelligible'] },
+  { id: 'participation', symbol: '⊂ₚ', name: 'Participation', tradition: 'PLATONISM', features: ['methexis', 'share', 'image', 'particular'] },
+  { id: 'the_good', symbol: '☉', name: 'The Good', tradition: 'PLATONISM', features: ['agathon', 'sun', 'highest', 'illumination'] },
+  { id: 'anamnesis', symbol: '⟲', name: 'Anamnesis', tradition: 'PLATONISM', features: ['recollection', 'memory', 'soul', 'learning'] },
+  { id: 'demiurge', symbol: '✦', name: 'Demiurge', tradition: 'PLATONISM', features: ['craftsman', 'creator', 'cosmos', 'timaeus'] },
+  { id: 'receptacle', symbol: '⌂', name: 'Receptacle', tradition: 'PLATONISM', features: ['chora', 'space', 'matrix', 'nurse'] },
+  { id: 'eros', symbol: '♡', name: 'Eros', tradition: 'PLATONISM', features: ['love', 'desire', 'ascent', 'beauty'] },
+  { id: 'dialectic_plato', symbol: '⇅', name: 'Dialectic', tradition: 'PLATONISM', features: ['division', 'collection', 'method', 'ascent'] },
+
+  // Aristotelianism
+  { id: 'ousia', symbol: '⦰', name: 'Ousia', tradition: 'ARISTOTELIANISM', features: ['substance', 'essence', 'primary', 'being'] },
+  { id: 'hylomorphism', symbol: '⧈', name: 'Hylomorphism', tradition: 'ARISTOTELIANISM', features: ['matter', 'form', 'composite', 'unity'] },
+  { id: 'actuality', symbol: 'ἐν', name: 'Actuality', tradition: 'ARISTOTELIANISM', features: ['energeia', 'act', 'fulfillment', 'work'] },
+  { id: 'potentiality', symbol: 'δύ', name: 'Potentiality', tradition: 'ARISTOTELIANISM', features: ['dynamis', 'power', 'capacity', 'change'] },
+  { id: 'telos', symbol: '⊚', name: 'Telos', tradition: 'ARISTOTELIANISM', features: ['end', 'purpose', 'final_cause', 'goal'] },
+  { id: 'eudaimonia', symbol: '☀', name: 'Eudaimonia', tradition: 'ARISTOTELIANISM', features: ['happiness', 'flourishing', 'good_life', 'virtue'] },
+  { id: 'four_causes', symbol: '④', name: 'Four Causes', tradition: 'ARISTOTELIANISM', features: ['material', 'formal', 'efficient', 'final'] },
+  { id: 'nous', symbol: 'ν', name: 'Nous', tradition: 'ARISTOTELIANISM', features: ['intellect', 'mind', 'reason', 'divine'] },
+
+  // Heracliteanism
+  { id: 'flux', symbol: '≋', name: 'Flux', tradition: 'HERACLITEANISM', features: ['flow', 'change', 'river', 'panta_rhei'] },
+  { id: 'logos_h', symbol: 'λ', name: 'Logos', tradition: 'HERACLITEANISM', features: ['reason', 'word', 'order', 'rational'] },
+  { id: 'fire', symbol: '🔥', name: 'Fire', tradition: 'HERACLITEANISM', features: ['element', 'primal', 'transformation', 'ever_living'] },
+  { id: 'strife', symbol: '⚔', name: 'Strife', tradition: 'HERACLITEANISM', features: ['war', 'conflict', 'tension', 'polemos'] },
+  { id: 'unity_opposites', symbol: '⊕', name: 'Unity of Opposites', tradition: 'HERACLITEANISM', features: ['opposites', 'harmony', 'identity', 'one'] },
+  { id: 'hidden_harmony', symbol: '⫰', name: 'Hidden Harmony', tradition: 'HERACLITEANISM', features: ['harmony', 'hidden', 'superior', 'attunement'] },
+  { id: 'thunderbolt', symbol: '⚡', name: 'Thunderbolt', tradition: 'HERACLITEANISM', features: ['lightning', 'governance', 'steering', 'zeus'] },
+];
+
+// Semantic relationships for training
+const RELATIONSHIPS = [
+  // Same-tradition relationships (strong positive)
+  { source: 'self', target: 'other', weight: 0.9, type: 'complement' },
+  { source: 'self', target: 'flesh', weight: 0.8, type: 'embodiment' },
+  { source: 'living_present', target: 'horizon', weight: 0.85, type: 'temporal' },
+  { source: 'substance', target: 'mode', weight: 0.95, type: 'modification' },
+  { source: 'conatus', target: 'mode', weight: 0.8, type: 'striving' },
+  { source: 'emptiness', target: 'dependent_origination', weight: 0.95, type: 'mutual_implication' },
+  { source: 'actual_entity', target: 'prehension', weight: 0.9, type: 'constitution' },
+  { source: 'concrescence', target: 'creativity', weight: 0.85, type: 'process' },
+  { source: 'aufhebung', target: 'determinate_negation', weight: 0.9, type: 'dialectic' },
+  { source: 'spirit', target: 'aufhebung', weight: 0.85, type: 'self_development' },
+  { source: 'being', target: 'dasein', weight: 0.95, type: 'question' },
+  { source: 'dasein', target: 'care', weight: 0.9, type: 'structure' },
+  { source: 'clearing', target: 'aletheia', weight: 0.9, type: 'disclosure' },
+  { source: 'world', target: 'fact', weight: 0.95, type: 'composition' },
+  { source: 'proposition', target: 'pictures', weight: 0.9, type: 'depiction' },
+  { source: 'shows', target: 'silence', weight: 0.85, type: 'limit' },
+  { source: 'language_game', target: 'use', weight: 0.95, type: 'meaning' },
+  { source: 'rule', target: 'form_life', weight: 0.9, type: 'practice' },
+  { source: 'therapy', target: 'dissolution', weight: 0.9, type: 'method' },
+  { source: 'transcendental', target: 'a_priori', weight: 0.95, type: 'condition' },
+  { source: 'phenomenon', target: 'noumenon', weight: 0.9, type: 'limit' },
+  { source: 'category', target: 'schema', weight: 0.85, type: 'application' },
+  { source: 'categorical_imperative', target: 'moral_law', weight: 0.95, type: 'formulation' },
+  { source: 'autonomy', target: 'dignity', weight: 0.9, type: 'ground' },
+
+  // Cross-tradition relationships (semantic bridges)
+  { source: 'self', target: 'dasein', weight: 0.7, type: 'cross_subject' },
+  { source: 'living_present', target: 'temporality', weight: 0.75, type: 'cross_time' },
+  { source: 'substance', target: 'being', weight: 0.65, type: 'cross_ontology' },
+  { source: 'emptiness', target: 'trace', weight: 0.6, type: 'cross_absence' },
+  { source: 'emptiness', target: 'dissolution', weight: 0.7, type: 'cross_negation' },
+  { source: 'actual_entity', target: 'dasein', weight: 0.55, type: 'cross_experience' },
+  { source: 'concrescence', target: 'becoming', weight: 0.75, type: 'cross_process' },
+  { source: 'plane_immanence', target: 'clearing', weight: 0.6, type: 'cross_field' },
+  { source: 'aufhebung', target: 'emptiness', weight: 0.5, type: 'cross_negation' },
+  { source: 'silence', target: 'mystical', weight: 0.9, type: 'limit' },
+  { source: 'shows', target: 'aletheia', weight: 0.65, type: 'cross_disclosure' },
+  { source: 'noumenon', target: 'substance', weight: 0.5, type: 'cross_absolute' },
+  { source: 'transcendental', target: 'horizon', weight: 0.6, type: 'cross_condition' },
+  { source: 'apperception', target: 'self', weight: 0.7, type: 'cross_unity' },
+  { source: 'family_resemblance', target: 'tetralemma', weight: 0.45, type: 'cross_logic' },
+  { source: 'form_life', target: 'spirit', weight: 0.5, type: 'cross_social' },
+  { source: 'hinge', target: 'thrownness', weight: 0.55, type: 'cross_givenness' },
+
+  // Oppositional relationships (negative/tension)
+  { source: 'substance', target: 'emptiness', weight: -0.6, type: 'opposition' },
+  { source: 'noumenon', target: 'emptiness', weight: -0.5, type: 'opposition' },
+  { source: 'world', target: 'language_game', weight: -0.4, type: 'shift' },
+  { source: 'proposition', target: 'use', weight: -0.3, type: 'shift' },
+];
+
+// Feature vocabulary for embeddings
+const FEATURE_VOCAB = [...new Set(CONCEPTS.flatMap(c => c.features))];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EMBEDDING ENGINE — Word2Vec-style Skip-gram with Negative Sampling
+// ═══════════════════════════════════════════════════════════════════════════
+
+class PhiLangEmbeddings {
+  constructor(concepts, relationships, embeddingDim = 32) {
+    this.concepts = concepts;
+    this.relationships = relationships;
+    this.embeddingDim = embeddingDim;
+    this.conceptIndex = {};
+    this.embeddings = {};
+    this.featureEmbeddings = {};
+    this.traditionEmbeddings = {};
+    this.loss = [];
+    this.epoch = 0;
+
+    // Build index
+    concepts.forEach((c, i) => {
+      this.conceptIndex[c.id] = i;
+    });
+
+    // Initialize random embeddings
+    this.initializeEmbeddings();
+  }
+
+  initializeEmbeddings() {
+    // Initialize concept embeddings with Xavier initialization
+    const scale = Math.sqrt(2.0 / this.embeddingDim);
+
+    this.concepts.forEach(c => {
+      this.embeddings[c.id] = Array(this.embeddingDim).fill(0).map(() =>
+        (Math.random() - 0.5) * scale
+      );
+    });
+
+    // Initialize tradition embeddings
+    Object.keys(TRADITIONS).forEach(t => {
+      this.traditionEmbeddings[t] = Array(this.embeddingDim).fill(0).map(() =>
+        (Math.random() - 0.5) * scale
+      );
+    });
+
+    // Initialize feature embeddings
+    FEATURE_VOCAB.forEach(f => {
+      this.featureEmbeddings[f] = Array(this.embeddingDim).fill(0).map(() =>
+        (Math.random() - 0.5) * scale * 0.5
+      );
+    });
+  }
+
+  // Dot product
+  dot(a, b) {
+    return a.reduce((sum, val, i) => sum + val * b[i], 0);
+  }
+
+  // Sigmoid activation
+  sigmoid(x) {
+    return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x))));
+  }
+
+  // Cosine similarity
+  cosineSimilarity(a, b) {
+    const dot = this.dot(a, b);
+    const normA = Math.sqrt(this.dot(a, a));
+    const normB = Math.sqrt(this.dot(b, b));
+    return dot / (normA * normB + 1e-8);
+  }
+
+  // L2 normalize
+  normalize(vec) {
+    const norm = Math.sqrt(this.dot(vec, vec)) + 1e-8;
+    return vec.map(v => v / norm);
+  }
+
+  // Get combined embedding (concept + tradition + features)
+  getCombinedEmbedding(conceptId) {
+    const concept = this.concepts.find(c => c.id === conceptId);
+    if (!concept) return null;
+
+    const conceptEmb = this.embeddings[conceptId];
+    const traditionEmb = this.traditionEmbeddings[concept.tradition];
+
+    // Average feature embeddings
+    const featureEmb = Array(this.embeddingDim).fill(0);
+    concept.features.forEach(f => {
+      if (this.featureEmbeddings[f]) {
+        this.featureEmbeddings[f].forEach((v, i) => {
+          featureEmb[i] += v / concept.features.length;
+        });
+      }
+    });
+
+    // Combine: 0.6 concept + 0.25 tradition + 0.15 features
+    return conceptEmb.map((v, i) =>
+      0.6 * v + 0.25 * traditionEmb[i] + 0.15 * featureEmb[i]
+    );
+  }
+
+  // Training step
+  trainStep(learningRate = 0.05) {
+    let totalLoss = 0;
+    const gradients = {};
+
+    // Initialize gradients
+    this.concepts.forEach(c => {
+      gradients[c.id] = Array(this.embeddingDim).fill(0);
+    });
+
+    // Process positive pairs from relationships
+    this.relationships.forEach(rel => {
+      const sourceEmb = this.getCombinedEmbedding(rel.source);
+      const targetEmb = this.getCombinedEmbedding(rel.target);
+
+      if (!sourceEmb || !targetEmb) return;
+
+      const similarity = this.cosineSimilarity(sourceEmb, targetEmb);
+      const targetSim = rel.weight;
+      const error = targetSim - similarity;
+
+      totalLoss += error * error;
+
+      // Gradient for cosine similarity
+      const normSource = Math.sqrt(this.dot(sourceEmb, sourceEmb)) + 1e-8;
+      const normTarget = Math.sqrt(this.dot(targetEmb, targetEmb)) + 1e-8;
+
+      // Update source embedding
+      for (let i = 0; i < this.embeddingDim; i++) {
+        const grad = error * (targetEmb[i] / (normSource * normTarget) -
+                             similarity * sourceEmb[i] / (normSource * normSource));
+        gradients[rel.source][i] += grad * 0.6;
+      }
+
+      // Update target embedding
+      for (let i = 0; i < this.embeddingDim; i++) {
+        const grad = error * (sourceEmb[i] / (normSource * normTarget) -
+                             similarity * targetEmb[i] / (normTarget * normTarget));
+        gradients[rel.target][i] += grad * 0.6;
+      }
+    });
+
+    // Add tradition coherence loss (concepts in same tradition should be similar)
+    const traditionGroups = {};
+    this.concepts.forEach(c => {
+      if (!traditionGroups[c.tradition]) traditionGroups[c.tradition] = [];
+      traditionGroups[c.tradition].push(c.id);
+    });
+
+    Object.values(traditionGroups).forEach(group => {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const emb1 = this.getCombinedEmbedding(group[i]);
+          const emb2 = this.getCombinedEmbedding(group[j]);
+          const sim = this.cosineSimilarity(emb1, emb2);
+          const targetSim = 0.5; // Moderate similarity within tradition
+          const error = (targetSim - sim) * 0.3;
+          totalLoss += error * error;
+
+          // Light gradient push
+          for (let k = 0; k < this.embeddingDim; k++) {
+            gradients[group[i]][k] += error * emb2[k] * 0.1;
+            gradients[group[j]][k] += error * emb1[k] * 0.1;
+          }
+        }
+      }
+    });
+
+    // Apply gradients with gradient clipping
+    Object.keys(gradients).forEach(id => {
+      const gradNorm = Math.sqrt(this.dot(gradients[id], gradients[id])) + 1e-8;
+      const clipNorm = 1.0;
+      const scale = gradNorm > clipNorm ? clipNorm / gradNorm : 1.0;
+
+      for (let i = 0; i < this.embeddingDim; i++) {
+        this.embeddings[id][i] += learningRate * gradients[id][i] * scale;
+      }
+    });
+
+    this.epoch++;
+    this.loss.push(totalLoss);
+    return totalLoss;
+  }
+
+  // Train for multiple epochs
+  train(epochs = 100, learningRate = 0.05, callback = null) {
+    for (let i = 0; i < epochs; i++) {
+      const loss = this.trainStep(learningRate * Math.pow(0.99, i)); // Learning rate decay
+      if (callback && i % 10 === 0) {
+        callback(i, loss, this);
+      }
+    }
+  }
+
+  // Get 2D projection using t-SNE-like algorithm (simplified)
+  get2DProjection() {
+    const embeddings = this.concepts.map(c => ({
+      id: c.id,
+      symbol: c.symbol,
+      name: c.name,
+      tradition: c.tradition,
+      embedding: this.getCombinedEmbedding(c.id)
+    }));
+
+    // Simple PCA for initialization
+    const n = embeddings.length;
+    const d = this.embeddingDim;
+
+    // Center the data
+    const mean = Array(d).fill(0);
+    embeddings.forEach(e => {
+      e.embedding.forEach((v, i) => mean[i] += v / n);
+    });
+
+    const centered = embeddings.map(e => ({
+      ...e,
+      centered: e.embedding.map((v, i) => v - mean[i])
+    }));
+
+    // Power iteration for first two principal components
+    let pc1 = Array(d).fill(0).map(() => Math.random() - 0.5);
+    let pc2 = Array(d).fill(0).map(() => Math.random() - 0.5);
+
+    for (let iter = 0; iter < 50; iter++) {
+      // Update PC1
+      const newPc1 = Array(d).fill(0);
+      centered.forEach(e => {
+        const proj = this.dot(e.centered, pc1);
+        e.centered.forEach((v, i) => newPc1[i] += v * proj);
+      });
+      const norm1 = Math.sqrt(this.dot(newPc1, newPc1)) + 1e-8;
+      pc1 = newPc1.map(v => v / norm1);
+
+      // Update PC2 (orthogonal to PC1)
+      const newPc2 = Array(d).fill(0);
+      centered.forEach(e => {
+        const proj = this.dot(e.centered, pc2);
+        e.centered.forEach((v, i) => newPc2[i] += v * proj);
+      });
+      // Gram-Schmidt orthogonalization
+      const overlap = this.dot(newPc2, pc1);
+      const orthPc2 = newPc2.map((v, i) => v - overlap * pc1[i]);
+      const norm2 = Math.sqrt(this.dot(orthPc2, orthPc2)) + 1e-8;
+      pc2 = orthPc2.map(v => v / norm2);
+    }
+
+    // Project to 2D
+    return centered.map(e => ({
+      id: e.id,
+      symbol: e.symbol,
+      name: e.name,
+      tradition: e.tradition,
+      x: this.dot(e.centered, pc1),
+      y: this.dot(e.centered, pc2)
+    }));
+  }
+
+  // Find most similar concepts
+  findSimilar(conceptId, topK = 5) {
+    const targetEmb = this.getCombinedEmbedding(conceptId);
+    if (!targetEmb) return [];
+
+    const similarities = this.concepts
+      .filter(c => c.id !== conceptId)
+      .map(c => ({
+        concept: c,
+        similarity: this.cosineSimilarity(targetEmb, this.getCombinedEmbedding(c.id))
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+
+    return similarities;
+  }
+
+  // Analogy: A is to B as C is to ?
+  analogy(aId, bId, cId, topK = 3) {
+    const aEmb = this.getCombinedEmbedding(aId);
+    const bEmb = this.getCombinedEmbedding(bId);
+    const cEmb = this.getCombinedEmbedding(cId);
+
+    if (!aEmb || !bEmb || !cEmb) return [];
+
+    // d = b - a + c
+    const targetEmb = bEmb.map((v, i) => v - aEmb[i] + cEmb[i]);
+
+    return this.concepts
+      .filter(c => c.id !== aId && c.id !== bId && c.id !== cId)
+      .map(c => ({
+        concept: c,
+        similarity: this.cosineSimilarity(targetEmb, this.getCombinedEmbedding(c.id))
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+  }
+
+  // Find clusters using k-means
+  findClusters(k = 5) {
+    const points = this.concepts.map(c => ({
+      id: c.id,
+      embedding: this.getCombinedEmbedding(c.id)
+    }));
+
+    // Initialize centroids randomly
+    let centroids = [];
+    const shuffled = [...points].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < k; i++) {
+      centroids.push([...shuffled[i].embedding]);
+    }
+
+    let assignments = [];
+
+    // K-means iterations
+    for (let iter = 0; iter < 50; iter++) {
+      // Assign points to nearest centroid
+      assignments = points.map(p => {
+        let minDist = Infinity;
+        let cluster = 0;
+        centroids.forEach((c, i) => {
+          const dist = 1 - this.cosineSimilarity(p.embedding, c);
+          if (dist < minDist) {
+            minDist = dist;
+            cluster = i;
+          }
+        });
+        return { ...p, cluster };
+      });
+
+      // Update centroids
+      const newCentroids = Array(k).fill(null).map(() =>
+        Array(this.embeddingDim).fill(0)
+      );
+      const counts = Array(k).fill(0);
+
+      assignments.forEach(a => {
+        counts[a.cluster]++;
+        a.embedding.forEach((v, i) => {
+          newCentroids[a.cluster][i] += v;
+        });
+      });
+
+      centroids = newCentroids.map((c, i) =>
+        counts[i] > 0 ? c.map(v => v / counts[i]) : c
+      );
+    }
+
+    return assignments;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REACT COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function EmbeddingVisualization({ points, selectedId, onSelect, clusters }) {
+  const svgRef = React.useRef(null);
+  const [transform, setTransform] = React.useState({ x: 0, y: 0, k: 1 });
+
+  React.useEffect(() => {
+    if (!svgRef.current || !points.length) return;
+
+    const svg = d3.select(svgRef.current);
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+
+    // Scale points to fit
+    const xExtent = d3.extent(points, d => d.x);
+    const yExtent = d3.extent(points, d => d.y);
+    const xScale = d3.scaleLinear()
+      .domain([xExtent[0] * 1.2, xExtent[1] * 1.2])
+      .range([50, width - 50]);
+    const yScale = d3.scaleLinear()
+      .domain([yExtent[0] * 1.2, yExtent[1] * 1.2])
+      .range([height - 50, 50]);
+
+    // Clear previous
+    svg.selectAll('*').remove();
+
+    // Add zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([0.5, 4])
+      .on('zoom', (event) => {
+        setTransform(event.transform);
+        g.attr('transform', event.transform);
+      });
+
+    svg.call(zoom);
+
+    const g = svg.append('g');
+
+    // Draw cluster hulls if available
+    if (clusters) {
+      const clusterGroups = {};
+      clusters.forEach(c => {
+        if (!clusterGroups[c.cluster]) clusterGroups[c.cluster] = [];
+        const point = points.find(p => p.id === c.id);
+        if (point) clusterGroups[c.cluster].push(point);
+      });
+
+      const clusterColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
+
+      Object.entries(clusterGroups).forEach(([clusterId, clusterPoints]) => {
+        if (clusterPoints.length < 3) return;
+
+        const hullPoints = clusterPoints.map(p => [xScale(p.x), yScale(p.y)]);
+        const hull = d3.polygonHull(hullPoints);
+
+        if (hull) {
+          g.append('path')
+            .datum(hull)
+            .attr('d', d => `M${d.join('L')}Z`)
+            .attr('fill', clusterColors[clusterId % clusterColors.length])
+            .attr('fill-opacity', 0.1)
+            .attr('stroke', clusterColors[clusterId % clusterColors.length])
+            .attr('stroke-opacity', 0.3)
+            .attr('stroke-width', 2);
+        }
+      });
+    }
+
+    // Draw points
+    const nodes = g.selectAll('g.node')
+      .data(points)
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', d => `translate(${xScale(d.x)}, ${yScale(d.y)})`)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => onSelect(d.id));
+
+    // Point circles
+    nodes.append('circle')
+      .attr('r', d => d.id === selectedId ? 12 : 8)
+      .attr('fill', d => TRADITIONS[d.tradition].color)
+      .attr('stroke', d => d.id === selectedId ? 'white' : 'transparent')
+      .attr('stroke-width', 2)
+      .attr('opacity', d => d.id === selectedId ? 1 : 0.8);
+
+    // Labels
+    nodes.append('text')
+      .attr('x', 12)
+      .attr('y', 4)
+      .attr('font-size', '12px')
+      .attr('fill', '#94a3b8')
+      .text(d => d.symbol);
+
+    // Tooltip on hover
+    nodes.append('title')
+      .text(d => `${d.name} (${TRADITIONS[d.tradition].name})`);
+
+  }, [points, selectedId, clusters]);
+
+  return (
+    <svg
+      ref={svgRef}
+      className="w-full h-full bg-gray-900/50 rounded-xl"
+      style={{ minHeight: '500px' }}
+    />
+  );
+}
+
+function SimilarityPanel({ engine, selectedId }) {
+  if (!selectedId || !engine) return null;
+
+  const concept = CONCEPTS.find(c => c.id === selectedId);
+  const similar = engine.findSimilar(selectedId, 8);
+
+  return (
+    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+      <div className="flex items-center gap-3 mb-4">
+        <span
+          className="text-3xl"
+          style={{ color: TRADITIONS[concept.tradition].color }}
+        >
+          {concept.symbol}
+        </span>
+        <div>
+          <h3 className="font-semibold">{concept.name}</h3>
+          <p className="text-sm text-gray-400">{TRADITIONS[concept.tradition].name}</p>
+        </div>
+      </div>
+
+      <h4 className="text-sm text-gray-400 uppercase tracking-wide mb-3">
+        Most Similar Concepts
+      </h4>
+
+      <div className="space-y-2">
+        {similar.map(({ concept: c, similarity }) => (
+          <div
+            key={c.id}
+            className="flex items-center justify-between p-2 rounded-lg bg-gray-700/50"
+          >
+            <div className="flex items-center gap-2">
+              <span style={{ color: TRADITIONS[c.tradition].color }}>{c.symbol}</span>
+              <span className="text-sm">{c.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="h-2 rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
+                style={{ width: `${similarity * 60}px`, opacity: 0.7 }}
+              />
+              <span className="text-xs text-gray-400 w-12 text-right">
+                {(similarity * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnalogyTool({ engine }) {
+  const [a, setA] = React.useState('');
+  const [b, setB] = React.useState('');
+  const [c, setC] = React.useState('');
+  const [results, setResults] = React.useState([]);
+
+  const compute = () => {
+    if (!a || !b || !c || !engine) return;
+    setResults(engine.analogy(a, b, c, 5));
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+      <h3 className="font-semibold mb-4">Philosophical Analogies</h3>
+      <p className="text-sm text-gray-400 mb-4">
+        Find: A is to B as C is to ?
+      </p>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <select
+          value={a}
+          onChange={e => setA(e.target.value)}
+          className="bg-gray-700 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">A...</option>
+          {CONCEPTS.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol} {c.name}</option>
+          ))}
+        </select>
+        <select
+          value={b}
+          onChange={e => setB(e.target.value)}
+          className="bg-gray-700 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">B...</option>
+          {CONCEPTS.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol} {c.name}</option>
+          ))}
+        </select>
+        <select
+          value={c}
+          onChange={e => setC(e.target.value)}
+          className="bg-gray-700 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">C...</option>
+          {CONCEPTS.map(c => (
+            <option key={c.id} value={c.id}>{c.symbol} {c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        onClick={compute}
+        disabled={!a || !b || !c}
+        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-600 rounded-lg text-sm transition-all mb-4"
+      >
+        Find Analogy
+      </button>
+
+      {results.length > 0 && (
+        <div className="space-y-2">
+          {results.map(({ concept: r, similarity }) => (
+            <div
+              key={r.id}
+              className="flex items-center justify-between p-2 rounded-lg bg-gray-700/50"
+            >
+              <div className="flex items-center gap-2">
+                <span style={{ color: TRADITIONS[r.tradition].color }}>{r.symbol}</span>
+                <span className="text-sm">{r.name}</span>
+              </div>
+              <span className="text-xs text-gray-400">
+                {(similarity * 100).toFixed(0)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrainingControls({ engine, onTrain, isTraining, epoch, loss }) {
+  return (
+    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+      <h3 className="font-semibold mb-4">Embedding Training</h3>
+
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => onTrain(100)}
+          disabled={isTraining}
+          className={`px-4 py-2 rounded-lg text-sm transition-all ${
+            isTraining
+              ? 'bg-gray-600 cursor-not-allowed training'
+              : 'bg-emerald-600 hover:bg-emerald-500'
+          }`}
+        >
+          {isTraining ? 'Training...' : 'Train 100 Epochs'}
+        </button>
+
+        <button
+          onClick={() => onTrain(500)}
+          disabled={isTraining}
+          className={`px-4 py-2 rounded-lg text-sm transition-all ${
+            isTraining
+              ? 'bg-gray-600 cursor-not-allowed'
+              : 'bg-indigo-600 hover:bg-indigo-500'
+          }`}
+        >
+          Train 500 Epochs
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p className="text-gray-400">Epoch</p>
+          <p className="text-2xl font-mono">{epoch}</p>
+        </div>
+        <div>
+          <p className="text-gray-400">Loss</p>
+          <p className="text-2xl font-mono">{loss.toFixed(4)}</p>
+        </div>
+      </div>
+
+      {engine && engine.loss.length > 10 && (
+        <div className="mt-4">
+          <p className="text-gray-400 text-sm mb-2">Loss History</p>
+          <div className="h-16 flex items-end gap-px">
+            {engine.loss.slice(-50).map((l, i) => (
+              <div
+                key={i}
+                className="flex-1 bg-indigo-500 rounded-t"
+                style={{
+                  height: `${Math.min(100, (l / Math.max(...engine.loss.slice(-50))) * 100)}%`,
+                  opacity: 0.5 + i / 100
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClusterPanel({ engine, clusters, onClusterSelect }) {
+  if (!clusters) return null;
+
+  const clusterGroups = {};
+  clusters.forEach(c => {
+    if (!clusterGroups[c.cluster]) clusterGroups[c.cluster] = [];
+    const concept = CONCEPTS.find(con => con.id === c.id);
+    if (concept) clusterGroups[c.cluster].push(concept);
+  });
+
+  const clusterColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
+
+  // Analyze cluster composition by tradition
+  const analyzeCluster = (concepts) => {
+    const traditions = {};
+    concepts.forEach(c => {
+      traditions[c.tradition] = (traditions[c.tradition] || 0) + 1;
+    });
+    const sorted = Object.entries(traditions).sort((a, b) => b[1] - a[1]);
+    return sorted.slice(0, 2);
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+      <h3 className="font-semibold mb-4">Discovered Clusters</h3>
+      <p className="text-sm text-gray-400 mb-4">
+        Latent groupings found by k-means on embeddings
+      </p>
+
+      <div className="space-y-4">
+        {Object.entries(clusterGroups).map(([clusterId, concepts]) => {
+          const dominant = analyzeCluster(concepts);
+          return (
+            <div
+              key={clusterId}
+              className="p-3 rounded-lg border"
+              style={{
+                borderColor: clusterColors[clusterId % clusterColors.length],
+                backgroundColor: `${clusterColors[clusterId % clusterColors.length]}10`
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className="font-semibold"
+                  style={{ color: clusterColors[clusterId % clusterColors.length] }}
+                >
+                  Cluster {parseInt(clusterId) + 1}
+                </span>
+                <span className="text-xs text-gray-400">{concepts.length} concepts</span>
+              </div>
+
+              <div className="flex flex-wrap gap-1 mb-2">
+                {concepts.slice(0, 8).map(c => (
+                  <span
+                    key={c.id}
+                    className="px-1.5 py-0.5 rounded text-sm"
+                    style={{
+                      backgroundColor: TRADITIONS[c.tradition].color + '30',
+                      color: TRADITIONS[c.tradition].color
+                    }}
+                  >
+                    {c.symbol}
+                  </span>
+                ))}
+                {concepts.length > 8 && (
+                  <span className="text-xs text-gray-500">+{concepts.length - 8}</span>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-400">
+                Dominant: {dominant.map(([t, count]) =>
+                  `${TRADITIONS[t].name} (${count})`
+                ).join(', ')}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Main App
+function PhiLangEmbeddingsApp() {
+  const [engine, setEngine] = React.useState(null);
+  const [points, setPoints] = React.useState([]);
+  const [selectedId, setSelectedId] = React.useState(null);
+  const [isTraining, setIsTraining] = React.useState(false);
+  const [epoch, setEpoch] = React.useState(0);
+  const [loss, setLoss] = React.useState(0);
+  const [clusters, setClusters] = React.useState(null);
+  const [showClusters, setShowClusters] = React.useState(false);
+
+  // Initialize engine
+  React.useEffect(() => {
+    const eng = new PhiLangEmbeddings(CONCEPTS, RELATIONSHIPS, 32);
+    setEngine(eng);
+
+    // Initial training
+    eng.train(200, 0.1);
+    setEpoch(eng.epoch);
+    setLoss(eng.loss[eng.loss.length - 1] || 0);
+    setPoints(eng.get2DProjection());
+  }, []);
+
+  const handleTrain = async (epochs) => {
+    if (!engine || isTraining) return;
+
+    setIsTraining(true);
+
+    // Animate training
+    const batchSize = 10;
+    for (let i = 0; i < epochs; i += batchSize) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      engine.train(batchSize, 0.05);
+      setEpoch(engine.epoch);
+      setLoss(engine.loss[engine.loss.length - 1] || 0);
+
+      if (i % 50 === 0) {
+        setPoints(engine.get2DProjection());
+      }
+    }
+
+    setPoints(engine.get2DProjection());
+    setIsTraining(false);
+
+    // Update clusters if showing
+    if (showClusters) {
+      setClusters(engine.findClusters(5));
+    }
+  };
+
+  const toggleClusters = () => {
+    if (!showClusters && engine) {
+      setClusters(engine.findClusters(5));
+    }
+    setShowClusters(!showClusters);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      {/* Header */}
+      <header className="border-b border-gray-800 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <span className="text-indigo-400">φ</span>
+              PhiLang Embeddings
+            </h1>
+            <p className="text-sm text-gray-400">Latent Structure Explorer</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleClusters}
+              className={`px-4 py-2 rounded-lg text-sm transition-all ${
+                showClusters
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {showClusters ? 'Hide Clusters' : 'Show Clusters'}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto p-6">
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Visualization */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800/30 rounded-xl border border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold">Embedding Space (2D Projection)</h2>
+                <div className="flex gap-2">
+                  {Object.entries(TRADITIONS).slice(0, 5).map(([key, t]) => (
+                    <div key={key} className="flex items-center gap-1">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: t.color }}
+                      />
+                      <span className="text-xs text-gray-400">{t.name.split(' ')[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <EmbeddingVisualization
+                points={points}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                clusters={showClusters ? clusters : null}
+              />
+            </div>
+          </div>
+
+          {/* Side Panel */}
+          <div className="space-y-6">
+            <TrainingControls
+              engine={engine}
+              onTrain={handleTrain}
+              isTraining={isTraining}
+              epoch={epoch}
+              loss={loss}
+            />
+
+            {selectedId && (
+              <SimilarityPanel
+                engine={engine}
+                selectedId={selectedId}
+              />
+            )}
+
+            {showClusters && (
+              <ClusterPanel
+                engine={engine}
+                clusters={clusters}
+              />
+            )}
+
+            <AnalogyTool engine={engine} />
+          </div>
+        </div>
+
+        {/* Tradition Legend */}
+        <div className="mt-6 flex flex-wrap justify-center gap-4">
+          {Object.entries(TRADITIONS).map(([key, t]) => (
+            <div key={key} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: t.color }}
+              />
+              <span className="text-sm text-gray-400">{t.name}</span>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 mt-16 py-8 text-center text-gray-500 text-sm">
+        <p>PhiLang Embeddings — Semantic vectors trained on philosophical relationships</p>
+        <p className="mt-1">32-dimensional embeddings • Skip-gram with negative sampling</p>
+      </footer>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PhiLangEmbeddingsApp />);
+
+// Initialize keyboard shortcuts after React mounts
+if (typeof PhiLangShortcuts !== 'undefined') {
+    PhiLangShortcuts.init([
+        { key: 'f', description: 'Focus search', action: () => document.querySelector('input[placeholder*="Search"]')?.focus() },
+        { key: 'g a', description: 'Go to advanced embeddings', action: () => window.location.href = 'philang_embeddings_advanced.html' },
+    ]);
+
+    // Show keyboard shortcuts hint for new users
+    if (PhiLangShortcuts.shouldShowHint()) {
+        setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+    }
+}
+    </script>
+</body>
+</html>

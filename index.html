@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang — A Philosophical Programming Language</title>
+
+    <!-- Security: Content Security Policy
+         Unified CSP for PhiLang - allows required CDNs while maintaining security -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- Distinctive Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PhiLang Core Modules (load order matters) -->
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_api.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_shortcuts.js"></script>
+    <script src="philang_skeleton.js"></script>
+    <script src="philang_ui.js"></script>
+
+    <style>
+        :root {
+            --void: #0a0a0c;
+            --abyss: #0f0e13;
+            --obsidian: #16141c;
+            --smoke: #1e1b27;
+            --ash: #2a2636;
+            --stone: #3d3750;
+            --silver: #9992a8;
+            --pearl: #d4d0e0;
+            --bone: #f0ede6;
+            --gold: #c9a227;
+            --amber: #e8b923;
+            --flame: #f4c430;
+            --ember: #8b6914;
+            --indigo-deep: #3730a3;
+            --indigo-glow: #6366f1;
+            --violet-mist: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--void);
+            color: var(--pearl);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        /* Grain overlay for texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Luminous accent bar */
+        .luminous-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--ember) 20%,
+                var(--gold) 35%,
+                var(--amber) 50%,
+                var(--gold) 65%,
+                var(--ember) 80%,
+                transparent
+            );
+            z-index: 100;
+            box-shadow:
+                0 0 20px var(--gold),
+                0 0 40px rgba(201, 162, 39, 0.3);
+        }
+
+        /* Typography */
+        .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+        .font-body { font-family: 'Crimson Pro', Georgia, serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Cosmic background */
+        .cosmic-bg {
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(ellipse 50% 30% at 20% 90%, rgba(201, 162, 39, 0.04) 0%, transparent 40%),
+                linear-gradient(180deg, var(--void) 0%, var(--abyss) 30%, var(--obsidian) 70%, var(--void) 100%);
+        }
+
+        /* Constellation of floating symbols */
+        .constellation {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .star-symbol {
+            position: absolute;
+            opacity: 0;
+            animation: starReveal 1.5s ease-out forwards, drift 20s ease-in-out infinite;
+        }
+
+        @keyframes starReveal {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: var(--final-opacity, 0.15); transform: scale(1); }
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(5px, -8px) rotate(2deg); }
+            50% { transform: translate(-3px, 5px) rotate(-1deg); }
+            75% { transform: translate(7px, 3px) rotate(1deg); }
+        }
+
+        /* Page entrance animations */
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes expandLine {
+            0% { transform: scaleX(0); opacity: 0; }
+            100% { transform: scaleX(1); opacity: 1; }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(201, 162, 39, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(201, 162, 39, 0.4); }
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Staggered delays */
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+        .delay-600 { animation-delay: 0.6s; }
+        .delay-700 { animation-delay: 0.7s; }
+        .delay-800 { animation-delay: 0.8s; }
+        .delay-1000 { animation-delay: 1s; }
+        .delay-1200 { animation-delay: 1.2s; }
+
+        /* Navigation */
+        .nav-link {
+            position: relative;
+            color: var(--silver);
+            transition: color 0.3s ease;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--bone);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* API Status orb */
+        .status-orb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            transition: all 0.5s ease;
+        }
+
+        .status-orb.connected {
+            background: var(--gold);
+            box-shadow:
+                0 0 10px var(--gold),
+                0 0 20px rgba(201, 162, 39, 0.5);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        /* Hero section */
+        .hero-phi {
+            font-size: clamp(120px, 20vw, 200px);
+            font-weight: 300;
+            line-height: 1;
+            background: linear-gradient(180deg, var(--bone) 0%, var(--gold) 50%, var(--ember) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 60px rgba(201, 162, 39, 0.3));
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 300;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .hero-subtitle {
+            color: var(--silver);
+            font-style: italic;
+            font-weight: 300;
+            letter-spacing: 0.08em;
+        }
+
+        .divider-line {
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 2rem auto;
+            animation: expandLine 1s ease-out 0.5s forwards;
+            transform: scaleX(0);
+        }
+
+        /* Expression showcase */
+        .expression-container {
+            position: relative;
+            background: linear-gradient(135deg, rgba(22, 20, 28, 0.8) 0%, rgba(30, 27, 39, 0.6) 100%);
+            border: 1px solid rgba(201, 162, 39, 0.2);
+            border-radius: 12px;
+            padding: 2rem 3rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .expression-container::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.3) 0%, transparent 50%, rgba(139, 92, 246, 0.2) 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .expression-container:hover::before {
+            opacity: 1;
+        }
+
+        /* Module cards */
+        .module-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(22, 20, 28, 0.9) 0%, rgba(15, 14, 19, 0.95) 100%);
+            border: 1px solid rgba(61, 55, 80, 0.4);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .module-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.05) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .module-card:hover {
+            border-color: rgba(201, 162, 39, 0.3);
+            transform: translateY(-8px);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 60px rgba(201, 162, 39, 0.08);
+        }
+
+        .module-card:hover::before,
+        .module-card:hover::after {
+            opacity: 1;
+        }
+
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.5s ease, filter 0.5s ease;
+            display: inline-block;
+        }
+
+        .module-card:hover .module-icon {
+            transform: scale(1.15) rotate(-5deg);
+            filter: drop-shadow(0 0 20px currentColor);
+        }
+
+        /* Concept pills */
+        .concept-pill {
+            position: relative;
+            padding: 0.6rem 1.2rem;
+            border-radius: 100px;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            cursor: default;
+            overflow: hidden;
+        }
+
+        .concept-pill::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: inherit;
+            filter: blur(20px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .concept-pill:hover {
+            transform: scale(1.08) translateY(-2px);
+        }
+
+        .concept-pill:hover::before {
+            opacity: 0.5;
+        }
+
+        /* Operator cards */
+        .operator-card {
+            background: rgba(22, 20, 28, 0.6);
+            border: 1px solid rgba(61, 55, 80, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .operator-card:hover {
+            background: rgba(30, 27, 39, 0.8);
+            border-color: rgba(201, 162, 39, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .operator-symbol {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .operator-card:hover .operator-symbol {
+            transform: scale(1.2);
+        }
+
+        /* Claude AI section */
+        .oracle-section {
+            position: relative;
+            background: linear-gradient(135deg,
+                rgba(55, 48, 163, 0.15) 0%,
+                rgba(139, 92, 246, 0.08) 50%,
+                rgba(201, 162, 39, 0.05) 100%
+            );
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            overflow: hidden;
+        }
+
+        .oracle-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                from 0deg at 50% 50%,
+                transparent 0deg,
+                rgba(99, 102, 241, 0.03) 60deg,
+                transparent 120deg,
+                rgba(201, 162, 39, 0.02) 180deg,
+                transparent 240deg,
+                rgba(139, 92, 246, 0.03) 300deg,
+                transparent 360deg
+            );
+            animation: slowRotate 60s linear infinite;
+        }
+
+        @keyframes slowRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .oracle-symbol {
+            font-size: 4rem;
+            background: linear-gradient(135deg, var(--indigo-glow) 0%, var(--violet-mist) 50%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.5));
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid rgba(61, 55, 80, 0.3);
+            background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 12, 0.5) 100%);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--void); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--stone);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--silver);
+        }
+
+        /* Button styles */
+        .btn-primary {
+            position: relative;
+            background: linear-gradient(135deg, var(--ember) 0%, var(--gold) 100%);
+            color: var(--void);
+            font-weight: 500;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--flame) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(201, 162, 39, 0.3);
+        }
+
+        .btn-primary:hover::before {
+            opacity: 1;
+        }
+
+        .btn-primary span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--stone);
+            color: var(--silver);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--gold);
+            color: var(--bone);
+        }
+
+        /* Tag styles */
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            letter-spacing: 0.03em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-phi { font-size: 100px; }
+            .hero-title { font-size: 2rem; }
+            .expression-container { padding: 1.5rem; }
+            .module-card { padding: 1.5rem; }
+            .oracle-section { padding: 2rem; }
+        }
+    </style>
+</head>
+<body class="cosmic-bg">
+    <!-- Luminous accent bar -->
+    <div class="luminous-bar"></div>
+
+    <!-- Constellation background -->
+    <div class="constellation" id="constellation"></div>
+
+    <div id="app" class="relative z-10 min-h-screen flex flex-col">
+        <!-- Navigation -->
+        <nav class="px-6 py-4 animate-fade-in delay-100">
+            <div class="max-w-6xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-8">
+                    <a href="index.html" class="flex items-center gap-3 group">
+                        <span class="font-display text-3xl text-[var(--gold)] group-hover:drop-shadow-[0_0_10px_rgba(201,162,39,0.5)] transition-all">φ</span>
+                        <span class="font-display text-lg tracking-widest text-[var(--pearl)] hidden sm:inline">PHILANG</span>
+                    </a>
+                    <div class="hidden md:flex items-center gap-6 text-sm">
+                        <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                        <a href="dialectical_dialogue.html" class="nav-link">Dialogue</a>
+                        <a href="socratic_counsel.html" class="nav-link">Counsel</a>
+                        <a href="philang_embeddings.html" class="nav-link">Embeddings</a>
+                        <a href="philang_embeddings_advanced.html" class="nav-link">Advanced</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="api-status" class="hidden sm:flex items-center gap-3 px-4 py-2 rounded-lg border border-[var(--stone)] bg-[var(--obsidian)]/50 backdrop-blur-sm">
+                        <div id="api-dot" class="status-orb"></div>
+                        <div class="text-sm">
+                            <div class="text-[var(--pearl)] font-medium" id="api-status-text">Claude API</div>
+                            <div class="text-xs text-[var(--silver)]" id="api-status-sub">Not configured</div>
+                        </div>
+                        <button id="api-config-btn" class="btn-secondary ml-2" aria-label="Configure Claude API">
+                            Configure
+                        </button>
+                    </div>
+                    <!-- Mobile Menu Toggle -->
+                    <button id="mobile-menu-btn" class="md:hidden flex flex-col gap-1.5 p-2" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav">
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                        <span class="block w-6 h-0.5 bg-[var(--pearl)] transition-all" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Navigation Overlay -->
+        <nav id="mobile-nav" class="fixed inset-0 bg-[var(--void)]/95 backdrop-blur-lg z-50 hidden md:hidden" role="navigation" aria-label="Mobile navigation">
+            <div class="flex flex-col items-center justify-center h-full gap-8">
+                <a href="index.html" class="text-2xl font-display text-[var(--gold)]">φ PHILANG</a>
+                <a href="derivation_graph.html" class="text-xl nav-link">Derivation</a>
+                <a href="dialectical_dialogue.html" class="text-xl nav-link">Dialogue</a>
+                <a href="socratic_counsel.html" class="text-xl nav-link">Counsel</a>
+                <a href="philang_embeddings.html" class="text-xl nav-link">Embeddings</a>
+                <a href="philang_embeddings_advanced.html" class="text-xl nav-link">Advanced</a>
+                <button id="mobile-api-btn" class="mt-4 btn-secondary" aria-label="Configure Claude API">Configure API</button>
+                <button id="mobile-menu-close" class="absolute top-6 right-6 text-3xl text-[var(--pearl)]" aria-label="Close navigation menu">&times;</button>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <header class="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div class="max-w-4xl mx-auto">
+                <!-- Phi symbol -->
+                <div class="animate-fade-up delay-200">
+                    <span class="hero-phi font-display">φ</span>
+                </div>
+
+                <!-- Title -->
+                <h1 class="hero-title font-display text-[var(--bone)] animate-fade-up delay-300">
+                    PhiLang
+                </h1>
+
+                <div class="divider-line"></div>
+
+                <p class="hero-subtitle text-xl mb-8 animate-fade-up delay-400">
+                    A Philosophical Programming Language
+                </p>
+
+                <p class="text-[var(--silver)] max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-up delay-500">
+                    PhiLang bridges the gap between formal systems and philosophical discourse,
+                    providing a grammar for expressing and deriving insights across the great traditions.
+                </p>
+
+                <!-- Expression showcase -->
+                <div class="expression-container inline-block animate-fade-up delay-600">
+                    <code class="font-mono text-lg md:text-xl">
+                        <span class="text-emerald-400">emptiness</span>
+                        <span class="text-[var(--silver)]"> ⊗ </span>
+                        <span class="text-sky-400">dep-orig</span>
+                        <span class="text-[var(--silver)]"> → </span>
+                        <span class="text-[var(--violet-mist)]">¬</span><span class="text-[var(--gold)]">substance</span>
+                    </code>
+                </div>
+                <p class="text-sm text-[var(--stone)] mt-4 italic animate-fade-up delay-700">
+                    "Emptiness synthesized with dependent origination derives the negation of substance"
+                </p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="px-6 py-16">
+            <div class="max-w-6xl mx-auto">
+
+                <!-- Modules Section -->
+                <section class="mb-24">
+                    <h2 class="font-display text-2xl text-center text-[var(--pearl)] tracking-widest uppercase mb-4 animate-fade-up">
+                        Explore
+                    </h2>
+                    <p class="text-center text-[var(--silver)] mb-12 animate-fade-up delay-100">
+                        Interactive modules for philosophical inquiry
+                    </p>
+
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Derivation Graph -->
+                        <a href="derivation_graph.html" class="module-card block animate-fade-up delay-200">
+                            <span class="module-icon text-[var(--indigo-glow)]">⟹</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Derivation Graph</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                Visualize concept relationships through magnetic force-directed networks.
+                                Semantic affinity reveals productive philosophical combinations.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-[var(--indigo-deep)]/30 text-[var(--indigo-glow)]">D3.js</span>
+                                <span class="tag bg-emerald-900/30 text-emerald-400">Claude AI</span>
+                            </div>
+                        </a>
+
+                        <!-- Dialectical Dialogue -->
+                        <a href="dialectical_dialogue.html" class="module-card block animate-fade-up delay-300">
+                            <span class="module-icon text-[var(--violet-mist)]">⚔</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Dialectical Dialogue</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                Simulate debates between philosophical traditions. Phenomenology,
+                                Buddhism, Hegelianism engage in dialectical exchange.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-purple-900/30 text-purple-400">10 Traditions</span>
+                                <span class="tag bg-emerald-900/30 text-emerald-400">Claude AI</span>
+                            </div>
+                        </a>
+
+                        <!-- Socratic Counsel -->
+                        <a href="socratic_counsel.html" class="module-card block animate-fade-up delay-400">
+                            <span class="module-icon text-[var(--gold)]">☉</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Socratic Counsel</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                Philosophical therapy. Engage in Socratic dialogue, Stoic counsel,
+                                Buddhist mindful inquiry, or existential confrontation.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-amber-900/30 text-amber-400">7 Methods</span>
+                                <span class="tag bg-emerald-900/30 text-emerald-400">Claude AI</span>
+                            </div>
+                        </a>
+
+                        <!-- Semantic Embeddings -->
+                        <a href="philang_embeddings.html" class="module-card block animate-fade-up delay-500">
+                            <span class="module-icon text-cyan-400">◎</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Semantic Embeddings</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                Train neural embeddings on PhiLang concepts. PCA visualization,
+                                k-means clustering, analogy completion.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-cyan-900/30 text-cyan-400">32D Vectors</span>
+                                <span class="tag bg-slate-700/30 text-slate-400">Skip-gram</span>
+                            </div>
+                        </a>
+
+                        <!-- Advanced Embeddings -->
+                        <a href="philang_embeddings_advanced.html" class="module-card block animate-fade-up delay-600">
+                            <span class="module-icon text-pink-400">✧</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Advanced Embeddings</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                64-dimensional embeddings with semantic axes, t-SNE projection,
+                                concept interpolation, philosophical analogy discovery.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-pink-900/30 text-pink-400">t-SNE</span>
+                                <span class="tag bg-emerald-900/30 text-emerald-400">Claude AI</span>
+                            </div>
+                        </a>
+
+                        <!-- Grammar Reference (Coming Soon) -->
+                        <div class="module-card block opacity-50 cursor-default">
+                            <span class="module-icon text-[var(--stone)]">📜</span>
+                            <h3 class="font-display text-xl text-[var(--silver)] mb-3">Grammar Reference</h3>
+                            <p class="text-[var(--stone)] text-sm mb-4 leading-relaxed">
+                                Complete reference for PhiLang syntax: operators, concepts,
+                                derivation rules, and cross-tradition mappings.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="tag bg-slate-800/30 text-slate-500">Coming Soon</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Core Concepts Section -->
+                <section class="mb-24">
+                    <h2 class="font-display text-2xl text-center text-[var(--pearl)] tracking-widest uppercase mb-4">
+                        Core Concepts
+                    </h2>
+                    <p class="text-center text-[var(--silver)] mb-12">
+                        Primitives from the great philosophical traditions
+                    </p>
+
+                    <div class="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
+                        <span class="concept-pill border border-indigo-500/40 bg-indigo-500/10 text-indigo-300">
+                            <span class="mr-2 opacity-70">Σ</span> Self
+                        </span>
+                        <span class="concept-pill border border-amber-500/40 bg-amber-500/10 text-amber-300">
+                            <span class="mr-2 opacity-70">▣</span> Substance
+                        </span>
+                        <span class="concept-pill border border-emerald-500/40 bg-emerald-500/10 text-emerald-300">
+                            <span class="mr-2 opacity-70">śū</span> Emptiness
+                        </span>
+                        <span class="concept-pill border border-sky-500/40 bg-sky-500/10 text-sky-300">
+                            <span class="mr-2 opacity-70">⦿</span> Concrescence
+                        </span>
+                        <span class="concept-pill border border-purple-500/40 bg-purple-500/10 text-purple-300">
+                            <span class="mr-2 opacity-70">⍟</span> Aufhebung
+                        </span>
+                        <span class="concept-pill border border-red-500/40 bg-red-500/10 text-red-300">
+                            <span class="mr-2 opacity-70">𝔇</span> Dasein
+                        </span>
+                        <span class="concept-pill border border-teal-500/40 bg-teal-500/10 text-teal-300">
+                            <span class="mr-2 opacity-70">𝔖𝔭</span> Language-game
+                        </span>
+                        <span class="concept-pill border border-pink-500/40 bg-pink-500/10 text-pink-300">
+                            <span class="mr-2 opacity-70">⌒</span> Fold
+                        </span>
+                    </div>
+                </section>
+
+                <!-- Operators Section -->
+                <section class="mb-24">
+                    <h2 class="font-display text-2xl text-center text-[var(--pearl)] tracking-widest uppercase mb-4">
+                        Operators
+                    </h2>
+                    <p class="text-center text-[var(--silver)] mb-12">
+                        The grammar of philosophical transformation
+                    </p>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                        <div class="operator-card">
+                            <span class="operator-symbol text-[var(--indigo-glow)]">→</span>
+                            <div class="font-display text-[var(--pearl)]">Derivation</div>
+                            <div class="text-xs text-[var(--stone)]">A derives B</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-[var(--violet-mist)]">⊗</span>
+                            <div class="font-display text-[var(--pearl)]">Synthesis</div>
+                            <div class="text-xs text-[var(--stone)]">A combined with B</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-red-400">¬</span>
+                            <div class="font-display text-[var(--pearl)]">Negation</div>
+                            <div class="text-xs text-[var(--stone)]">dialectical negation</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-emerald-400">⟨ ⟩</span>
+                            <div class="font-display text-[var(--pearl)]">Epoché</div>
+                            <div class="text-xs text-[var(--stone)]">phenomenological bracket</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-cyan-400">∘</span>
+                            <div class="font-display text-[var(--pearl)]">Composition</div>
+                            <div class="text-xs text-[var(--stone)]">A composed with B</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-[var(--gold)]">↺</span>
+                            <div class="font-display text-[var(--pearl)]">Recursion</div>
+                            <div class="text-xs text-[var(--stone)]">self-referential</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-[var(--silver)]">∅</span>
+                            <div class="font-display text-[var(--pearl)]">Emptiness</div>
+                            <div class="text-xs text-[var(--stone)]">void, absence</div>
+                        </div>
+                        <div class="operator-card">
+                            <span class="operator-symbol text-pink-400">Δ</span>
+                            <div class="font-display text-[var(--pearl)]">Difference</div>
+                            <div class="text-xs text-[var(--stone)]">change, becoming</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Claude AI / Oracle Section -->
+                <section class="mb-16" id="ai-section">
+                    <div class="oracle-section">
+                        <div class="relative z-10 flex flex-col md:flex-row items-start gap-8">
+                            <div class="oracle-symbol">✦</div>
+                            <div class="flex-1">
+                                <h3 class="font-display text-2xl text-[var(--pearl)] mb-4 tracking-wide">
+                                    Powered by Claude AI
+                                </h3>
+                                <p class="text-[var(--silver)] mb-6 leading-relaxed">
+                                    PhiLang integrates with Anthropic's Claude to provide genuine philosophical reasoning.
+                                    The oracle can engage in Socratic dialogue, argue from different traditions,
+                                    explain concept connections, and generate novel philosophical insights.
+                                </p>
+                                <div class="flex flex-wrap gap-4 mb-8">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <div class="w-2 h-2 bg-[var(--gold)] rounded-full shadow-[0_0_8px_rgba(201,162,39,0.5)]"></div>
+                                        <span class="text-[var(--pearl)]">Genuine reasoning</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <div class="w-2 h-2 bg-[var(--gold)] rounded-full shadow-[0_0_8px_rgba(201,162,39,0.5)]"></div>
+                                        <span class="text-[var(--pearl)]">Streaming responses</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <div class="w-2 h-2 bg-[var(--gold)] rounded-full shadow-[0_0_8px_rgba(201,162,39,0.5)]"></div>
+                                        <span class="text-[var(--pearl)]">Rule-based fallback</span>
+                                    </div>
+                                </div>
+                                <button id="setup-api-btn" class="btn-primary" aria-label="Configure your Claude API key">
+                                    <span>Configure API Key</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="px-6 py-8">
+            <div class="max-w-6xl mx-auto text-center">
+                <p class="font-display text-[var(--silver)] tracking-wider">
+                    PhiLang — Bridging formal systems and philosophical discourse
+                </p>
+                <p class="mt-3 text-xs text-[var(--stone)]">
+                    Built with care for the examined life
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Create constellation of floating symbols
+        function createConstellation() {
+            const constellation = document.getElementById('constellation');
+            const symbols = ['Σ', '▣', 'śū', '⦿', '⍟', '𝔇', '⌒', '→', '⊗', '¬', '∘', 'φ', 'Δ', '∅', '↺'];
+            const colors = ['#6366f1', '#8b5cf6', '#c9a227', '#10b981', '#ec4899', '#3b82f6', '#ef4444', '#06b6d4'];
+
+            for (let i = 0; i < 20; i++) {
+                const symbol = document.createElement('span');
+                symbol.className = 'star-symbol font-display';
+                symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                symbol.style.left = Math.random() * 100 + '%';
+                symbol.style.top = Math.random() * 100 + '%';
+                symbol.style.fontSize = (Math.random() * 30 + 20) + 'px';
+                symbol.style.color = colors[Math.floor(Math.random() * colors.length)];
+                symbol.style.setProperty('--final-opacity', (Math.random() * 0.1 + 0.05).toFixed(2));
+                symbol.style.animationDelay = (Math.random() * 2) + 's, ' + (Math.random() * 5) + 's';
+                constellation.appendChild(symbol);
+            }
+        }
+
+        // Initialize API status
+        function updateAPIStatus() {
+            const dot = document.getElementById('api-dot');
+            const statusText = document.getElementById('api-status-text');
+            const statusSub = document.getElementById('api-status-sub');
+            const configBtn = document.getElementById('api-config-btn');
+
+            if (typeof PhiLangAPI !== 'undefined' && PhiLangAPI.isConfigured()) {
+                dot.classList.add('connected');
+                statusText.textContent = 'Claude API';
+                statusSub.textContent = 'Connected';
+                configBtn.textContent = 'Change';
+            } else {
+                dot.classList.remove('connected');
+                statusText.textContent = 'Claude API';
+                statusSub.textContent = 'Not configured';
+                configBtn.textContent = 'Configure';
+            }
+        }
+
+        function openAPIConfig() {
+            if (typeof PhiLangAPI !== 'undefined') {
+                PhiLangAPI.showConfigModal();
+            } else {
+                alert('PhiLang API module not loaded. Please check if philang_api.js is accessible.');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('api-config-btn').addEventListener('click', openAPIConfig);
+        document.getElementById('setup-api-btn').addEventListener('click', openAPIConfig);
+
+        // Listen for API configuration changes
+        window.addEventListener('philang-api-configured', updateAPIStatus);
+
+        // Initialize page using shared UI module
+        document.addEventListener('DOMContentLoaded', () => {
+            createConstellation();
+            updateAPIStatus();
+
+            // Use shared mobile menu initialization
+            if (typeof PhiLangUI !== 'undefined') {
+                PhiLangUI.initMobileMenu({
+                    menuBtnId: 'mobile-menu-btn',
+                    navId: 'mobile-nav',
+                    closeBtnId: 'mobile-menu-close'
+                });
+            }
+
+            // Mobile API config button
+            const mobileApiBtn = document.getElementById('mobile-api-btn');
+            mobileApiBtn?.addEventListener('click', () => {
+                const mobileNav = document.getElementById('mobile-nav');
+                mobileNav?.classList.add('hidden');
+                document.body.style.overflow = '';
+                PhiLangAPI?.showConfigModal();
+            });
+
+            // Add config modal to page (using security module for safe insertion)
+            if (typeof PhiLangAPI !== 'undefined') {
+                const modalHTML = PhiLangAPI.createConfigModal();
+                // Note: createConfigModal returns trusted internal HTML
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+
+            // Initialize keyboard shortcuts using shared UI page init
+            if (typeof PhiLangShortcuts !== 'undefined') {
+                PhiLangShortcuts.init([
+                    { key: '/', description: 'Focus search (if available)', action: () => {
+                        const search = document.querySelector('input[type="search"], input[placeholder*="search"]');
+                        if (search) search.focus();
+                    }},
+                ]);
+
+                // Show keyboard shortcuts hint for new users
+                if (PhiLangShortcuts.shouldShowHint()) {
+                    setTimeout(() => PhiLangShortcuts.showHint(), 2000);
+                }
+            }
+
+            // Register service worker using config module
+            if (typeof PhiLangConfig !== 'undefined') {
+                PhiLangConfig.registerServiceWorker().then(registration => {
+                    if (registration) {
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker?.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    PhiLangToast?.info('New version available. Refresh to update.');
+                                }
+                            });
+                        });
+                    }
+                });
+            } else if ('serviceWorker' in navigator) {
+                // Fallback if config module not loaded
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            }
+        });
+    </script>
+</body>
+</html>
