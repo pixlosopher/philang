@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhiLang Promotional Kit</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f8f9fa;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        /* Cover Page */
+        .cover {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 80px 60px;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cover-phi {
+            font-size: 120px;
+            background: linear-gradient(180deg, #f0ede6 0%, #c9a227 50%, #8b6914 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .cover h1 {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .cover-subtitle {
+            font-size: 20px;
+            color: #a0a0b0;
+            font-style: italic;
+            margin-bottom: 40px;
+        }
+
+        .cover-meta {
+            font-size: 14px;
+            color: #707080;
+            margin-top: 60px;
+        }
+
+        .cover-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #c9a227 0%, #e8b923 100%);
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Content Sections */
+        .section {
+            padding: 60px;
+            border-bottom: 1px solid #eee;
+            page-break-inside: avoid;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 32px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 22px;
+            color: #16213e;
+            margin: 32px 0 16px 0;
+            font-weight: 600;
+        }
+
+        h4 {
+            font-size: 16px;
+            color: #0f3460;
+            margin: 24px 0 12px 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        /* Screenshots */
+        .screenshot {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin: 24px 0;
+        }
+
+        .screenshot-caption {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            margin-top: -12px;
+            margin-bottom: 24px;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 20px 24px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 16px 0;
+            white-space: pre-wrap;
+        }
+
+        .code-inline {
+            background: #f0f0f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: #c9a227;
+        }
+
+        /* Post boxes */
+        .post-box {
+            background: #fafbfc;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .post-box-title {
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+            font-size: 18px;
+        }
+
+        .post-box-meta {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .post-content {
+            color: #333;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        /* Copy button */
+        .copy-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #e8e8f0;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #555;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #c9a227;
+            color: white;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e8f4f8;
+            color: #0f3460;
+            border-radius: 100px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Table of contents */
+        .toc {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .toc-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .toc li:last-child {
+            border-bottom: none;
+        }
+
+        .toc a {
+            color: #0f3460;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: #c9a227;
+        }
+
+        /* Highlight box */
+        .highlight-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+            border-left: 4px solid #c9a227;
+            padding: 20px 24px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        /* Thread styling */
+        .thread {
+            border-left: 3px solid #1da1f2;
+            padding-left: 20px;
+            margin: 20px 0;
+        }
+
+        .tweet {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+        }
+
+        .tweet-number {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Divider */
+        hr {
+            border: none;
+            height: 1px;
+            background: #eee;
+            margin: 40px 0;
+        }
+
+        /* Print styles */
+        @media print {
+            .cover {
+                min-height: auto;
+                padding: 60px;
+            }
+            .copy-btn {
+                display: none;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Expression styling */
+        .expression {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 12px 0;
+        }
+
+        .expression .green { color: #10b981; }
+        .expression .blue { color: #38bdf8; }
+        .expression .gold { color: #c9a227; }
+        .expression .purple { color: #a78bfa; }
+        .expression .gray { color: #9ca3af; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- COVER PAGE -->
+        <div class="cover">
+            <div class="cover-phi">φ</div>
+            <h1>PHILANG</h1>
+            <p class="cover-subtitle">A Philosophical Programming Language</p>
+            <p style="color: #c9a227; font-size: 16px; max-width: 500px;">
+                Promotional Kit & Launch Materials
+            </p>
+            <a href="https://pixlosopher.github.io/philang/" class="cover-link">
+                Visit Live Demo →
+            </a>
+            <p class="cover-meta">
+                GitHub: github.com/pixlosopher/philang<br>
+                February 2026
+            </p>
+        </div>
+
+        <!-- TABLE OF CONTENTS -->
+        <div class="section">
+            <h2>Contents</h2>
+            <p class="section-subtitle">Everything you need to promote PhiLang</p>
+
+            <div class="toc">
+                <div class="toc-title">Quick Navigation</div>
+                <ul>
+                    <li><a href="#screenshots">1. Screenshots & Visuals</a></li>
+                    <li><a href="#hackernews">2. Hacker News Post</a></li>
+                    <li><a href="#twitter">3. Twitter/X Threads</a></li>
+                    <li><a href="#reddit">4. Reddit Posts</a></li>
+                    <li><a href="#devto">5. Dev.to Article</a></li>
+                    <li><a href="#philosophy">6. Philosophy Forum Post</a></li>
+                    <li><a href="#taglines">7. Taglines & Short Copy</a></li>
+                    <li><a href="#hashtags">8. Hashtags & Keywords</a></li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <strong>Key Links:</strong><br>
+                Live Demo: <a href="https://pixlosopher.github.io/philang/">https://pixlosopher.github.io/philang/</a><br>
+                GitHub: <a href="https://github.com/pixlosopher/philang">https://github.com/pixlosopher/philang</a>
+            </div>
+        </div>
+
+        <!-- SCREENSHOTS -->
+        <div class="section" id="screenshots">
+            <h2>1. Screenshots & Visuals</h2>
+            <p class="section-subtitle">Use these images for social media and blog posts</p>
+
+            <h3>Landing Page / Hero</h3>
+            <img src="https://pixlosopher.github.io/philang/assets/screenshot-hero.png" alt="PhiLang Landing Page" class="screenshot"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div style="display:none; background: #1a1a2e; color: white; padding: 40px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 80px; background: linear-gradient(180deg, #f0ede6, #c9a227); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">φ</div>
+                <div style="font-size: 32px; letter-spacing: 0.1em; margin: 16px 0;">PHILANG</div>
+                <div style="color: #888; font-style: italic;">A Philosophical Programming Language</div>
+                <div style="margin-top: 24px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 8px; display: inline-block;">
+                    <span style="color: #10b981;">emptiness</span>
+                    <span style="color: #888;">⊗</span>
+                    <span style="color: #38bdf8;">dep-orig</span>
+                    <span style="color: #888;">→</span>
+                    <span style="color: #a78bfa;">¬</span><span style="color: #c9a227;">substance</span>
+                </div>
+            </div>
+            <p class="screenshot-caption">The PhiLang landing page with the signature φ symbol and expression showcase</p>
+
+            <h3>Derivation Graph</h3>
+            <img src="https://pixlosopher.github.io/philang/assets/screenshot-derivation.png" alt="Derivation Graph" class="screenshot"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div style="display:none; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 40px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 20px;">🔮 Derivation Graph</div>
+                <p style="color: #888;">Force-directed visualization with 150+ philosophical concepts from 10 traditions</p>
+                <div style="display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                    <span style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #6366f1; display: flex; align-items: center; justify-content: center;">Σ</span>
+                    <span style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #10b981; display: flex; align-items: center; justify-content: center;">śū</span>
+                    <span style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #c9a227; display: flex; align-items: center; justify-content: center;">Ω</span>
+                    <span style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ec4899; display: flex; align-items: center; justify-content: center;">⦿</span>
+                </div>
+            </div>
+            <p class="screenshot-caption">Force-directed graph showing concept relationships and semantic affinity</p>
+
+            <h3>Dialectical Dialogue</h3>
+            <img src="https://pixlosopher.github.io/philang/assets/screenshot-dialogue.png" alt="Dialectical Dialogue" class="screenshot"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div style="display:none; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 40px; border-radius: 12px;">
+                <div style="font-size: 24px; margin-bottom: 20px; text-align: center;">⚔️ Dialectical Dialogue</div>
+                <p style="color: #888; text-align: center; margin-bottom: 24px;">10 philosophical traditions debating fundamental questions</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                    <div style="background: rgba(99,102,241,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #6366f1;">Phenomenology</div>
+                    <div style="background: rgba(16,185,129,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #10b981;">Buddhism</div>
+                    <div style="background: rgba(201,162,39,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #c9a227;">Hegelianism</div>
+                    <div style="background: rgba(236,72,153,0.2); padding: 12px; border-radius: 8px; border-left: 3px solid #ec4899;">Poststructuralism</div>
+                </div>
+            </div>
+            <p class="screenshot-caption">Select traditions and watch them debate philosophical questions</p>
+
+            <h4>Image Guidelines</h4>
+            <ul>
+                <li>Screenshots work best at 1200x800 or 16:9 aspect ratio</li>
+                <li>The dark theme is visually striking—use it for social media</li>
+                <li>Crop to focus on key UI elements when needed</li>
+            </ul>
+        </div>
+
+        <!-- HACKER NEWS -->
+        <div class="section" id="hackernews">
+            <h2>2. Hacker News Post</h2>
+            <p class="section-subtitle">For Show HN submission</p>
+
+            <h4>Title Options (choose one)</h4>
+            <div class="post-box">
+                <div class="post-box-title">Option A (Recommended)</div>
+                <div class="post-content">
+                    Show HN: PhiLang – A programming language for philosophical concepts
+                </div>
+            </div>
+
+            <div class="post-box">
+                <div class="post-box-title">Option B</div>
+                <div class="post-content">
+                    Show HN: I built a tool to visualize and derive philosophical concepts with AI
+                </div>
+            </div>
+
+            <div class="post-box">
+                <div class="post-box-title">Option C</div>
+                <div class="post-content">
+                    Show HN: PhiLang – Compute with philosophy like you compute with numbers
+                </div>
+            </div>
+
+            <h4>Post Body</h4>
+            <div class="post-box">
+                <div class="post-box-meta">Copy this text for your HN submission</div>
+                <div class="post-content">
+Hey HN,
+
+I built PhiLang, an experimental "programming language" for philosophical concepts. The idea started as a thought experiment: what if we could express philosophical relationships with formal syntax?
+
+<strong>Live demo:</strong> https://pixlosopher.github.io/philang/
+<strong>GitHub:</strong> https://github.com/pixlosopher/philang
+
+For example, this expression:
+
+    emptiness ⊗ dep-orig → ¬substance
+
+reads as "Emptiness synthesized with dependent origination derives the negation of substance" — a key insight from Madhyamaka Buddhism.
+
+<strong>Features:</strong>
+• <strong>Derivation Graph:</strong> D3.js force-directed visualization where concepts cluster by semantic affinity
+• <strong>Dialectical Dialogue:</strong> AI-powered debates between philosophical traditions (Phenomenology vs Buddhism, Hegel vs Deleuze, etc.)
+• <strong>Socratic Counsel:</strong> Philosophical therapy sessions using different methods
+• <strong>Semantic Embeddings:</strong> Train skip-gram embeddings on philosophical concepts, visualize with PCA/t-SNE
+
+The AI integration uses Claude, which does surprisingly good philosophical reasoning. The prompts give it context about each tradition's key concepts and argumentative style, so you get debates that feel genuine rather than generic.
+
+Tech stack: Vanilla JS, D3.js, Tailwind, Claude API. No framework dependencies—the whole thing runs client-side from GitHub Pages.
+
+I'm especially interested in feedback on:
+1. The concept ontology—are key ideas from each tradition well-represented?
+2. The derivation mechanics—does the syntax feel intuitive?
+3. Educational potential—could this help teach philosophy?
+
+Happy to answer any questions about the implementation or philosophical choices.
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <strong>💡 HN Tips:</strong><br>
+                • Post on a weekday, ideally 11am-12pm EST<br>
+                • Engage quickly with early comments<br>
+                • Be ready to answer technical questions
+            </div>
+        </div>
+
+        <!-- TWITTER -->
+        <div class="section" id="twitter">
+            <h2>3. Twitter/X Threads</h2>
+            <p class="section-subtitle">Three ready-to-post thread variations</p>
+
+            <h3>Thread A: Main Launch Thread</h3>
+            <p>General introduction for broad audience</p>
+
+            <div class="thread">
+                <div class="tweet">
+                    <div class="tweet-number">1/7</div>
+                    🧵 I built a programming language for philosophy.
+
+It sounds absurd, but hear me out.
+
+PhiLang lets you write things like:
+
+    emptiness ⊗ dep-orig → ¬substance
+
+"Emptiness synthesized with dependent origination derives the negation of substance"
+
+Here's what it does 👇
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">2/7</div>
+                    <strong>The Derivation Graph</strong>
+
+Drag philosophical concepts from 10 traditions onto a force-directed canvas.
+
+Watch them cluster by semantic affinity—Buddhist concepts naturally attract each other, but also pull toward Process Philosophy.
+
+Derive new insights by combining ideas.
+
+[Add screenshot of derivation graph]
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">3/7</div>
+                    <strong>Dialectical Dialogue</strong>
+
+Ever wonder how Hegel would respond to Derrida?
+
+PhiLang simulates debates between philosophical traditions, powered by Claude AI.
+
+Pick 2-4 traditions, choose a topic like "What is the nature of time?" and watch them argue.
+
+[Add screenshot of dialogue]
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">4/7</div>
+                    <strong>Socratic Counsel</strong>
+
+Philosophy as therapy.
+
+Engage in:
+• Socratic dialogue
+• Stoic counsel
+• Buddhist mindful inquiry
+• Existential confrontation
+• Phenomenological exploration
+
+The AI adapts its method to help you examine your thinking.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">5/7</div>
+                    <strong>Why build this?</strong>
+
+Philosophy has formal structures—syllogisms, dialectics, phenomenological reductions.
+
+I wanted to make them interactive and computable.
+
+Not to reduce philosophy to algorithms, but to explore it in new ways.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">6/7</div>
+                    <strong>Try it yourself:</strong>
+
+🔗 https://pixlosopher.github.io/philang/
+
+It's free, runs in your browser, and works without an API key (though Claude makes it way better).
+
+Built with: D3.js, vanilla JS, Claude API
+
+Would love your feedback! What traditions should I add?
+                </div>
+            </div>
+
+            <hr>
+
+            <h3>Thread B: Technical Deep Dive</h3>
+            <p>For developer audience</p>
+
+            <div class="thread">
+                <div class="tweet">
+                    <div class="tweet-number">1/6</div>
+                    🧵 How do you build a "programming language" for philosophy?
+
+A technical thread on PhiLang's architecture.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">2/6</div>
+                    <strong>The Concept Ontology</strong>
+
+Each philosophical tradition has:
+• Core concepts (with symbols)
+• Semantic tags for affinity
+• Typical argument patterns
+• Key thinkers
+
+This creates a graph structure where edges = philosophical relationships.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">3/6</div>
+                    <strong>The Grammar</strong>
+
+Operators borrowed from logic + phenomenology:
+
+→ Derivation
+⊗ Synthesis
+¬ Negation
+⟨ ⟩ Epoché (phenomenological bracket)
+∘ Composition
+↺ Recursion
+
+These map loosely to logical operations but preserve philosophical meaning.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">4/6</div>
+                    <strong>Force-Directed Visualization</strong>
+
+D3.js simulates magnetic forces between concepts.
+
+Affinity = attractive force
+Difference = repulsive force
+
+Result: concepts self-organize into meaningful clusters.
+
+Derivations create visible edges between nodes.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">5/6</div>
+                    <strong>Stack</strong>
+
+• Vanilla JS (no framework)
+• D3.js for viz
+• Tailwind for styling
+• IndexedDB for persistence
+• Claude API for reasoning
+
+Everything runs client-side. ~40KB of JS total.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">6/6</div>
+                    GitHub: https://github.com/pixlosopher/philang
+Demo: https://pixlosopher.github.io/philang/
+
+Would love contributions, especially:
+• New philosophical traditions
+• Better AI prompts
+• Visualization improvements
+                </div>
+            </div>
+
+            <hr>
+
+            <h3>Thread C: Philosophy-Focused</h3>
+            <p>For philosophy Twitter</p>
+
+            <div class="thread">
+                <div class="tweet">
+                    <div class="tweet-number">1/6</div>
+                    🧵 What if philosophical traditions could actually debate each other?
+
+Not cherry-picked quotes. Real-time dialectical exchange.
+
+I built a tool that does this. It's called PhiLang.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">2/6</div>
+                    <strong>10 Traditions, One Arena</strong>
+
+• Phenomenology (Husserl, Merleau-Ponty)
+• Buddhism (Nāgārjuna, Candrakīrti)
+• Hegelianism (Hegel, Žižek)
+• Poststructuralism (Deleuze, Derrida)
+• Process Philosophy (Whitehead)
+• Spinozism
+• Early & Late Wittgenstein
+• Kantian, Aristotelian, Platonic
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">3/6</div>
+                    <strong>Example: Buddhism vs Hegelianism on "self"</strong>
+
+Buddhist: "The self is empty (śūnyatā). What you call 'self' is merely dependent origination—a temporary confluence of conditions."
+
+Hegelian: "But this emptiness is precisely the negative moment through which Spirit recognizes itself..."
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">4/6</div>
+                    The debates reveal real tensions:
+
+• Buddhism's non-self vs Phenomenology's transcendental ego
+• Deleuze's difference vs Hegel's dialectical negation
+• Wittgenstein's language-games vs Husserl's essences
+
+These aren't new—but seeing them argued in real-time is illuminating.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">5/6</div>
+                    It's also a learning tool.
+
+Don't understand Aufhebung? Watch it get deployed in an argument.
+
+Confused by différance? See how Derrida would respond to Aristotle on substance.
+
+Philosophy through debate, not just reading.
+                </div>
+
+                <div class="tweet">
+                    <div class="tweet-number">6/6</div>
+                    Try it: https://pixlosopher.github.io/philang/dialectical_dialogue.html
+
+Pick traditions. Choose a question. Watch them argue.
+
+What topics would you want to see debated?
+                </div>
+            </div>
+        </div>
+
+        <!-- REDDIT -->
+        <div class="section" id="reddit">
+            <h2>4. Reddit Posts</h2>
+            <p class="section-subtitle">Tailored posts for different subreddits</p>
+
+            <h3>r/philosophy</h3>
+            <div class="post-box">
+                <div class="post-box-title">I built an interactive tool for exploring philosophical concepts across traditions - would love feedback from this community</div>
+                <div class="post-box-meta">Subreddit: r/philosophy • Flair: Discussion</div>
+                <div class="post-content">
+Hi r/philosophy,
+
+I've been working on a project called PhiLang that tries to make philosophical concepts more interactive and explorable. It's essentially a "philosophical programming language" with visualization tools.
+
+<strong>What it does:</strong>
+
+1. <strong>Derivation Graph</strong> - A visual canvas where you can drag concepts from different traditions and see how they relate. The force-directed layout clusters concepts by semantic affinity.
+
+2. <strong>Dialectical Dialogue</strong> - AI-simulated debates between philosophical traditions. You pick 2-4 traditions (Phenomenology, Buddhism, Hegelianism, Poststructuralism, etc.) and a topic, then watch them argue.
+
+3. <strong>Socratic Counsel</strong> - Philosophical therapy using different methods (Socratic questioning, Stoic counsel, Buddhist mindful inquiry, existential confrontation).
+
+<strong>The concept ontology includes:</strong>
+• Phenomenology (Husserl, Merleau-Ponty)
+• Buddhism (Nāgārjuna, Madhyamaka)
+• Hegelianism (with Žižek influences)
+• Process Philosophy (Whitehead)
+• Poststructuralism (Deleuze, Derrida)
+• Spinozism
+• Both early and late Wittgenstein
+• Plus Kantian, Aristotelian, and Platonic traditions
+
+<strong>Link:</strong> https://pixlosopher.github.io/philang/
+
+<strong>I'm particularly interested in feedback on:</strong>
+
+1. Are the core concepts from each tradition well-chosen? I'm sure I've missed important ones.
+2. The AI debates—do they feel philosophically genuine or like surface-level pastiche?
+3. Educational value—could this help teach philosophical concepts?
+4. What traditions should I add? I've been considering Confucianism, Daoism, African philosophy, and Indian schools beyond Buddhism.
+
+This is a passion project, not an academic tool, but I'd love input from people who actually study philosophy.
+                </div>
+            </div>
+
+            <h3>r/programming</h3>
+            <div class="post-box">
+                <div class="post-box-title">Show r/programming: PhiLang - A domain-specific language for philosophical concepts with D3.js visualization</div>
+                <div class="post-box-meta">Subreddit: r/programming • Flair: Show r/programming</div>
+                <div class="post-content">
+I built an unusual DSL that lets you express philosophical relationships using a formal syntax.
+
+<strong>Live demo:</strong> https://pixlosopher.github.io/philang/
+<strong>GitHub:</strong> https://github.com/pixlosopher/philang
+
+<strong>The syntax looks like:</strong>
+
+    emptiness ⊗ dep-orig → ¬substance
+
+Which reads as: "Emptiness synthesized with dependent origination derives the negation of substance"
+
+<strong>Operators:</strong>
+• → Derivation
+• ⊗ Synthesis
+• ¬ Negation
+• ⟨ ⟩ Epoché (phenomenological bracketing)
+• ∘ Composition
+• ↺ Recursion
+
+<strong>Technical highlights:</strong>
+1. Force-directed graph using D3.js where concepts cluster by semantic affinity
+2. AI integration with Claude for generating philosophical dialogues
+3. Skip-gram embeddings trained on philosophical concepts
+4. Zero framework dependencies - vanilla JS, D3, and Tailwind
+5. Client-side only - everything runs in the browser
+
+<strong>Stack:</strong> Vanilla JavaScript (~40KB), D3.js, Tailwind CSS, IndexedDB, Claude API (Anthropic)
+
+Would love feedback on the codebase or suggestions for improvement.
+                </div>
+            </div>
+
+            <h3>r/ClaudeAI</h3>
+            <div class="post-box">
+                <div class="post-box-title">Built a philosophical reasoning tool with Claude - the results are surprisingly good</div>
+                <div class="post-box-meta">Subreddit: r/ClaudeAI</div>
+                <div class="post-content">
+I've been experimenting with Claude for philosophical reasoning and built a tool called PhiLang that demonstrates what's possible.
+
+<strong>Demo:</strong> https://pixlosopher.github.io/philang/
+
+<strong>The most interesting feature: Dialectical Dialogue</strong>
+
+You pick 2-4 philosophical traditions (Buddhism, Phenomenology, Hegelianism, Poststructuralism, etc.) and a topic. Claude then simulates a debate between them.
+
+<strong>What surprised me:</strong>
+
+Claude actually engages with the core concepts of each tradition rather than just generating generic philosophy-sounding text. When "playing" a Hegelian, it properly uses dialectical structure. When arguing as a Buddhist, it genuinely engages with emptiness and dependent origination.
+
+<strong>The prompt structure:</strong>
+
+Each tradition has:
+• Core concepts with definitions
+• Key thinkers to channel
+• Typical argumentative moves
+
+<strong>Example output:</strong>
+
+Topic: "What is consciousness?"
+
+<em>Phenomenologist:</em> "Consciousness is always consciousness-of-something. The intentional structure reveals that subjectivity is not a container but a directedness toward the world..."
+
+<em>Buddhist:</em> "This intentional structure you describe still posits a substantial self that 'has' experiences. But when we examine consciousness, we find only the flow of dependent arising..."
+
+Curious if others have explored Claude for philosophical reasoning. What prompting strategies have worked for you?
+                </div>
+            </div>
+        </div>
+
+        <!-- DEV.TO -->
+        <div class="section" id="devto">
+            <h2>5. Dev.to Article</h2>
+            <p class="section-subtitle">Technical blog post for developer community</p>
+
+            <div class="post-box">
+                <div class="post-box-title">Building a Programming Language for Philosophy: A Technical Journey</div>
+                <div class="post-box-meta">Platform: Dev.to • Tags: javascript, ai, philosophy, d3js, webdev</div>
+                <div class="post-content" style="font-size: 14px;">
+<strong># Building a Programming Language for Philosophy</strong>
+
+What happens when you try to apply programming language concepts to philosophy? I spent several months finding out, and the result is PhiLang—an experimental system for exploring philosophical concepts through code.
+
+<strong>## The Weird Idea</strong>
+
+Philosophy has always had formal structures. Aristotle gave us syllogisms. Kant had his categories. Hegel developed dialectics. Husserl created phenomenological reduction.
+
+These aren't just rhetorical devices—they're *operations* on concepts. So what if we made them explicit and computable?
+
+<strong>## The Grammar</strong>
+
+PhiLang uses a simple syntax inspired by mathematical logic and phenomenology:
+
+    emptiness ⊗ dep-orig → ¬substance
+
+This reads: "Emptiness synthesized with dependent origination derives the negation of substance."
+
+| Symbol | Name | Meaning |
+|--------|------|---------|
+| → | Derivation | A leads to B |
+| ⊗ | Synthesis | A combined with B |
+| ¬ | Negation | Dialectical negation |
+| ⟨ ⟩ | Epoché | Phenomenological bracketing |
+
+<strong>## The Concept Ontology</strong>
+
+Every programming language needs primitives. PhiLang's primitives are philosophical concepts from 10 traditions:
+
+```javascript
+const traditions = {
+  phenomenology: {
+    concepts: ['self', 'other', 'horizon', 'flesh'],
+    thinkers: ['Husserl', 'Merleau-Ponty'],
+    color: '#6366f1'
+  },
+  buddhism: {
+    concepts: ['emptiness', 'dependent-origination'],
+    thinkers: ['Nāgārjuna'],
+    color: '#10b981'
+  }
+};
+```
+
+<strong>## Visualization with D3.js</strong>
+
+The Derivation Graph uses D3's force simulation to create a living map of philosophical space. Concepts cluster by semantic affinity.
+
+<strong>## AI Integration</strong>
+
+The most interesting part: getting Claude to argue philosophically. The trick is giving Claude the *structure* of each tradition's argumentation style.
+
+<strong>## Try It</strong>
+
+Live Demo: https://pixlosopher.github.io/philang/
+GitHub: https://github.com/pixlosopher/philang
+
+---
+
+*"The limits of my language mean the limits of my world." — Wittgenstein*
+
+*So let's expand the language.*
+                </div>
+            </div>
+        </div>
+
+        <!-- PHILOSOPHY FORUMS -->
+        <div class="section" id="philosophy">
+            <h2>6. Philosophy Forum Post</h2>
+            <p class="section-subtitle">For academic philosophy communities</p>
+
+            <div class="post-box">
+                <div class="post-box-title">Experimental Tool for Cross-Traditional Philosophical Dialogue - Seeking Feedback</div>
+                <div class="post-box-meta">Appropriate for: Philosophy Forums, PhilPapers discussions, academic listservs</div>
+                <div class="post-content">
+Hello,
+
+I've created an experimental tool called PhiLang that I'd like to share with this community. It's an attempt to make philosophical concepts more interactive and to facilitate dialogue between different traditions.
+
+<strong>What PhiLang Does:</strong>
+
+1. <strong>Concept Mapping</strong>: A visual space where concepts from different traditions can be placed and connected. The visualization groups concepts by philosophical affinity.
+
+2. <strong>Cross-Traditional Dialogue</strong>: Using AI, the tool can simulate debates between philosophical traditions on fundamental questions.
+
+3. <strong>Socratic Sessions</strong>: Philosophical therapy using different methods—Socratic questioning, Stoic counsel, Buddhist inquiry.
+
+<strong>Traditions Currently Included:</strong>
+Phenomenology, Buddhism (Madhyamaka), Hegelianism, Poststructuralism, Process Philosophy, Spinozism, Early/Late Wittgenstein, Kantian, Aristotelian, Platonic
+
+<strong>Link:</strong> https://pixlosopher.github.io/philang/
+
+<strong>Questions for the Community:</strong>
+
+1. For each tradition, I've selected core concepts. Are there glaring omissions?
+
+2. Do the AI-generated debates capture genuine philosophical reasoning or just mimic philosophical language?
+
+3. The tool suggests affinities between traditions (e.g., Buddhist emptiness and Hegelian negation). Are these connections philosophically defensible?
+
+4. What traditions should be added? I'm considering Daoism, Confucianism, and various Indian schools.
+
+I'm not a professional philosopher—this is a passion project. I'd genuinely appreciate critical feedback.
+                </div>
+            </div>
+        </div>
+
+        <!-- TAGLINES -->
+        <div class="section" id="taglines">
+            <h2>7. Taglines & Short Copy</h2>
+            <p class="section-subtitle">Quick phrases for bios, descriptions, and CTAs</p>
+
+            <h3>One-Liners</h3>
+            <div class="post-box">
+                <div class="post-content">
+• "A programming language for the examined life."
+• "Compute with concepts. Derive insights."
+• "Where Hegel meets D3.js."
+• "Philosophy, but make it executable."
+• "Bridging formal systems and philosophical discourse."
+• "What if ideas had syntax?"
+• "The unexamined code is not worth running."
+                </div>
+            </div>
+
+            <h3>Elevator Pitch (30 seconds)</h3>
+            <div class="post-box">
+                <div class="post-content">
+"PhiLang is a tool for exploring philosophy interactively. You can visualize how concepts from different traditions relate to each other, simulate debates between philosophers, and even get Socratic counsel from an AI. It's like a playground for philosophical ideas—you can combine Buddhist emptiness with Hegelian dialectics and see what emerges."
+                </div>
+            </div>
+
+            <h3>For Tech Contexts</h3>
+            <div class="post-box">
+                <div class="post-content">
+"PhiLang is a DSL for philosophical concepts with D3.js visualization and Claude AI integration. It's a zero-dependency web app that runs entirely client-side, featuring force-directed graphs, skip-gram embeddings, and multi-turn dialogue generation."
+                </div>
+            </div>
+
+            <h3>For Academic Contexts</h3>
+            <div class="post-box">
+                <div class="post-content">
+"PhiLang is an experimental digital humanities project exploring computational approaches to philosophical discourse. It provides a formal grammar for expressing inter-traditional relationships and uses AI to generate dialogues that respect the argumentative structures of different philosophical schools."
+                </div>
+            </div>
+
+            <h3>Call-to-Action Variants</h3>
+            <div class="post-box">
+                <div class="post-content">
+• "Try PhiLang → pixlosopher.github.io/philang"
+• "Explore the demo →"
+• "Start your philosophical journey"
+• "Derive something new"
+• "Question everything (interactively)"
+                </div>
+            </div>
+        </div>
+
+        <!-- HASHTAGS -->
+        <div class="section" id="hashtags">
+            <h2>8. Hashtags & Keywords</h2>
+            <p class="section-subtitle">For discoverability across platforms</p>
+
+            <h3>Primary Hashtags</h3>
+            <p>
+                <span class="tag">#philosophy</span>
+                <span class="tag">#opensource</span>
+                <span class="tag">#webdev</span>
+                <span class="tag">#ai</span>
+                <span class="tag">#d3js</span>
+                <span class="tag">#javascript</span>
+            </p>
+
+            <h3>Secondary Hashtags</h3>
+            <p>
+                <span class="tag">#digitalhumanities</span>
+                <span class="tag">#phenomenology</span>
+                <span class="tag">#buddhism</span>
+                <span class="tag">#hegel</span>
+                <span class="tag">#visualization</span>
+                <span class="tag">#edtech</span>
+                <span class="tag">#claude</span>
+                <span class="tag">#anthropic</span>
+            </p>
+
+            <h3>SEO Keywords</h3>
+            <div class="post-box">
+                <div class="post-content">
+philosophical programming language, philosophy visualization tool, AI philosophy debate, cross-traditional philosophy, interactive philosophy, concept mapping, dialectical dialogue, Socratic AI, phenomenology tool, Buddhist philosophy app, Hegelian dialectics software, philosophy education technology
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="section" style="background: #f8f9fa; text-align: center;">
+            <h2>Ready to Launch! 🚀</h2>
+            <p style="margin-bottom: 30px;">All materials are ready to copy and use.</p>
+
+            <div class="expression">
+                <span class="green">emptiness</span>
+                <span class="gray"> ⊗ </span>
+                <span class="blue">dep-orig</span>
+                <span class="gray"> → </span>
+                <span class="purple">¬</span><span class="gold">substance</span>
+            </div>
+
+            <p style="margin-top: 30px; color: #666;">
+                <strong>Live Demo:</strong> <a href="https://pixlosopher.github.io/philang/">pixlosopher.github.io/philang</a><br>
+                <strong>GitHub:</strong> <a href="https://github.com/pixlosopher/philang">github.com/pixlosopher/philang</a>
+            </p>
+
+            <p style="margin-top: 40px; font-style: italic; color: #888;">
+                "The unexamined life is not worth living." — Socrates
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>
