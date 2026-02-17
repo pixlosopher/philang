@@ -1023,6 +1023,172 @@
         .derivation-item:hover .delete-derivation {
             opacity: 1;
         }
+
+        /* ═══════════════════════════════════════════════════════════════
+           P ≠ NP GUIDED DEMO OVERLAY
+           ═══════════════════════════════════════════════════════════════ */
+        #pnp-demo-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            pointer-events: none;
+        }
+        #pnp-demo-panel {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            width: 360px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(10, 10, 12, 0.97) 0%, rgba(15, 14, 19, 0.97) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            pointer-events: all;
+            z-index: 201;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(34, 211, 238, 0.1);
+            backdrop-filter: blur(16px);
+            animation: demoSlideIn 0.5s ease-out;
+        }
+        @keyframes demoSlideIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        #pnp-demo-panel .demo-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            color: #22d3ee;
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
+        }
+        #pnp-demo-panel .demo-subtitle {
+            font-size: 0.8rem;
+            color: #9992a8;
+            margin-bottom: 16px;
+            font-style: italic;
+        }
+        #pnp-demo-panel .demo-step {
+            background: rgba(34, 211, 238, 0.05);
+            border: 1px solid rgba(34, 211, 238, 0.15);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+            transition: all 0.4s ease;
+            opacity: 0.4;
+        }
+        #pnp-demo-panel .demo-step.active {
+            opacity: 1;
+            border-color: rgba(34, 211, 238, 0.5);
+            background: rgba(34, 211, 238, 0.1);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.08);
+        }
+        #pnp-demo-panel .demo-step.done {
+            opacity: 0.7;
+            border-color: rgba(34, 211, 238, 0.1);
+        }
+        #pnp-demo-panel .demo-step.done .step-check {
+            color: #22d3ee;
+        }
+        .demo-step .step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .demo-step .step-number {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(34, 211, 238, 0.2);
+            color: #22d3ee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .demo-step .step-label {
+            color: #d4d0e0;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .demo-step .step-desc {
+            color: #9992a8;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            margin-left: 30px;
+        }
+        .demo-step .step-expression {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: #22d3ee;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 8px 0 0 30px;
+            display: inline-block;
+        }
+        #pnp-demo-panel .demo-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(34, 211, 238, 0.1) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 8px;
+            color: #22d3ee;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Crimson Pro', Georgia, serif;
+        }
+        #pnp-demo-panel .demo-btn:hover {
+            background: rgba(34, 211, 238, 0.25);
+            border-color: rgba(34, 211, 238, 0.5);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+        }
+        #pnp-demo-panel .demo-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            color: #9992a8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+        #pnp-demo-panel .demo-close:hover { color: #d4d0e0; }
+        #pnp-demo-panel .demo-conclusion {
+            margin-top: 14px;
+            padding: 14px;
+            background: rgba(34, 211, 238, 0.08);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 10px;
+            display: none;
+        }
+        #pnp-demo-panel .demo-conclusion h4 {
+            color: #22d3ee;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+        }
+        #pnp-demo-panel .demo-conclusion p {
+            color: #9992a8;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+            #pnp-demo-panel {
+                width: calc(100% - 20px);
+                right: 10px;
+                top: auto;
+                bottom: 10px;
+                max-height: 50vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -3240,6 +3406,9 @@ window.addEventListener('load', () => {
         checkAPIAvailability();
     });
 
+    // Check for demo mode (e.g. ?demo=pnp)
+    checkForDemo();
+
     // Initialize keyboard shortcuts
     if (typeof PhiLangShortcuts !== 'undefined') {
         PhiLangShortcuts.init([
@@ -3269,6 +3438,182 @@ window.addEventListener('resize', () => {
         simulation.alpha(0.3).restart();
     }, 100);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// P ≠ NP GUIDED DEMO
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PNP_DEMO_STEPS = [
+    {
+        label: 'The Solver as Concrescence',
+        desc: 'The Solver undergoes genuine creative process—each step is a prehension of the problem\'s structure, synthesizing a novel solution.',
+        conceptIds: ['solver'],
+        expression: '⊢ (Solver) — creative advance'
+    },
+    {
+        label: 'The Verifier as Eternal Object',
+        desc: 'The Verifier checks a witness against fixed, abstract criteria. It merely confirms ingression—no novelty is required.',
+        conceptIds: ['verifier'],
+        expression: '✓ (Verifier) — polynomial check'
+    },
+    {
+        label: 'Solver ⊥ Verifier → Prehensive Gap',
+        desc: 'Selecting Solver and Verifier together reveals the Prehensive Gap: creation and verification are ontologically asymmetric.',
+        conceptIds: ['solver', 'verifier'],
+        derive: true,
+        expression: '⊢ ⊥ ✓ → ⊗ₚ'
+    },
+    {
+        label: '3-SAT Grounds NP-Completeness',
+        desc: '3-SAT is the archetypal NP-complete problem—its satisfiability defines the boundary of tractable verification.',
+        conceptIds: ['three-sat'],
+        expression: 'SAT → 𝐍𝐏 (completeness)'
+    },
+    {
+        label: 'Prehensive Gap → P ≠ NP',
+        desc: 'The irreducible gap between creative solution-finding and mechanical checking grounds the separation: P cannot equal NP because concrescence cannot be reduced to verification.',
+        conceptIds: ['prehensive-gap'],
+        derive: true,
+        expression: '⊗ₚ → 𝐏 ⊥ 𝐍𝐏'
+    }
+];
+
+let demoCurrentStep = 0;
+let demoActive = false;
+
+function initPNPDemo() {
+    demoActive = true;
+    demoCurrentStep = 0;
+
+    // Filter to COMPLEXITY tradition
+    state.activeTradition = 'COMPLEXITY';
+    updateTraditionTabs();
+    renderConceptList();
+
+    // Create demo overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'pnp-demo-overlay';
+    overlay.innerHTML = `
+        <div id="pnp-demo-panel">
+            <button class="demo-close" id="demo-close-btn" title="Close demo">&times;</button>
+            <div class="demo-title">⊛ P ≠ NP Explorer</div>
+            <div class="demo-subtitle">A Whiteheadian Process Argument</div>
+            ${PNP_DEMO_STEPS.map((step, i) => `
+                <div class="demo-step ${i === 0 ? 'active' : ''}" data-step="${i}">
+                    <div class="step-header">
+                        <div class="step-number"><span class="step-check">${i + 1}</span></div>
+                        <div class="step-label">${step.label}</div>
+                    </div>
+                    <div class="step-desc">${step.desc}</div>
+                    <div class="step-expression">${step.expression}</div>
+                </div>
+            `).join('')}
+            <div class="demo-conclusion" id="demo-conclusion">
+                <h4>∴ P ≠ NP (Process-Ontological)</h4>
+                <p>The Solver's concrescence—its creative becoming—is irreducible to the Verifier's polynomial checking.
+                The Prehensive Gap between them is not an epistemic limitation but an ontological structure:
+                novelty cannot be mechanically derived from settled fact.</p>
+                <p style="margin-top: 8px; color: #22d3ee; font-style: italic; font-size: 0.75rem;">
+                    This is a philosophical exploration, not a mathematical proof.
+                    It reframes P vs NP as a question about the nature of creative process.</p>
+            </div>
+            <button class="demo-btn" id="demo-next-btn">Next Step →</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Wire up buttons
+    document.getElementById('demo-next-btn').addEventListener('click', advanceDemoStep);
+    document.getElementById('demo-close-btn').addEventListener('click', closePNPDemo);
+
+    // Execute first step
+    executeDemoStep(0);
+}
+
+function executeDemoStep(stepIndex) {
+    const step = PNP_DEMO_STEPS[stepIndex];
+    if (!step) return;
+
+    // Clear previous selection
+    state.selectedConcepts = [];
+
+    // Select the concepts for this step
+    step.conceptIds.forEach(id => {
+        const concept = CONCEPTS.find(c => c.id === id);
+        if (concept) {
+            state.selectedConcepts.push(concept);
+        }
+    });
+
+    // Update UI
+    updateSelectionPanel();
+    updateNodeSelection();
+    updateApplicableRules();
+    updateGraph();
+
+    // Restart simulation to animate magnetic attraction
+    if (simulation) {
+        simulation.alpha(0.8).restart();
+    }
+
+    // If this step triggers a derivation, do it after a brief pause
+    if (step.derive && state.selectedConcepts.length > 0) {
+        setTimeout(() => {
+            attemptDerivation();
+        }, 800);
+    }
+
+    // Update step indicators in the panel
+    document.querySelectorAll('#pnp-demo-panel .demo-step').forEach((el, i) => {
+        el.classList.remove('active', 'done');
+        if (i < stepIndex) el.classList.add('done');
+        else if (i === stepIndex) el.classList.add('active');
+    });
+}
+
+function advanceDemoStep() {
+    demoCurrentStep++;
+    if (demoCurrentStep >= PNP_DEMO_STEPS.length) {
+        // Demo complete — show conclusion
+        const btn = document.getElementById('demo-next-btn');
+        btn.textContent = 'Explore Freely →';
+        btn.removeEventListener('click', advanceDemoStep);
+        btn.addEventListener('click', closePNPDemo);
+
+        document.getElementById('demo-conclusion').style.display = 'block';
+
+        // Mark last step done
+        document.querySelectorAll('#pnp-demo-panel .demo-step').forEach(el => {
+            el.classList.remove('active');
+            el.classList.add('done');
+        });
+
+        showNotification('Demo complete! Explore the Complexity tradition freely.', 'success');
+        return;
+    }
+
+    executeDemoStep(demoCurrentStep);
+}
+
+function closePNPDemo() {
+    demoActive = false;
+    const overlay = document.getElementById('pnp-demo-overlay');
+    if (overlay) overlay.remove();
+
+    // Keep COMPLEXITY tradition selected so they can explore
+    state.activeTradition = 'COMPLEXITY';
+    updateTraditionTabs();
+    renderConceptList();
+}
+
+// Check for demo parameter on load
+function checkForDemo() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('demo') === 'pnp') {
+        // Small delay to let the graph initialize fully
+        setTimeout(() => initPNPDemo(), 1200);
+    }
+}
     </script>
 </body>
 </html>
