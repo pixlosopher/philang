@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P ≠ NP — A Process-Ontological Argument | PhiLang</title>
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:title" content="P ≠ NP: A Process-Ontological Argument">
+    <meta property="og:description" content="Reframing the Millennium Problem through Whitehead's Process Philosophy. A PhiLang exploration.">
+    <meta property="og:type" content="article">
+    <meta name="description" content="A Whiteheadian process-ontological reframing of the P vs NP problem through PhiLang's philosophical grammar.">
+
+    <!-- Security -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://d3js.org https://unpkg.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://api.anthropic.com;
+        img-src 'self' data: blob:;
+        frame-ancestors 'none';
+    ">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="philang_config.js"></script>
+    <script src="philang_security.js"></script>
+    <script src="philang_toast.js"></script>
+    <script src="philang_ui.js"></script>
+
+    <style>
+        :root {
+            --void: #0a0a0c;
+            --abyss: #0f0e13;
+            --obsidian: #16141c;
+            --smoke: #1e1b27;
+            --ash: #2a2636;
+            --stone: #3d3750;
+            --silver: #9992a8;
+            --pearl: #d4d0e0;
+            --bone: #f0ede6;
+            --gold: #c9a227;
+            --amber: #e8b923;
+            --flame: #f4c430;
+            --ember: #8b6914;
+            --cyan: #22d3ee;
+            --cyan-deep: #0e7490;
+            --cyan-glow: #67e8f9;
+            --indigo-glow: #6366f1;
+            --violet-mist: #8b5cf6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--void);
+            color: var(--pearl);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        /* Grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+        .font-body { font-family: 'Crimson Pro', Georgia, serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* ═══════════════════════════════════════
+           LUMINOUS BAR
+           ═══════════════════════════════════════ */
+        .luminous-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan-deep) 20%, var(--cyan) 50%, var(--cyan-deep) 80%, transparent);
+            z-index: 10001;
+            box-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(34, 211, 238, 0.3);
+        }
+
+        /* ═══════════════════════════════════════
+           NAVIGATION
+           ═══════════════════════════════════════ */
+        .nav-link {
+            position: relative;
+            color: var(--silver);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            letter-spacing: 0.05em;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 0; height: 1px;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover { color: var(--bone); }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link.active { color: var(--cyan); }
+        .nav-link.active::after { width: 100%; background: var(--cyan); }
+
+        /* ═══════════════════════════════════════
+           ANIMATIONS
+           ═══════════════════════════════════════ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes expandLine {
+            from { transform: scaleX(0); opacity: 0; }
+            to { transform: scaleX(1); opacity: 1; }
+        }
+        @keyframes glyphFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-8px) rotate(2deg); }
+            66% { transform: translateY(4px) rotate(-1deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { filter: drop-shadow(0 0 30px rgba(34, 211, 238, 0.3)); }
+            50% { filter: drop-shadow(0 0 60px rgba(34, 211, 238, 0.6)); }
+        }
+        @keyframes scanline {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(100vh); }
+        }
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .anim-fade-up { animation: fadeUp 0.9s ease-out forwards; opacity: 0; }
+        .anim-fade-in { animation: fadeIn 1s ease-out forwards; opacity: 0; }
+        .d1 { animation-delay: 0.1s; }
+        .d2 { animation-delay: 0.2s; }
+        .d3 { animation-delay: 0.3s; }
+        .d4 { animation-delay: 0.4s; }
+        .d5 { animation-delay: 0.5s; }
+        .d6 { animation-delay: 0.6s; }
+        .d7 { animation-delay: 0.7s; }
+        .d8 { animation-delay: 0.8s; }
+        .d10 { animation-delay: 1s; }
+        .d12 { animation-delay: 1.2s; }
+
+        /* ═══════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+            background:
+                radial-gradient(ellipse 70% 50% at 50% 30%, rgba(34, 211, 238, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 20% 80%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 30% at 80% 70%, rgba(34, 211, 238, 0.03) 0%, transparent 40%),
+                linear-gradient(180deg, var(--void) 0%, var(--abyss) 40%, var(--obsidian) 80%, var(--void) 100%);
+        }
+
+        .hero-glyph {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(80px, 15vw, 140px);
+            font-weight: 300;
+            line-height: 1;
+            background: linear-gradient(180deg, var(--cyan-glow) 0%, var(--cyan) 40%, var(--cyan-deep) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulseGlow 4s ease-in-out infinite, glyphFloat 8s ease-in-out infinite;
+        }
+
+        .hero-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 300;
+            letter-spacing: 0.08em;
+            color: var(--bone);
+            line-height: 1.2;
+        }
+
+        .hero-title em {
+            font-style: normal;
+            color: var(--cyan);
+        }
+
+        .hero-divider {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            margin: 2rem auto;
+            animation: expandLine 1.2s ease-out 0.6s forwards;
+            transform: scaleX(0);
+        }
+
+        .hero-subtitle {
+            color: var(--silver);
+            font-style: italic;
+            font-weight: 300;
+            font-size: 1.15rem;
+            letter-spacing: 0.04em;
+            max-width: 600px;
+        }
+
+        .hero-meta {
+            margin-top: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--stone);
+        }
+
+        .hero-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--stone);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            animation: fadeIn 1s ease-out 2s forwards;
+            opacity: 0;
+        }
+
+        .hero-scroll::after {
+            content: '↓';
+            font-size: 1.2rem;
+            animation: glyphFloat 2s ease-in-out infinite;
+        }
+
+        /* ═══════════════════════════════════════
+           STEP SECTIONS
+           ═══════════════════════════════════════ */
+        .step-section {
+            position: relative;
+            padding: 6rem 2rem;
+            border-top: 1px solid rgba(34, 211, 238, 0.08);
+        }
+
+        .step-section:nth-child(even) {
+            background: linear-gradient(180deg, rgba(34, 211, 238, 0.015) 0%, transparent 100%);
+        }
+
+        .step-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            background: rgba(34, 211, 238, 0.08);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+            flex-shrink: 0;
+        }
+
+        .step-tradition {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--cyan);
+            opacity: 0.7;
+        }
+
+        .step-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+            font-weight: 400;
+            color: var(--bone);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+            letter-spacing: 0.02em;
+        }
+
+        .step-expression {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--cyan);
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(34, 211, 238, 0.03) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            margin-bottom: 2rem;
+            letter-spacing: 0.03em;
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.05);
+        }
+
+        .step-body p {
+            color: var(--pearl);
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+        }
+
+        .step-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-body strong {
+            color: var(--bone);
+            font-weight: 500;
+        }
+
+        .step-body em {
+            color: var(--cyan-glow);
+            font-style: italic;
+        }
+
+        .step-concept-card {
+            margin-top: 2.5rem;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.06) 0%, rgba(15, 14, 19, 0.9) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.15);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            transition: all 0.5s ease;
+        }
+
+        .step-concept-card:hover {
+            border-color: rgba(34, 211, 238, 0.35);
+            box-shadow: 0 0 40px rgba(34, 211, 238, 0.08);
+        }
+
+        .concept-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            color: var(--cyan);
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(34, 211, 238, 0.08);
+            border-radius: 50%;
+            border: 1px solid rgba(34, 211, 238, 0.2);
+        }
+
+        .concept-meta h4 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.2rem;
+            color: var(--bone);
+            margin-bottom: 0.25rem;
+        }
+
+        .concept-meta p {
+            color: var(--silver);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .concept-meta .concept-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .concept-tag {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 100px;
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.15);
+            color: var(--cyan);
+            letter-spacing: 0.03em;
+        }
+
+        /* ═══════════════════════════════════════
+           DERIVATION ARROW (between steps 2→3 and 4→5)
+           ═══════════════════════════════════════ */
+        .derivation-bridge {
+            text-align: center;
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        .derivation-bridge::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.3), transparent);
+        }
+
+        .derivation-bridge .bridge-symbol {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--abyss);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            color: var(--cyan);
+            font-size: 1.2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ═══════════════════════════════════════
+           CONCLUSION
+           ═══════════════════════════════════════ */
+        .conclusion-section {
+            padding: 6rem 2rem;
+            text-align: center;
+            background:
+                radial-gradient(ellipse 60% 40% at 50% 50%, rgba(34, 211, 238, 0.05) 0%, transparent 60%),
+                linear-gradient(180deg, transparent 0%, rgba(34, 211, 238, 0.01) 50%, transparent 100%);
+        }
+
+        .conclusion-box {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 3rem;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.06) 0%, rgba(10, 10, 12, 0.95) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.25);
+            border-radius: 20px;
+            box-shadow:
+                0 0 60px rgba(34, 211, 238, 0.08),
+                0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .conclusion-symbol {
+            font-size: 1.5rem;
+            color: var(--cyan);
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .conclusion-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 400;
+            color: var(--bone);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.04em;
+        }
+
+        .conclusion-body {
+            color: var(--pearl);
+            font-size: 1.05rem;
+            max-width: 560px;
+            margin: 0 auto 2rem;
+        }
+
+        .disclaimer {
+            font-size: 0.85rem;
+            color: var(--stone);
+            font-style: italic;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(34, 211, 238, 0.1);
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════
+           CONCEPT MAP (SVG diagram)
+           ═══════════════════════════════════════ */
+        .concept-map-section {
+            padding: 5rem 2rem;
+            border-top: 1px solid rgba(34, 211, 238, 0.08);
+        }
+
+        .concept-map {
+            max-width: 700px;
+            margin: 2rem auto 0;
+        }
+
+        .concept-map svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .concept-map svg text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .concept-map svg .node-label {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 13px;
+            fill: var(--pearl);
+        }
+
+        .concept-map svg .node-symbol {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            fill: var(--cyan);
+        }
+
+        .concept-map svg .edge {
+            stroke: rgba(34, 211, 238, 0.2);
+            stroke-width: 1;
+            fill: none;
+        }
+
+        .concept-map svg .edge-strong {
+            stroke: rgba(34, 211, 238, 0.4);
+            stroke-width: 1.5;
+            stroke-dasharray: 6 3;
+        }
+
+        .concept-map svg .node-circle {
+            fill: rgba(34, 211, 238, 0.08);
+            stroke: rgba(34, 211, 238, 0.3);
+            stroke-width: 1;
+        }
+
+        .concept-map svg .node-circle-gap {
+            fill: rgba(34, 211, 238, 0.12);
+            stroke: var(--cyan);
+            stroke-width: 1.5;
+        }
+
+        /* ═══════════════════════════════════════
+           ACTION BAR
+           ═══════════════════════════════════════ */
+        .action-bar {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-cyan {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--cyan-deep) 0%, rgba(34, 211, 238, 0.3) 100%);
+            color: var(--bone);
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-cyan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(34, 211, 238, 0.2);
+            border-color: var(--cyan);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: 1px solid var(--stone);
+            color: var(--silver);
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 1rem;
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--cyan);
+            color: var(--bone);
+            transform: translateY(-2px);
+        }
+
+        /* ═══════════════════════════════════════
+           SHARE TOAST
+           ═══════════════════════════════════════ */
+        .share-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(34, 211, 238, 0.15);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            color: var(--cyan-glow);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .share-toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ═══════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════ */
+        .page-footer {
+            border-top: 1px solid rgba(61, 55, 80, 0.3);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--silver);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--cyan);
+        }
+
+        /* ═══════════════════════════════════════
+           SCROLL REVEAL
+           ═══════════════════════════════════════ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ═══════════════════════════════════════
+           READING PROGRESS BAR
+           ═══════════════════════════════════════ */
+        .reading-progress {
+            position: fixed;
+            top: 2px;
+            left: 0;
+            height: 2px;
+            background: var(--cyan);
+            z-index: 10002;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        /* ═══════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .hero { padding: 5rem 1.5rem 3rem; min-height: 90vh; }
+            .hero-glyph { font-size: 70px; }
+            .step-section { padding: 4rem 1.5rem; }
+            .step-concept-card { flex-direction: column; text-align: center; gap: 1rem; }
+            .conclusion-box { padding: 2rem; }
+            .hero-scroll { display: none; }
+            .hero-meta { flex-direction: column; gap: 0.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .hero-glyph { font-size: 56px; }
+            .step-expression { font-size: 0.9rem; padding: 0.6rem 1rem; }
+            .concept-symbol { width: 60px; height: 60px; font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Luminous bar (cyan for complexity) -->
+    <div class="luminous-bar"></div>
+
+    <!-- Reading progress -->
+    <div class="reading-progress" id="reading-progress" style="width: 0%;"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-[2px] left-0 right-0 z-[1000] bg-[var(--abyss)]/85 backdrop-blur-xl border-b border-[var(--stone)]/30">
+        <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3">
+            <div class="flex items-center gap-8">
+                <a href="index.html" class="flex items-center gap-3 group no-underline">
+                    <span class="font-display text-3xl text-[var(--gold)] group-hover:drop-shadow-[0_0_10px_rgba(201,162,39,0.5)] transition-all">φ</span>
+                    <span class="font-display text-lg tracking-widest text-[var(--pearl)] hidden sm:inline">PHILANG</span>
+                </a>
+                <div class="hidden md:flex items-center gap-6 text-sm">
+                    <a href="derivation_graph.html" class="nav-link">Derivation</a>
+                    <a href="dialectical_dialogue.html" class="nav-link">Dialogue</a>
+                    <a href="socratic_counsel.html" class="nav-link">Counsel</a>
+                    <a href="p-vs-np.html" class="nav-link active">P ≠ NP</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="share-btn" class="btn-ghost text-sm py-2 px-4 hidden sm:flex" style="font-size: 0.85rem;">
+                    <span>⎘</span> Share
+                </button>
+                <button id="mobile-menu-btn" class="md:hidden flex flex-col gap-1.5 p-2" aria-label="Open navigation">
+                    <span class="block w-6 h-0.5 bg-[var(--pearl)]"></span>
+                    <span class="block w-6 h-0.5 bg-[var(--pearl)]"></span>
+                    <span class="block w-6 h-0.5 bg-[var(--pearl)]"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Navigation -->
+    <nav id="mobile-nav" class="fixed inset-0 bg-[var(--void)]/95 backdrop-blur-lg z-[1050] hidden md:hidden" role="navigation">
+        <div class="flex flex-col items-center justify-center h-full gap-8">
+            <a href="index.html" class="text-2xl font-display text-[var(--gold)] no-underline">φ PHILANG</a>
+            <a href="derivation_graph.html" class="text-xl nav-link">Derivation</a>
+            <a href="dialectical_dialogue.html" class="text-xl nav-link">Dialogue</a>
+            <a href="socratic_counsel.html" class="text-xl nav-link">Counsel</a>
+            <a href="p-vs-np.html" class="text-xl nav-link active">P ≠ NP</a>
+            <button id="mobile-menu-close" class="absolute top-6 right-6 text-3xl text-[var(--pearl)]">&times;</button>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════════════════════════
+         HERO
+         ═══════════════════════════════════════ -->
+    <header class="hero">
+        <div class="anim-fade-up d2">
+            <span class="hero-glyph">⊛</span>
+        </div>
+
+        <h1 class="hero-title anim-fade-up d3">
+            <em>P ≠ NP</em>
+        </h1>
+
+        <div class="hero-divider"></div>
+
+        <p class="hero-subtitle anim-fade-up d5">
+            A Process-Ontological Argument<br>
+            Reframing the Millennium Problem through Whitehead
+        </p>
+
+        <div class="hero-meta anim-fade-in d8">
+            <span>⊛ Computational Complexity</span>
+            <span>⦿ Process Philosophy</span>
+            <span>φ PhiLang</span>
+        </div>
+
+        <div class="hero-scroll">Begin</div>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         PREAMBLE
+         ═══════════════════════════════════════ -->
+    <section class="step-section" style="border-top: none;">
+        <div class="step-inner reveal">
+            <p class="text-[var(--silver)] text-lg leading-relaxed italic" style="max-width: 640px; margin: 0 auto; text-align: center;">
+                The P versus NP problem asks whether every problem whose solution can be
+                <strong class="text-[var(--bone)]">quickly verified</strong> can also be
+                <strong class="text-[var(--bone)]">quickly solved</strong>.
+                We propose that the answer is <em style="color: var(--cyan);">no</em> &mdash;
+                and that Whitehead's process philosophy reveals why.
+            </p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         STEP 1: The Solver as Concrescence
+         ═══════════════════════════════════════ -->
+    <section class="step-section" id="step-1">
+        <div class="step-inner reveal">
+            <div class="step-badge">
+                <div class="step-number">01</div>
+                <span class="step-tradition">Process Ontology</span>
+            </div>
+
+            <h2 class="step-title">The Solver as Concrescence</h2>
+
+            <div class="step-expression">⊢ (Solver) &mdash; creative advance</div>
+
+            <div class="step-body">
+                <p>
+                    In Whitehead's metaphysics, <strong>concrescence</strong> is the process by which
+                    an actual entity comes into being &mdash; a creative advance into novelty. Each moment
+                    of becoming involves <em>prehension</em>: the grasping and integration of data from the entire
+                    settled world into something genuinely new.
+                </p>
+                <p>
+                    An algorithmic solver searching for a satisfying assignment to a Boolean formula
+                    undergoes an analogous process. Each step is not mere mechanical iteration but a
+                    <strong>creative synthesis</strong> &mdash; the solver prehends the problem's constraint
+                    structure, feels its way through the landscape of partial assignments, and must
+                    produce something that did not exist before: a solution.
+                </p>
+                <p>
+                    The solver's search is <em>temporal in the deepest sense</em>. It cannot skip ahead
+                    to the answer because the answer must be constructed through a process of becoming.
+                    The creative advance is irreducible &mdash; it cannot be compressed to a single moment
+                    of recognition.
+                </p>
+            </div>
+
+            <div class="step-concept-card">
+                <div class="concept-symbol">⊢</div>
+                <div class="concept-meta">
+                    <h4>Solver</h4>
+                    <p>Creative process of solution-finding. Each step is a prehension of the problem's structure, synthesizing novelty.</p>
+                    <div class="concept-tags">
+                        <span class="concept-tag">algorithm</span>
+                        <span class="concept-tag">search</span>
+                        <span class="concept-tag">construction</span>
+                        <span class="concept-tag">creativity</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="derivation-bridge reveal"><div class="bridge-symbol">↓</div></div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 2: The Verifier as Eternal Object
+         ═══════════════════════════════════════ -->
+    <section class="step-section" id="step-2">
+        <div class="step-inner reveal">
+            <div class="step-badge">
+                <div class="step-number">02</div>
+                <span class="step-tradition">Process Ontology</span>
+            </div>
+
+            <h2 class="step-title">The Verifier as Eternal Object</h2>
+
+            <div class="step-expression">✓ (Verifier) &mdash; polynomial check</div>
+
+            <div class="step-body">
+                <p>
+                    Whitehead distinguishes <strong>eternal objects</strong> from actual entities.
+                    Eternal objects are pure potentials &mdash; abstract forms that can <em>ingress</em>
+                    into the process of becoming but do not themselves undergo becoming. They are timeless
+                    patterns, structures that constrain without creating.
+                </p>
+                <p>
+                    A polynomial-time verifier operates in precisely this mode. Given a candidate
+                    solution (a <em>witness</em>), the verifier merely checks whether the witness
+                    satisfies the fixed, abstract criteria of the formula. It performs no creative
+                    search. It produces no novelty. It simply confirms or denies <strong>ingression</strong>
+                    &mdash; whether the abstract pattern is realized in the concrete candidate.
+                </p>
+                <p>
+                    Verification is <em>recognition</em>, not <em>creation</em>. It operates in the
+                    realm of settled fact, applying eternal structure to given data. This is why it
+                    can be done efficiently: no genuine becoming is required.
+                </p>
+            </div>
+
+            <div class="step-concept-card">
+                <div class="concept-symbol">✓</div>
+                <div class="concept-meta">
+                    <h4>Verifier</h4>
+                    <p>Polynomial-time witness checking. Confirms ingression of abstract form into concrete data &mdash; no novelty required.</p>
+                    <div class="concept-tags">
+                        <span class="concept-tag">check</span>
+                        <span class="concept-tag">certificate</span>
+                        <span class="concept-tag">polynomial</span>
+                        <span class="concept-tag">validation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="derivation-bridge reveal"><div class="bridge-symbol">⟹</div></div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 3: The Prehensive Gap
+         ═══════════════════════════════════════ -->
+    <section class="step-section" id="step-3">
+        <div class="step-inner reveal">
+            <div class="step-badge">
+                <div class="step-number">03</div>
+                <span class="step-tradition">Derivation</span>
+            </div>
+
+            <h2 class="step-title">Solver ⊥ Verifier &rarr; Prehensive Gap</h2>
+
+            <div class="step-expression">⊢ ⊥ ✓ &rarr; ⊗ₚ</div>
+
+            <div class="step-body">
+                <p>
+                    When we place Solver and Verifier side by side, a fundamental asymmetry emerges.
+                    The solver must undergo <em>genuine becoming</em> &mdash; concrescence, creative advance,
+                    temporal unfolding. The verifier need only perform <em>recognition</em> &mdash; the
+                    timeless checking of pattern against data.
+                </p>
+                <p>
+                    This asymmetry is what we call the <strong>Prehensive Gap</strong>: the irreducible
+                    ontological difference between creation and verification. It is not merely that we
+                    lack a clever algorithm to bridge the gap. The gap is <em>structural</em>. It belongs
+                    to the nature of process itself.
+                </p>
+                <p>
+                    Whitehead's category of <strong>creativity</strong> &mdash; "the many become one and
+                    are increased by one" &mdash; describes what the solver must achieve and what the
+                    verifier never needs to. Creativity is the ultimate principle behind every act of
+                    concrescence. It cannot be reduced to the repetition of eternal patterns.
+                </p>
+            </div>
+
+            <div class="step-concept-card" style="border-color: rgba(34, 211, 238, 0.35); box-shadow: 0 0 40px rgba(34, 211, 238, 0.1);">
+                <div class="concept-symbol" style="border-color: var(--cyan); background: rgba(34, 211, 238, 0.12);">⊗ₚ</div>
+                <div class="concept-meta">
+                    <h4>Prehensive Gap</h4>
+                    <p>The irreducible asymmetry between creation and verification. An ontological structure, not an epistemic limitation.</p>
+                    <div class="concept-tags">
+                        <span class="concept-tag">asymmetry</span>
+                        <span class="concept-tag">irreducibility</span>
+                        <span class="concept-tag">process</span>
+                        <span class="concept-tag">ontological</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="derivation-bridge reveal"><div class="bridge-symbol">↓</div></div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 4: 3-SAT
+         ═══════════════════════════════════════ -->
+    <section class="step-section" id="step-4">
+        <div class="step-inner reveal">
+            <div class="step-badge">
+                <div class="step-number">04</div>
+                <span class="step-tradition">Complexity Theory</span>
+            </div>
+
+            <h2 class="step-title">3-SAT Grounds NP-Completeness</h2>
+
+            <div class="step-expression">SAT &rarr; 𝐍𝐏 (completeness)</div>
+
+            <div class="step-body">
+                <p>
+                    The <strong>Cook-Levin theorem</strong> (1971) established that 3-SAT &mdash; the
+                    problem of determining whether a Boolean formula in conjunctive normal form with
+                    at most three literals per clause can be satisfied &mdash; is <em>NP-complete</em>.
+                    Every problem in NP can be reduced to it in polynomial time.
+                </p>
+                <p>
+                    3-SAT thus serves as the <strong>archetype</strong> of computational difficulty within
+                    NP. If any problem in NP requires super-polynomial time to solve, 3-SAT does. It is
+                    the boundary marker, the place where the question "can verification power equal
+                    creation power?" is most sharply posed.
+                </p>
+                <p>
+                    In PhiLang's terms, 3-SAT is the <em>concrete particular</em> that instantiates
+                    the abstract question. The clauses of a 3-SAT instance are the constraints that the
+                    solver must prehend; the satisfying assignment (if it exists) is what must be
+                    brought into being through concrescence.
+                </p>
+            </div>
+
+            <div class="step-concept-card">
+                <div class="concept-symbol" style="font-size: 1.8rem;">SAT</div>
+                <div class="concept-meta">
+                    <h4>3-SAT</h4>
+                    <p>Boolean satisfiability &mdash; NP-complete archetype. The concrete problem where the Prehensive Gap is most visible.</p>
+                    <div class="concept-tags">
+                        <span class="concept-tag">boolean</span>
+                        <span class="concept-tag">clauses</span>
+                        <span class="concept-tag">NP-complete</span>
+                        <span class="concept-tag">Cook-Levin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="derivation-bridge reveal"><div class="bridge-symbol">⟹</div></div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 5: P ≠ NP
+         ═══════════════════════════════════════ -->
+    <section class="step-section" id="step-5">
+        <div class="step-inner reveal">
+            <div class="step-badge">
+                <div class="step-number">05</div>
+                <span class="step-tradition">Conclusion</span>
+            </div>
+
+            <h2 class="step-title">Prehensive Gap &rarr; P ≠ NP</h2>
+
+            <div class="step-expression">⊗ₚ &rarr; 𝐏 ⊥ 𝐍𝐏</div>
+
+            <div class="step-body">
+                <p>
+                    If the Prehensive Gap is ontologically real &mdash; if the asymmetry between
+                    creative process and pattern-recognition is a <em>structural feature of reality</em>
+                    rather than a contingent limitation of current algorithms &mdash; then P cannot equal NP.
+                </p>
+                <p>
+                    The class <strong>P</strong> contains problems solvable in polynomial time: problems
+                    where the solver's concrescence can be completed efficiently. The class <strong>NP</strong>
+                    contains problems whose solutions can be <em>verified</em> in polynomial time &mdash;
+                    but whose creation may require the full temporal unfolding of creative advance.
+                </p>
+                <p>
+                    To assert P = NP would be to claim that <em>every act of creation can be replaced
+                    by an act of recognition</em> &mdash; that concrescence is reducible to the ingression
+                    of eternal objects. But Whitehead's entire philosophy stands against this reduction.
+                    Creativity is the <strong>ultimate category</strong>: it cannot be derived from anything
+                    more fundamental. The many genuinely <em>become</em> one. This becoming cannot be
+                    short-circuited.
+                </p>
+            </div>
+
+            <div class="step-concept-card" style="border-color: rgba(34, 211, 238, 0.4); box-shadow: 0 0 50px rgba(34, 211, 238, 0.12);">
+                <div class="concept-symbol" style="font-size: 1.6rem; border-color: var(--cyan); background: rgba(34, 211, 238, 0.15);">𝐏⊥𝐍𝐏</div>
+                <div class="concept-meta">
+                    <h4>P ≠ NP</h4>
+                    <p>The irreducible gap between creation and verification implies that deterministic polynomial time cannot encompass nondeterministic polynomial time.</p>
+                    <div class="concept-tags">
+                        <span class="concept-tag">millennium problem</span>
+                        <span class="concept-tag">process</span>
+                        <span class="concept-tag">ontological</span>
+                        <span class="concept-tag">irreducibility</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         CONCLUSION
+         ═══════════════════════════════════════ -->
+    <section class="conclusion-section" id="conclusion">
+        <div class="reveal">
+            <div class="conclusion-box">
+                <div class="conclusion-symbol font-mono">∴</div>
+
+                <h2 class="conclusion-title">
+                    P ≠ NP<br>
+                    <span style="font-size: 0.6em; color: var(--silver); font-style: italic;">(Process-Ontological)</span>
+                </h2>
+
+                <p class="conclusion-body">
+                    The Solver's concrescence &mdash; its creative becoming &mdash; is irreducible
+                    to the Verifier's polynomial checking. The Prehensive Gap between them is not an
+                    epistemic limitation but an ontological structure: <strong style="color: var(--cyan);">novelty
+                    cannot be mechanically derived from settled fact.</strong>
+                </p>
+
+                <p class="disclaimer">
+                    This is a philosophical exploration, not a mathematical proof.
+                    It reframes P vs NP as a question about the nature of creative process &mdash;
+                    offering an ontological reason to believe the conjecture is true, without claiming
+                    to satisfy the formal requirements of the Clay Mathematics Institute.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         CONCEPT MAP
+         ═══════════════════════════════════════ -->
+    <section class="concept-map-section">
+        <div class="reveal" style="text-align: center;">
+            <h3 class="font-display text-2xl text-[var(--bone)] tracking-wider mb-2">Concept Map</h3>
+            <p class="text-[var(--silver)] text-sm mb-6">The derivation structure of the argument</p>
+
+            <div class="concept-map">
+                <svg viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Edges -->
+                    <line x1="150" y1="80" x2="450" y2="80" class="edge" />
+                    <line x1="150" y1="80" x2="300" y2="200" class="edge-strong" />
+                    <line x1="450" y1="80" x2="300" y2="200" class="edge-strong" />
+                    <line x1="300" y1="200" x2="300" y2="320" class="edge-strong" />
+                    <line x1="150" y1="320" x2="300" y2="200" class="edge" />
+                    <line x1="150" y1="320" x2="300" y2="320" class="edge" />
+                    <line x1="300" y1="320" x2="450" y2="320" class="edge-strong" />
+
+                    <!-- Solver node -->
+                    <circle cx="150" cy="80" r="36" class="node-circle" />
+                    <text x="150" y="76" text-anchor="middle" class="node-symbol">⊢</text>
+                    <text x="150" y="96" text-anchor="middle" class="node-label">Solver</text>
+
+                    <!-- Verifier node -->
+                    <circle cx="450" cy="80" r="36" class="node-circle" />
+                    <text x="450" y="76" text-anchor="middle" class="node-symbol">✓</text>
+                    <text x="450" y="96" text-anchor="middle" class="node-label">Verifier</text>
+
+                    <!-- Prehensive Gap (center, larger) -->
+                    <circle cx="300" cy="200" r="42" class="node-circle-gap" />
+                    <text x="300" y="195" text-anchor="middle" class="node-symbol" style="font-size: 20px;">⊗ₚ</text>
+                    <text x="300" y="218" text-anchor="middle" class="node-label" style="font-size: 11px;">Prehensive Gap</text>
+
+                    <!-- 3-SAT node -->
+                    <circle cx="150" cy="320" r="32" class="node-circle" />
+                    <text x="150" y="316" text-anchor="middle" class="node-symbol" style="font-size: 14px;">SAT</text>
+                    <text x="150" y="336" text-anchor="middle" class="node-label">3-SAT</text>
+
+                    <!-- P ≠ NP node -->
+                    <circle cx="300" cy="320" r="32" class="node-circle" />
+                    <text x="300" y="316" text-anchor="middle" class="node-symbol" style="font-size: 14px;">𝐏</text>
+                    <text x="300" y="336" text-anchor="middle" class="node-label">P</text>
+
+                    <!-- NP node -->
+                    <circle cx="450" cy="320" r="32" class="node-circle" />
+                    <text x="450" y="316" text-anchor="middle" class="node-symbol" style="font-size: 14px;">𝐍𝐏</text>
+                    <text x="450" y="336" text-anchor="middle" class="node-label">NP</text>
+
+                    <!-- ⊥ symbol between P and NP -->
+                    <text x="375" y="310" text-anchor="middle" style="font-family: 'JetBrains Mono', monospace; font-size: 16px; fill: #22d3ee;">⊥</text>
+
+                    <!-- Arrow labels -->
+                    <text x="300" y="58" text-anchor="middle" style="font-family: 'Crimson Pro', serif; font-size: 10px; fill: #9992a8; letter-spacing: 0.1em;">ASYMMETRY</text>
+                    <text x="210" y="155" text-anchor="middle" style="font-family: 'Crimson Pro', serif; font-size: 10px; fill: #9992a8; transform: rotate(-35deg); transform-origin: 210px 155px;">concrescence</text>
+                    <text x="390" y="155" text-anchor="middle" style="font-family: 'Crimson Pro', serif; font-size: 10px; fill: #9992a8; transform: rotate(35deg); transform-origin: 390px 155px;">ingression</text>
+                    <text x="310" y="268" text-anchor="middle" style="font-family: 'Crimson Pro', serif; font-size: 10px; fill: #22d3ee; letter-spacing: 0.1em;">GROUNDS</text>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         ACTION BAR
+         ═══════════════════════════════════════ -->
+    <section class="action-bar" id="actions">
+        <div class="reveal">
+            <h3 class="font-display text-xl text-[var(--bone)] tracking-wider mb-6">Explore Further</h3>
+            <div class="action-buttons">
+                <a href="derivation_graph.html?demo=pnp" class="btn-cyan">
+                    <span>⟹</span> Replay in Derivation Graph
+                </a>
+                <button id="share-btn-bottom" class="btn-ghost">
+                    <span>⎘</span> Copy Link
+                </button>
+                <a href="dialectical_dialogue.html" class="btn-ghost">
+                    <span>⚔</span> Debate This
+                </a>
+            </div>
+            <p class="text-[var(--stone)] text-sm mt-4">
+                The Complexity tradition is available in all PhiLang modules
+            </p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         FOOTER
+         ═══════════════════════════════════════ -->
+    <footer class="page-footer">
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="derivation_graph.html">Derivation</a>
+            <a href="dialectical_dialogue.html">Dialogue</a>
+            <a href="socratic_counsel.html">Counsel</a>
+            <a href="philang_embeddings.html">Embeddings</a>
+        </div>
+        <p class="font-display text-[var(--silver)] tracking-wider text-sm">
+            PhiLang &mdash; Bridging formal systems and philosophical discourse
+        </p>
+        <p class="mt-2 text-xs text-[var(--stone)]">
+            Built with care for the examined life
+        </p>
+    </footer>
+
+    <!-- Share toast -->
+    <div class="share-toast" id="share-toast">Link copied to clipboard</div>
+
+    <script>
+        // ═══════════════════════════════════════
+        // SCROLL REVEAL
+        // ═══════════════════════════════════════
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // ═══════════════════════════════════════
+        // READING PROGRESS
+        // ═══════════════════════════════════════
+        const progressBar = document.getElementById('reading-progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+            progressBar.style.width = progress + '%';
+        });
+
+        // ═══════════════════════════════════════
+        // SHARE
+        // ═══════════════════════════════════════
+        function shareLink() {
+            const url = window.location.href.split('?')[0].split('#')[0];
+            navigator.clipboard.writeText(url).then(() => {
+                const toast = document.getElementById('share-toast');
+                toast.classList.add('visible');
+                setTimeout(() => toast.classList.remove('visible'), 2500);
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = window.location.href;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                const toast = document.getElementById('share-toast');
+                toast.classList.add('visible');
+                setTimeout(() => toast.classList.remove('visible'), 2500);
+            });
+        }
+
+        document.getElementById('share-btn')?.addEventListener('click', shareLink);
+        document.getElementById('share-btn-bottom')?.addEventListener('click', shareLink);
+
+        // ═══════════════════════════════════════
+        // MOBILE MENU
+        // ═══════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof PhiLangUI !== 'undefined') {
+                PhiLangUI.initMobileMenu({
+                    menuBtnId: 'mobile-menu-btn',
+                    navId: 'mobile-nav',
+                    closeBtnId: 'mobile-menu-close'
+                });
+            } else {
+                // Fallback mobile menu
+                const btn = document.getElementById('mobile-menu-btn');
+                const nav = document.getElementById('mobile-nav');
+                const close = document.getElementById('mobile-menu-close');
+                if (btn && nav) {
+                    btn.addEventListener('click', () => nav.classList.toggle('hidden'));
+                    close?.addEventListener('click', () => nav.classList.add('hidden'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
