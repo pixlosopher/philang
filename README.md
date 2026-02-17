@@ -46,7 +46,7 @@ Train neural embeddings on PhiLang concepts. Explore 32D/64D vector spaces with 
 
 ## Philosophical Traditions
 
-PhiLang includes 150+ concepts from 10+ major philosophical traditions:
+PhiLang includes 150+ concepts from 14 philosophical traditions:
 
 | Tradition | Key Concepts | Thinkers |
 |-----------|--------------|----------|
@@ -61,6 +61,7 @@ PhiLang includes 150+ concepts from 10+ major philosophical traditions:
 | **Kantian** | Categories, Transcendental Unity, Thing-in-itself | Kant |
 | **Aristotelian** | Substance, Essence, Four Causes, Eudaimonia | Aristotle |
 | **Platonic** | Forms, Participation, Allegory of the Cave | Plato |
+| **Computational Complexity** | P, NP, 3-SAT, Solver, Verifier, Prehensive Gap | Whitehead, Cook, Turing |
 
 ---
 

@@ -117,6 +117,14 @@ const PhiLangOntology = (function() {
             shortName: 'Hera',
             icon: '🔥',
             thinkers: ['Heraclitus', 'Nietzsche', 'Deleuze']
+        },
+        COMPLEXITY: {
+            id: 'COMPLEXITY',
+            name: 'Computational Complexity',
+            color: '#22d3ee',
+            shortName: 'Comp',
+            icon: '⊛',
+            thinkers: ['Whitehead', 'Cook', 'Turing', 'Gödel']
         }
     };
 
@@ -575,6 +583,40 @@ const PhiLangOntology = (function() {
             id: 'thunderbolt', symbol: '⚡', name: 'Thunderbolt', tradition: 'HERACLITEANISM',
             semantics: { temporal: 0.5, unity: 0.7, presence: 0.8, subject: 0.2, activity: 0.95, transcendence: 0.6, knowledge: 0.5, becoming: 0.7 },
             features: ['lightning', 'governance', 'steering', 'zeus', 'sudden']
+        },
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Computational Complexity (Whiteheadian Process Ontology of Computation)
+        // ─────────────────────────────────────────────────────────────────────────
+        {
+            id: 'p_class', symbol: '𝐏', name: 'P (Deterministic)', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.7, unity: 0.8, presence: 0.9, subject: 0.3, activity: 0.7, transcendence: 0.1, knowledge: 0.8, becoming: 0.6 },
+            features: ['polynomial', 'deterministic', 'tractable', 'efficient', 'solvable']
+        },
+        {
+            id: 'np_class', symbol: '𝐍𝐏', name: 'NP (Nondeterministic)', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.8, unity: 0.5, presence: 0.6, subject: 0.4, activity: 0.9, transcendence: 0.5, knowledge: 0.5, becoming: 0.8 },
+            features: ['nondeterministic', 'verifiable', 'exponential', 'search', 'witness']
+        },
+        {
+            id: 'satisfiability', symbol: 'SAT', name: '3-SAT', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.6, unity: 0.4, presence: 0.7, subject: 0.3, activity: 0.8, transcendence: 0.4, knowledge: 0.6, becoming: 0.7 },
+            features: ['boolean', 'clauses', 'assignment', 'np_complete', 'cook_levin']
+        },
+        {
+            id: 'solver', symbol: '⊢', name: 'Solver', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.9, unity: 0.6, presence: 0.8, subject: 0.5, activity: 0.95, transcendence: 0.2, knowledge: 0.7, becoming: 0.9 },
+            features: ['algorithm', 'search', 'construction', 'process', 'creativity']
+        },
+        {
+            id: 'verifier', symbol: '✓', name: 'Verifier', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.5, unity: 0.7, presence: 0.9, subject: 0.3, activity: 0.6, transcendence: 0.1, knowledge: 0.9, becoming: 0.3 },
+            features: ['check', 'certificate', 'witness', 'polynomial', 'validation']
+        },
+        {
+            id: 'prehensive_gap', symbol: '⊗ₚ', name: 'Prehensive Gap', tradition: 'COMPLEXITY',
+            semantics: { temporal: 0.7, unity: 0.3, presence: 0.4, subject: 0.4, activity: 0.7, transcendence: 0.7, knowledge: 0.4, becoming: 0.8 },
+            features: ['asymmetry', 'irreducibility', 'creation_vs_verification', 'gap', 'process']
         }
     ];
 
@@ -680,7 +722,24 @@ const PhiLangOntology = (function() {
         { source: 'actuality', target: 'concrescence', weight: 0.75, type: 'resonance' },
         { source: 'logos_h', target: 'spirit', weight: 0.7, type: 'resonance' },
         { source: 'eros', target: 'conatus', weight: 0.7, type: 'resonance' },
-        { source: 'nous', target: 'intuitive_knowledge', weight: 0.8, type: 'resonance' }
+        { source: 'nous', target: 'intuitive_knowledge', weight: 0.8, type: 'resonance' },
+
+        // Complexity internal
+        { source: 'p_class', target: 'np_class', weight: 0.9, type: 'containment' },
+        { source: 'np_class', target: 'satisfiability', weight: 0.85, type: 'completeness' },
+        { source: 'solver', target: 'satisfiability', weight: 0.8, type: 'process' },
+        { source: 'verifier', target: 'satisfiability', weight: 0.85, type: 'validation' },
+        { source: 'solver', target: 'verifier', weight: 0.7, type: 'asymmetry' },
+        { source: 'prehensive_gap', target: 'solver', weight: 0.8, type: 'ground' },
+        { source: 'prehensive_gap', target: 'verifier', weight: 0.8, type: 'ground' },
+
+        // Complexity cross-tradition
+        { source: 'solver', target: 'concrescence', weight: 0.8, type: 'resonance' },
+        { source: 'verifier', target: 'eternal_object', weight: 0.7, type: 'resonance' },
+        { source: 'prehensive_gap', target: 'creativity', weight: 0.75, type: 'resonance' },
+        { source: 'satisfiability', target: 'contradiction', weight: 0.7, type: 'resonance' },
+        { source: 'np_class', target: 'potentiality', weight: 0.7, type: 'resonance' },
+        { source: 'p_class', target: 'actuality', weight: 0.7, type: 'resonance' }
     ];
 
     // ═══════════════════════════════════════════════════════════════════════════

@@ -1166,6 +1166,7 @@ const TRADITIONS = {
     PLATONISM: { name: 'Platonism', color: '#4f46e5' },
     ARISTOTELIANISM: { name: 'Aristotelianism', color: '#059669' },
     HERACLITEANISM: { name: 'Heracliteanism', color: '#dc2626' },
+    COMPLEXITY: { name: 'Computational Complexity', color: '#22d3ee' },
 };
 
 const CONCEPTS = [
@@ -1291,6 +1292,14 @@ const CONCEPTS = [
     { id: 'unity-opposites', symbol: '⊕', name: 'Unity of Opposites', tradition: 'HERACLITEANISM', description: 'Opposites are secretly one', keywords: ['opposites', 'harmony'] },
     { id: 'hidden-harmony', symbol: '⫰', name: 'Hidden Harmony', tradition: 'HERACLITEANISM', description: 'The non-apparent connection', keywords: ['harmony', 'hidden'] },
     { id: 'thunderbolt', symbol: '⚡', name: 'Thunderbolt', tradition: 'HERACLITEANISM', description: 'Lightning steers all things', keywords: ['lightning', 'governance'] },
+
+    // Computational Complexity (Whiteheadian Process Ontology of Computation)
+    { id: 'p-class', symbol: '𝐏', name: 'P', tradition: 'COMPLEXITY', description: 'Deterministic polynomial—tractable problems', keywords: ['polynomial', 'deterministic', 'tractable'] },
+    { id: 'np-class', symbol: '𝐍𝐏', name: 'NP', tradition: 'COMPLEXITY', description: 'Nondeterministic polynomial—verifiable in P-time', keywords: ['nondeterministic', 'verifiable', 'search'] },
+    { id: 'three-sat', symbol: 'SAT', name: '3-SAT', tradition: 'COMPLEXITY', description: 'Boolean satisfiability—NP-complete archetype', keywords: ['boolean', 'clauses', 'np-complete'] },
+    { id: 'solver', symbol: '⊢', name: 'Solver', tradition: 'COMPLEXITY', description: 'Creative process of solution-finding', keywords: ['algorithm', 'search', 'construction'] },
+    { id: 'verifier', symbol: '✓', name: 'Verifier', tradition: 'COMPLEXITY', description: 'Polynomial-time witness checking', keywords: ['check', 'certificate', 'validation'] },
+    { id: 'prehensive-gap', symbol: '⊗ₚ', name: 'Prehensive Gap', tradition: 'COMPLEXITY', description: 'Irreducible asymmetry between creation and verification', keywords: ['asymmetry', 'irreducibility', 'process'] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1375,6 +1384,18 @@ const INFERENCE_RULES = [
     { id: 'fire-flux', name: 'Fire → Flux', tradition: 'HERACLITEANISM', pattern: '🔥 → ≋', description: 'Fire is the element of eternal becoming', inputs: ['fire'], output: { concept: 'flux', transform: () => 'Fire is living change' }, matches: (concepts) => concepts.some(c => c.id === 'fire') },
     { id: 'unity-hidden', name: 'Unity of Opposites → Hidden Harmony', tradition: 'HERACLITEANISM', pattern: '⊕ → ⫰', description: 'The unity is a non-apparent attunement', inputs: ['unity-opposites'], output: { concept: 'hidden-harmony', transform: () => 'Unity is hidden, superior' }, matches: (concepts) => concepts.some(c => c.id === 'unity-opposites') },
 
+    // Complexity Rules (Whiteheadian Process Ontology of Computation)
+    { id: 'sat-np', name: '3-SAT → NP', tradition: 'COMPLEXITY', pattern: 'SAT → 𝐍𝐏', description: '3-SAT is the archetypal NP-complete problem', inputs: ['three-sat'], output: { concept: 'np-class', transform: () => '3-SAT defines NP-completeness' }, matches: (concepts) => concepts.some(c => c.id === 'three-sat') },
+    { id: 'solver-verifier', name: 'Solver ⊥ Verifier', tradition: 'COMPLEXITY', pattern: '⊢ ⊥ ✓', description: 'Creative search (concrescence) vs polynomial checking (eternal object)', inputs: ['solver', 'verifier'], output: { concept: 'prehensive-gap', transform: () => 'Creation ≠ Verification: Prehensive Gap' }, matches: (concepts) => concepts.some(c => c.id === 'solver') && concepts.some(c => c.id === 'verifier') },
+    { id: 'np-verifier', name: 'NP → Verifier', tradition: 'COMPLEXITY', pattern: '𝐍𝐏 → ✓', description: 'NP defined by polynomial-time verifiability', inputs: ['np-class'], output: { concept: 'verifier', transform: () => 'NP means verifiable witnesses' }, matches: (concepts) => concepts.some(c => c.id === 'np-class') },
+    { id: 'gap-pnp', name: 'Prehensive Gap → P ≠ NP', tradition: 'COMPLEXITY', pattern: '⊗ₚ → 𝐏 ⊥ 𝐍𝐏', description: 'The irreducible gap between creation and verification implies P ≠ NP', inputs: ['prehensive-gap'], output: { concept: 'p-class', transform: () => 'Process asymmetry grounds P ≠ NP' }, matches: (concepts) => concepts.some(c => c.id === 'prehensive-gap') },
+
+    // Cross-tradition resonances: Complexity
+    { id: 'solver-concrescence', name: 'Solver ≈ Concrescence', tradition: 'CROSS', pattern: '⊢ ≈ ⤳', description: 'Algorithmic search parallels Whiteheadian concrescence—creative becoming', inputs: ['solver', 'concrescence'], output: { concept: null, transform: () => 'Both: creative process yielding novelty' }, matches: (concepts) => concepts.some(c => c.id === 'solver') && concepts.some(c => c.id === 'concrescence') },
+    { id: 'verifier-eternal', name: 'Verifier ≈ Eternal Object', tradition: 'CROSS', pattern: '✓ ≈ ∞ₒ', description: 'Verification is timeless checking against abstract form', inputs: ['verifier', 'eternal-object'], output: { concept: null, transform: () => 'Both: timeless structure constraining process' }, matches: (concepts) => concepts.some(c => c.id === 'verifier') && concepts.some(c => c.id === 'eternal-object') },
+    { id: 'gap-creativity', name: 'Prehensive Gap ≈ Creativity', tradition: 'CROSS', pattern: '⊗ₚ ≈ ℂ', description: 'The computational gap reflects the irreducibility of creative advance', inputs: ['prehensive-gap', 'creativity'], output: { concept: null, transform: () => 'Irreducible novelty in both process and computation' }, matches: (concepts) => concepts.some(c => c.id === 'prehensive-gap') && concepts.some(c => c.id === 'creativity') },
+    { id: 'np-potentiality', name: 'NP ≈ Potentiality', tradition: 'CROSS', pattern: '𝐍𝐏 ≈ δύ', description: 'NP as space of potential solutions parallels Aristotelian dynamis', inputs: ['np-class', 'potentiality'], output: { concept: null, transform: () => 'Both: vast space of unrealized possibility' }, matches: (concepts) => concepts.some(c => c.id === 'np-class') && concepts.some(c => c.id === 'potentiality') },
+
     // Cross-tradition resonances with new traditions
     { id: 'form-eternal-object', name: 'Form ≈ Eternal Object', tradition: 'CROSS', pattern: '△ ≈ ∞ₒ', description: 'Platonic Forms parallel Whiteheadian eternal objects', inputs: ['form', 'eternal-object'], output: { concept: null, transform: () => 'Both are pure potentials for actualization' }, matches: (concepts) => concepts.some(c => c.id === 'form') && concepts.some(c => c.id === 'eternal-object') },
     { id: 'flux-becoming', name: 'Flux ≈ Becoming', tradition: 'CROSS', pattern: '≋ ≈ ⥁', description: 'Heraclitean flux anticipates Hegelian becoming', inputs: ['flux', 'becoming'], output: { concept: null, transform: () => 'Both affirm primacy of change' }, matches: (concepts) => concepts.some(c => c.id === 'flux') && concepts.some(c => c.id === 'becoming') },
@@ -1397,7 +1418,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.3, 'hylomorphism': 0.5, 'actuality': 0.4, 'potentiality': 0.6, 'telos': 0.3, 'eudaimonia': 0.4, 'four-causes': 0.4, 'nous': 0.2,
         // Heracliteanism
-        'flux': 0.95, 'fire': 0.9, 'strife': 0.7, 'logos-h': 0.2, 'unity-opposites': 0.3, 'hidden-harmony': 0.2, 'thunderbolt': 0.5
+        'flux': 0.95, 'fire': 0.9, 'strife': 0.7, 'logos-h': 0.2, 'unity-opposites': 0.3, 'hidden-harmony': 0.2, 'thunderbolt': 0.5,
+        // Complexity
+        'p-class': 0.7, 'np-class': 0.8, 'three-sat': 0.6, 'solver': 0.9, 'verifier': 0.5, 'prehensive-gap': 0.7
     },
     processual: { // Degree of process/becoming vs static being
         'becoming': 0.95, 'concrescence': 0.9, 'creativity': 0.85, 'aufhebung': 0.8,
@@ -1408,7 +1431,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.3, 'hylomorphism': 0.5, 'actuality': 0.5, 'potentiality': 0.7, 'telos': 0.4, 'eudaimonia': 0.4, 'four-causes': 0.4, 'nous': 0.3,
         // Heracliteanism
-        'flux': 0.99, 'fire': 0.95, 'strife': 0.85, 'logos-h': 0.5, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.7
+        'flux': 0.99, 'fire': 0.95, 'strife': 0.85, 'logos-h': 0.5, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.7,
+        // Complexity
+        'p-class': 0.6, 'np-class': 0.7, 'three-sat': 0.5, 'solver': 0.9, 'verifier': 0.3, 'prehensive-gap': 0.8
     },
     relational: { // How much the concept depends on relations
         'dep-orig': 0.95, 'prehension': 0.9, 'other': 0.85, 'flesh': 0.8,
@@ -1419,7 +1444,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.4, 'hylomorphism': 0.8, 'actuality': 0.5, 'potentiality': 0.6, 'telos': 0.6, 'eudaimonia': 0.6, 'four-causes': 0.85, 'nous': 0.4,
         // Heracliteanism
-        'flux': 0.7, 'fire': 0.6, 'strife': 0.8, 'logos-h': 0.6, 'unity-opposites': 0.95, 'hidden-harmony': 0.7, 'thunderbolt': 0.5
+        'flux': 0.7, 'fire': 0.6, 'strife': 0.8, 'logos-h': 0.6, 'unity-opposites': 0.95, 'hidden-harmony': 0.7, 'thunderbolt': 0.5,
+        // Complexity
+        'p-class': 0.4, 'np-class': 0.6, 'three-sat': 0.7, 'solver': 0.5, 'verifier': 0.8, 'prehensive-gap': 0.9
     },
     negational: { // Role of negation/absence/emptiness
         'emptiness': 0.95, 'det-neg': 0.9, 'aufhebung': 0.85, 'trace': 0.8,
@@ -1430,7 +1457,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.3, 'hylomorphism': 0.3, 'actuality': 0.2, 'potentiality': 0.5, 'telos': 0.2, 'eudaimonia': 0.2, 'four-causes': 0.3, 'nous': 0.2,
         // Heracliteanism
-        'flux': 0.5, 'fire': 0.5, 'strife': 0.7, 'logos-h': 0.3, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.4
+        'flux': 0.5, 'fire': 0.5, 'strife': 0.7, 'logos-h': 0.3, 'unity-opposites': 0.6, 'hidden-harmony': 0.4, 'thunderbolt': 0.4,
+        // Complexity
+        'p-class': 0.2, 'np-class': 0.3, 'three-sat': 0.4, 'solver': 0.3, 'verifier': 0.2, 'prehensive-gap': 0.7
     },
     disclosive: { // Truth/manifestation/showing
         'aletheia': 0.95, 'clearing': 0.9, 'shows': 0.85, 'phenomenon': 0.8,
@@ -1441,7 +1470,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.7, 'hylomorphism': 0.6, 'actuality': 0.8, 'potentiality': 0.4, 'telos': 0.6, 'eudaimonia': 0.7, 'four-causes': 0.75, 'nous': 0.9,
         // Heracliteanism
-        'flux': 0.5, 'fire': 0.6, 'strife': 0.5, 'logos-h': 0.85, 'unity-opposites': 0.7, 'hidden-harmony': 0.9, 'thunderbolt': 0.7
+        'flux': 0.5, 'fire': 0.6, 'strife': 0.5, 'logos-h': 0.85, 'unity-opposites': 0.7, 'hidden-harmony': 0.9, 'thunderbolt': 0.7,
+        // Complexity
+        'p-class': 0.8, 'np-class': 0.6, 'three-sat': 0.7, 'solver': 0.7, 'verifier': 0.85, 'prehensive-gap': 0.5
     },
     practical: { // Embeddedness in practice/life
         'lang-game': 0.95, 'use': 0.9, 'form-life': 0.9, 'rule': 0.85,
@@ -1452,7 +1483,9 @@ const SEMANTIC_DIMENSIONS = {
         // Aristotelianism
         'ousia': 0.5, 'hylomorphism': 0.5, 'actuality': 0.7, 'potentiality': 0.5, 'telos': 0.8, 'eudaimonia': 0.95, 'four-causes': 0.6, 'nous': 0.5,
         // Heracliteanism
-        'flux': 0.4, 'fire': 0.5, 'strife': 0.6, 'logos-h': 0.6, 'unity-opposites': 0.5, 'hidden-harmony': 0.4, 'thunderbolt': 0.5
+        'flux': 0.4, 'fire': 0.5, 'strife': 0.6, 'logos-h': 0.6, 'unity-opposites': 0.5, 'hidden-harmony': 0.4, 'thunderbolt': 0.5,
+        // Complexity
+        'p-class': 0.8, 'np-class': 0.6, 'three-sat': 0.7, 'solver': 0.85, 'verifier': 0.7, 'prehensive-gap': 0.4
     }
 };
 

@@ -773,18 +773,20 @@
                             </div>
                         </a>
 
-                        <!-- Grammar Reference (Coming Soon) -->
-                        <div class="module-card block opacity-50 cursor-default">
-                            <span class="module-icon text-[var(--stone)]">📜</span>
-                            <h3 class="font-display text-xl text-[var(--silver)] mb-3">Grammar Reference</h3>
-                            <p class="text-[var(--stone)] text-sm mb-4 leading-relaxed">
-                                Complete reference for PhiLang syntax: operators, concepts,
-                                derivation rules, and cross-tradition mappings.
+                        <!-- P ≠ NP Complexity Theory -->
+                        <a href="derivation_graph.html" class="module-card block animate-fade-up delay-700">
+                            <span class="module-icon text-cyan-400">⊛</span>
+                            <h3 class="font-display text-xl text-[var(--pearl)] mb-3">P ≠ NP Explorer</h3>
+                            <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
+                                Whiteheadian process ontology meets computational complexity.
+                                Explore how concrescence, prehension, and creativity
+                                illuminate the P vs NP question.
                             </p>
                             <div class="flex flex-wrap gap-2">
-                                <span class="tag bg-slate-800/30 text-slate-500">Coming Soon</span>
+                                <span class="tag bg-cyan-900/30 text-cyan-400">Complexity</span>
+                                <span class="tag bg-sky-900/30 text-sky-400">Process</span>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </section>
 
@@ -821,6 +823,9 @@
                         </span>
                         <span class="concept-pill border border-pink-500/40 bg-pink-500/10 text-pink-300">
                             <span class="mr-2 opacity-70">⌒</span> Fold
+                        </span>
+                        <span class="concept-pill border border-cyan-400/40 bg-cyan-400/10 text-cyan-300">
+                            <span class="mr-2 opacity-70">⊗ₚ</span> Prehensive Gap
                         </span>
                     </div>
                 </section>
@@ -933,8 +938,8 @@
         // Create constellation of floating symbols
         function createConstellation() {
             const constellation = document.getElementById('constellation');
-            const symbols = ['Σ', '▣', 'śū', '⦿', '⍟', '𝔇', '⌒', '→', '⊗', '¬', '∘', 'φ', 'Δ', '∅', '↺'];
-            const colors = ['#6366f1', '#8b5cf6', '#c9a227', '#10b981', '#ec4899', '#3b82f6', '#ef4444', '#06b6d4'];
+            const symbols = ['Σ', '▣', 'śū', '⦿', '⍟', '𝔇', '⌒', '→', '⊗', '¬', '∘', 'φ', 'Δ', '∅', '↺', '𝐏', '𝐍𝐏', '⊛'];
+            const colors = ['#6366f1', '#8b5cf6', '#c9a227', '#10b981', '#ec4899', '#3b82f6', '#ef4444', '#06b6d4', '#22d3ee'];
 
             for (let i = 0; i < 20; i++) {
                 const symbol = document.createElement('span');
