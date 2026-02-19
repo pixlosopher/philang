@@ -310,10 +310,13 @@
             transform: scale(1.15) rotate(-5deg);
         }
 
-        /* First card spans 2 columns on large screens */
+        /* First card spans 2 columns, last card centered on large screens */
         @media (min-width: 1024px) {
             .module-card:first-child {
                 grid-column: span 2;
+            }
+            .module-card:last-child {
+                grid-column: 2;
             }
         }
 
@@ -419,13 +422,12 @@
 
         .btn-secondary {
             background: transparent;
-            border: 1px solid var(--stone);
+            border: 2px solid var(--stone);
             color: var(--silver);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 0.875rem;
         }
 
         .btn-secondary:hover {
@@ -726,7 +728,7 @@
                     <h2 class="font-display text-2xl text-center md:text-right text-[var(--pearl)] tracking-widest uppercase mb-4 md:border-r-[3px] md:border-[var(--gold)] md:pr-4">
                         Operators
                     </h2>
-                    <p class="text-center md:text-right text-[var(--silver)] mb-12 md:pr-4">
+                    <p class="text-center md:text-left text-[var(--silver)] mb-12">
                         The grammar of philosophical transformation
                     </p>
 
