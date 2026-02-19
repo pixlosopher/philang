@@ -3,8 +3,8 @@
  * Provides offline support and caching for the PhiLang application
  */
 
-const CACHE_NAME = 'philang-v1.0.0';
-const CACHE_VERSION = '1.0.0';
+const CACHE_NAME = 'philang-v1.1.0';
+const CACHE_VERSION = '1.1.0';
 
 // Debug mode - set to false in production
 const SW_DEBUG = false;
@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
     './dialectical_dialogue.html',
     './philang_embeddings.html',
     './philang_embeddings_advanced.html',
+    './p-vs-np.html',
 
     // Core scripts (load order matters)
     './philang_config.js',
@@ -34,6 +35,9 @@ const STATIC_ASSETS = [
     './philang_export.js',
     './philang_urlstate.js',
     './philang_ui.js',
+    './philang_features.js',
+    './philang_performance.js',
+    './philang_analytics.js',
 
     // Styles
     './philang-theme.css',

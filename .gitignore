@@ -32,7 +32,7 @@ coverage/
 *.tmp
 *.temp
 
-# Python
+# Python (legacy experiments)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,6 +40,13 @@ __pycache__/
 .Python
 venv/
 .venv/
+*.py
 
-# Claude Code skills (local only)
+# Shell scripts (local dev tools)
+*.sh
+
+# JSX source (compiled at build time)
+*.jsx
+
+# Claude Code (local only)
 .claude/

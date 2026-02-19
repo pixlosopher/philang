@@ -1,0 +1,35 @@
+{
+  "name": "philang",
+  "version": "1.1.0",
+  "description": "A philosophical programming language and visualization system for exploring concepts across traditions",
+  "author": "Pedro Hernandez Baez",
+  "license": "MIT",
+  "homepage": "https://pixlosopher.github.io/philang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pixlosopher/philang.git"
+  },
+  "keywords": [
+    "philosophy",
+    "programming-language",
+    "visualization",
+    "ontology",
+    "dialectics",
+    "complexity-theory",
+    "embeddings",
+    "d3js"
+  ],
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "test": "open tests/test_runner.html",
+    "lint": "echo 'No linter configured — vanilla JS project'"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "browserslist": [
+    "last 2 versions",
+    "not dead",
+    "> 0.5%"
+  ]
+}
