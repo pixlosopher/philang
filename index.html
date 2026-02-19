@@ -192,17 +192,19 @@
             color: var(--silver);
             transition: color 0.3s ease;
             letter-spacing: 0.05em;
+            padding: 0.25rem 0.5rem;
         }
 
         .nav-link::after {
             content: '';
             position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 1px;
-            background: var(--gold);
-            transition: width 0.3s ease;
+            inset: 0;
+            background: rgba(201, 162, 39, 0.08);
+            border-radius: 4px;
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: transform 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+            z-index: -1;
         }
 
         .nav-link:hover {
@@ -210,7 +212,7 @@
         }
 
         .nav-link:hover::after {
-            width: 100%;
+            transform: scaleY(1);
         }
 
         /* API Status orb */
@@ -258,141 +260,91 @@
         }
 
         .divider-line {
-            width: 80px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            margin: 2rem auto;
+            width: 40px;
+            height: 2px;
+            background: var(--gold);
+            margin: 1.5rem auto;
             animation: expandLine 1s ease-out 0.5s forwards;
             transform: scaleX(0);
+        }
+
+        @media (min-width: 768px) {
+            .divider-line { margin: 1.5rem 0; }
         }
 
         /* Expression showcase */
         .expression-container {
             position: relative;
-            background: linear-gradient(135deg, rgba(22, 20, 28, 0.8) 0%, rgba(30, 27, 39, 0.6) 100%);
+            background: var(--obsidian);
             border: 1px solid rgba(201, 162, 39, 0.2);
-            border-radius: 12px;
+            border-left: 3px solid var(--gold);
+            border-radius: 0 12px 12px 0;
             padding: 2rem 3rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .expression-container::before {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            border-radius: 13px;
-            background: linear-gradient(135deg, rgba(201, 162, 39, 0.3) 0%, transparent 50%, rgba(139, 92, 246, 0.2) 100%);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .expression-container:hover::before {
-            opacity: 1;
         }
 
         /* Module cards */
         .module-card {
             position: relative;
-            background: linear-gradient(180deg, rgba(22, 20, 28, 0.9) 0%, rgba(15, 14, 19, 0.95) 100%);
+            background: var(--obsidian);
             border: 1px solid rgba(61, 55, 80, 0.4);
-            border-radius: 16px;
+            border-left: 3px solid var(--card-accent, var(--stone));
+            border-radius: 2px 16px 16px 2px;
             padding: 2rem;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-        }
-
-        .module-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .module-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.05) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: border-left-width 0.3s ease, background 0.3s ease, border-color 0.3s ease;
         }
 
         .module-card:hover {
-            border-color: rgba(201, 162, 39, 0.3);
-            transform: translateY(-8px);
-            box-shadow:
-                0 20px 40px rgba(0, 0, 0, 0.4),
-                0 0 60px rgba(201, 162, 39, 0.08);
-        }
-
-        .module-card:hover::before,
-        .module-card:hover::after {
-            opacity: 1;
+            border-color: var(--card-accent, var(--gold));
+            border-left-width: 5px;
+            background: var(--smoke);
         }
 
         .module-icon {
             font-size: 3rem;
             margin-bottom: 1.5rem;
-            transition: transform 0.5s ease, filter 0.5s ease;
+            transition: transform 0.5s ease;
             display: inline-block;
         }
 
         .module-card:hover .module-icon {
             transform: scale(1.15) rotate(-5deg);
-            filter: drop-shadow(0 0 20px currentColor);
+        }
+
+        /* First card spans 2 columns on large screens */
+        @media (min-width: 1024px) {
+            .module-card:first-child {
+                grid-column: span 2;
+            }
         }
 
         /* Concept pills */
         .concept-pill {
-            position: relative;
             padding: 0.6rem 1.2rem;
             border-radius: 100px;
             font-size: 0.95rem;
             letter-spacing: 0.02em;
-            transition: all 0.3s ease;
+            transition: border-width 0.2s ease;
             cursor: default;
-            overflow: hidden;
-        }
-
-        .concept-pill::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: inherit;
-            filter: blur(20px);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: -1;
         }
 
         .concept-pill:hover {
-            transform: scale(1.08) translateY(-2px);
-        }
-
-        .concept-pill:hover::before {
-            opacity: 0.5;
+            border-width: 2px;
         }
 
         /* Operator cards */
         .operator-card {
             background: rgba(22, 20, 28, 0.6);
             border: 1px solid rgba(61, 55, 80, 0.3);
+            border-top: 2px solid transparent;
             border-radius: 12px;
             padding: 1.5rem;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s ease, background 0.3s ease;
             text-align: center;
         }
 
         .operator-card:hover {
             background: rgba(30, 27, 39, 0.8);
-            border-color: rgba(201, 162, 39, 0.2);
-            transform: translateY(-4px);
+            border-top-color: var(--gold);
         }
 
         .operator-symbol {
@@ -409,40 +361,18 @@
         /* Claude AI section */
         .oracle-section {
             position: relative;
-            background: linear-gradient(135deg,
-                rgba(55, 48, 163, 0.15) 0%,
-                rgba(139, 92, 246, 0.08) 50%,
-                rgba(201, 162, 39, 0.05) 100%
-            );
+            background: var(--smoke);
             border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 20px;
+            border-left: 4px solid var(--indigo-glow);
+            border-radius: 2px 20px 20px 2px;
             padding: 3rem;
-            overflow: hidden;
         }
 
-        .oracle-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(
-                from 0deg at 50% 50%,
-                transparent 0deg,
-                rgba(99, 102, 241, 0.03) 60deg,
-                transparent 120deg,
-                rgba(201, 162, 39, 0.02) 180deg,
-                transparent 240deg,
-                rgba(139, 92, 246, 0.03) 300deg,
-                transparent 360deg
-            );
-            animation: slowRotate 60s linear infinite;
-        }
-
-        @keyframes slowRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @media (min-width: 768px) {
+            .oracle-section {
+                margin-left: -1rem;
+                margin-right: 3rem;
+            }
         }
 
         .oracle-symbol {
@@ -457,7 +387,6 @@
         /* Footer */
         footer {
             border-top: 1px solid rgba(61, 55, 80, 0.3);
-            background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 12, 0.5) 100%);
         }
 
         /* Custom scrollbar */
@@ -473,39 +402,19 @@
 
         /* Button styles */
         .btn-primary {
-            position: relative;
-            background: linear-gradient(135deg, var(--ember) 0%, var(--gold) 100%);
+            background: var(--gold);
             color: var(--void);
             font-weight: 500;
             padding: 0.875rem 2rem;
             border-radius: 8px;
-            border: none;
+            border: 2px solid var(--gold);
             cursor: pointer;
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, var(--gold) 0%, var(--flame) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: background 0.2s ease, color 0.2s ease;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(201, 162, 39, 0.3);
-        }
-
-        .btn-primary:hover::before {
-            opacity: 1;
-        }
-
-        .btn-primary span {
-            position: relative;
-            z-index: 1;
+            background: transparent;
+            color: var(--gold);
         }
 
         .btn-secondary {
@@ -608,57 +517,64 @@
         </nav>
 
         <!-- Hero Section -->
-        <header class="flex flex-col items-center pt-8 md:pt-12 pb-16 px-6 text-center">
-            <div class="max-w-4xl mx-auto">
-                <!-- Phi symbol -->
-                <div class="animate-fade-up delay-200">
+        <header class="flex flex-col items-center pt-8 md:pt-12 pb-16 px-6 text-center md:text-left">
+            <div class="max-w-4xl mx-auto md:grid md:grid-cols-[1fr_auto] md:gap-12 md:items-center">
+                <!-- Text content -->
+                <div>
+                    <!-- Title -->
+                    <h1 class="hero-title font-display text-[var(--bone)] animate-fade-up delay-200">
+                        PhiLang
+                    </h1>
+
+                    <div class="divider-line"></div>
+
+                    <p class="hero-subtitle text-xl mb-8 animate-fade-up delay-300">
+                        A Philosophical Programming Language
+                    </p>
+
+                    <p class="text-[var(--silver)] max-w-2xl mb-12 leading-relaxed animate-fade-up delay-400 md:mx-0 mx-auto">
+                        PhiLang bridges the gap between formal systems and philosophical discourse,
+                        providing a grammar for expressing and deriving insights across the great traditions.
+                    </p>
+
+                    <!-- Expression showcase -->
+                    <div class="expression-container inline-block animate-fade-up delay-500">
+                        <code class="font-mono text-lg md:text-xl">
+                            <span class="text-emerald-400">emptiness</span>
+                            <span class="text-[var(--silver)]"> ⊗ </span>
+                            <span class="text-sky-400">dep-orig</span>
+                            <span class="text-[var(--silver)]"> → </span>
+                            <span class="text-[var(--violet-mist)]">¬</span><span class="text-[var(--gold)]">substance</span>
+                        </code>
+                    </div>
+                    <p class="text-sm text-[var(--stone)] mt-4 italic animate-fade-up delay-600">
+                        "Emptiness synthesized with dependent origination derives the negation of substance"
+                    </p>
+
+                    <!-- Quick navigation buttons -->
+                    <div class="flex flex-wrap justify-center md:justify-start gap-4 mt-12 animate-fade-up delay-700">
+                        <a href="derivation_graph.html" class="btn-primary">
+                            <span class="mr-2">⊹</span> Explore Derivations
+                        </a>
+                        <a href="dialectical_dialogue.html" class="btn-secondary">
+                            <span class="mr-2">⟐</span> Start Dialogue
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Phi symbol (right column on desktop) -->
+                <div class="animate-fade-up delay-100 hidden md:block">
                     <span class="hero-phi font-display">φ</span>
                 </div>
-
-                <!-- Title -->
-                <h1 class="hero-title font-display text-[var(--bone)] animate-fade-up delay-300">
-                    PhiLang
-                </h1>
-
-                <div class="divider-line"></div>
-
-                <p class="hero-subtitle text-xl mb-8 animate-fade-up delay-400">
-                    A Philosophical Programming Language
-                </p>
-
-                <p class="text-[var(--silver)] max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-up delay-500">
-                    PhiLang bridges the gap between formal systems and philosophical discourse,
-                    providing a grammar for expressing and deriving insights across the great traditions.
-                </p>
-
-                <!-- Expression showcase -->
-                <div class="expression-container inline-block animate-fade-up delay-600">
-                    <code class="font-mono text-lg md:text-xl">
-                        <span class="text-emerald-400">emptiness</span>
-                        <span class="text-[var(--silver)]"> ⊗ </span>
-                        <span class="text-sky-400">dep-orig</span>
-                        <span class="text-[var(--silver)]"> → </span>
-                        <span class="text-[var(--violet-mist)]">¬</span><span class="text-[var(--gold)]">substance</span>
-                    </code>
-                </div>
-                <p class="text-sm text-[var(--stone)] mt-4 italic animate-fade-up delay-700">
-                    "Emptiness synthesized with dependent origination derives the negation of substance"
-                </p>
-
-                <!-- Quick navigation buttons -->
-                <div class="flex flex-wrap justify-center gap-4 mt-12 animate-fade-up delay-800">
-                    <a href="derivation_graph.html" class="btn-primary">
-                        <span class="mr-2">⊹</span> Explore Derivations
-                    </a>
-                    <a href="dialectical_dialogue.html" class="btn-secondary">
-                        <span class="mr-2">⟐</span> Start Dialogue
-                    </a>
+                <!-- Phi symbol (mobile only, above title) -->
+                <div class="animate-fade-up delay-100 md:hidden">
+                    <span class="hero-phi font-display">φ</span>
                 </div>
             </div>
 
             <!-- GitHub link -->
             <a href="https://github.com/pixlosopher/philang" target="_blank" rel="noopener noreferrer"
-               class="inline-flex items-center gap-2 mt-4 text-sm text-[var(--stone)] hover:text-[var(--silver)] transition-colors animate-fade-in delay-1000">
+               class="inline-flex items-center gap-2 mt-8 text-sm text-[var(--stone)] hover:text-[var(--silver)] transition-colors animate-fade-in delay-1000">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
                 View on GitHub
             </a>
@@ -670,16 +586,16 @@
 
                 <!-- Modules Section -->
                 <section class="mb-24">
-                    <h2 class="font-display text-2xl text-center text-[var(--pearl)] tracking-widest uppercase mb-4 animate-fade-up">
+                    <h2 class="font-display text-2xl text-center md:text-left text-[var(--pearl)] tracking-widest uppercase mb-4 animate-fade-up md:border-l-[3px] md:border-[var(--gold)] md:pl-4">
                         Explore
                     </h2>
-                    <p class="text-center text-[var(--silver)] mb-12 animate-fade-up delay-100">
+                    <p class="text-center md:text-left text-[var(--silver)] mb-12 animate-fade-up delay-100 md:pl-4">
                         Interactive modules for philosophical inquiry
                     </p>
 
                     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Derivation Graph -->
-                        <a href="derivation_graph.html" class="module-card block animate-fade-up delay-200">
+                        <a href="derivation_graph.html" class="module-card block animate-fade-up delay-200" style="--card-accent: #6366f1">
                             <span class="module-icon text-[var(--indigo-glow)]">⟹</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Derivation Graph</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -693,7 +609,7 @@
                         </a>
 
                         <!-- Dialectical Dialogue -->
-                        <a href="dialectical_dialogue.html" class="module-card block animate-fade-up delay-300">
+                        <a href="dialectical_dialogue.html" class="module-card block animate-fade-up delay-300" style="--card-accent: #8b5cf6">
                             <span class="module-icon text-[var(--violet-mist)]">⚔</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Dialectical Dialogue</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -707,7 +623,7 @@
                         </a>
 
                         <!-- Socratic Counsel -->
-                        <a href="socratic_counsel.html" class="module-card block animate-fade-up delay-400">
+                        <a href="socratic_counsel.html" class="module-card block animate-fade-up delay-400" style="--card-accent: #c9a227">
                             <span class="module-icon text-[var(--gold)]">☉</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Socratic Counsel</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -721,7 +637,7 @@
                         </a>
 
                         <!-- Semantic Embeddings -->
-                        <a href="philang_embeddings.html" class="module-card block animate-fade-up delay-500">
+                        <a href="philang_embeddings.html" class="module-card block animate-fade-up delay-500" style="--card-accent: #22d3ee">
                             <span class="module-icon text-cyan-400">◎</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Semantic Embeddings</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -735,7 +651,7 @@
                         </a>
 
                         <!-- Advanced Embeddings -->
-                        <a href="philang_embeddings_advanced.html" class="module-card block animate-fade-up delay-600">
+                        <a href="philang_embeddings_advanced.html" class="module-card block animate-fade-up delay-600" style="--card-accent: #f472b6">
                             <span class="module-icon text-pink-400">✧</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">Advanced Embeddings</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -749,7 +665,7 @@
                         </a>
 
                         <!-- P ≠ NP Complexity Theory -->
-                        <a href="p-vs-np.html" class="module-card block animate-fade-up delay-700">
+                        <a href="p-vs-np.html" class="module-card block animate-fade-up delay-700" style="--card-accent: #06b6d4">
                             <span class="module-icon text-cyan-400">⊛</span>
                             <h3 class="font-display text-xl text-[var(--pearl)] mb-3">P ≠ NP Explorer</h3>
                             <p class="text-[var(--silver)] text-sm mb-4 leading-relaxed">
@@ -807,10 +723,10 @@
 
                 <!-- Operators Section -->
                 <section class="mb-24">
-                    <h2 class="font-display text-2xl text-center text-[var(--pearl)] tracking-widest uppercase mb-4">
+                    <h2 class="font-display text-2xl text-center md:text-right text-[var(--pearl)] tracking-widest uppercase mb-4 md:border-r-[3px] md:border-[var(--gold)] md:pr-4">
                         Operators
                     </h2>
-                    <p class="text-center text-[var(--silver)] mb-12">
+                    <p class="text-center md:text-right text-[var(--silver)] mb-12 md:pr-4">
                         The grammar of philosophical transformation
                     </p>
 
